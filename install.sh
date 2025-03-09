@@ -25,7 +25,7 @@ fi
 
 # Define list of required packages
 PACKAGES=(
-   snapd zsh tmux xclip fzf bat ripgrep fd-find curl git wget unzip python3-pip btop gh
+   snapd zsh tmux xclip fzf bat ripgrep fd-find curl git wget unzip python3-pip btop gh python3-pygments bat 
 )
 # Update package lists and install missing packages
 echo "Updating system packages..."
@@ -80,17 +80,13 @@ createSymlink "$DOTFILES_DIR/.gitconfig" "$HOME/.gitconfig"
 
 # Setup btop config
 echo "Setting up btop config..."
-if [ ! -d "$HOME/.config/btop" ]; then
-    mkdir -p "$HOME/.config/btop"
-fi
+mkdir -p "$HOME/.config/btop"
 createSymlink "$DOTFILES_DIR/btop" "$HOME/.config/btop"
 
 
 # Setup Neovim
 echo "Setting up Neovim..."
-if [ ! -d "$HOME/.config/nvim" ]; then
-    mkdir -p "$HOME/.config/nvim"
-fi
+mkdir -p "$HOME/.config/nvim"
 createSymlink "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 
 
@@ -158,6 +154,38 @@ createSymlink "$DOTFILES_DIR/.p10k.zsh" "$HOME/.p10k.zsh"
 # Install IDEAVim Configuration
 echo "Setting up IDEAVim..."
 createSymlink "$DOTFILES_DIR/.ideavimrc" "$HOME/.ideavimrc"
+
+
+# Install fonts
+echo "Installing Nerd Fonts..."
+
+FONT_DIR="$HOME/.local/share/fonts"
+mkdir -p "$FONT_DIR"
+
+# Read fonts from the file and download them
+FONTS_FILE="$DOTFILES_DIR/fonts.txt"
+while IFS= read -r font || [[ -n "$font" ]]; do
+    # Ignore empty lines
+    if [[ -z "$font" ]]; then
+        continue
+    fi
+
+    # Check if font already exists
+    if ls "$FONT_DIR" | grep -qi "$font"; then
+        echo "$font Nerd Font is already installed. Skipping..."
+        continue
+    fi
+
+    echo "Downloading $font Nerd Font..."
+    wget -O "$font.zip" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/$font.zip"
+    unzip -o "$font.zip" -d "$FONT_DIR"
+    rm "$font.zip"
+done < "$FONTS_FILE"
+
+# Refresh font cache
+fc-cache -fv
+
+echo "Fonts installed successfully!"cho "Fonts installed successfully!"
 
 # Change default shell to Zsh
 if [[ "$SHELL" != "$(which zsh)" ]]; then
