@@ -60,7 +60,7 @@ createSymlink() {
 
         backup_name="${dest}.bak"
         if [ -n "$extension" ]; then
-            backup_name="${dest%.*}_$(date +%Y%m%d_%H%M%S).bak.$extension"
+            backup_name="${dest%.*}.bak.$extension"
         fi
 
         mv "$dest" "$backup_name"
@@ -150,6 +150,10 @@ echo "Installing Powerlevel10k..."
 if [ ! -d "$HOME/.oh-my-zsh/custom/themes/powerlevel10k" ]; then
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
 fi
+
+# Setup Powerlevel10k
+echo "Setting up Powerlevel10k..."
+createSymlink "$DOTFILES_DIR/.p10k.zsh" "$HOME/.p10k.zsh"
 
 # Install IDEAVim Configuration
 echo "Setting up IDEAVim..."
