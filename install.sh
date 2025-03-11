@@ -45,22 +45,29 @@ createSymlink() {
     local src="$1"
     local dest="$2"
 
-    # Check if destination already exists
+    # Check if the destination already exists
     if [ -e "$dest" ] || [ -L "$dest" ]; then
-        echo "Backup existing file: $dest"
-
-        # Extract filename and extension safely
-        filename=$(basename -- "$dest")
-        extension="${filename##*.}"
-        if [[ "$filename" == "$extension" ]]; then
-            extension=""
-        else
-            filename="${filename%.*}"
+        # If the destination is already a symlink pointing to the correct source, do nothing
+        if [ -L "$dest" ] && [ "$(readlink -- "$dest")" = "$src" ]; then
+            echo "Symlink already exists: $dest → $src (No changes needed)"
+            return 0
         fi
 
-        backup_name="${dest}.bak"
-        if [ -n "$extension" ]; then
-            backup_name="${dest%.*}.bak.$extension"
+        echo "Backup existing file: $dest"
+
+        # Handle files that start with a dot (e.g., .gitconfig)
+        filename=$(basename -- "$dest")
+        
+        if [[ "$filename" == .* ]]; then
+            backup_name="${dest}.bak"
+        else
+            extension="${filename##*.}"
+            base="${filename%.*}"
+            if [[ "$base" == "$filename" ]]; then
+                backup_name="${dest}.bak"
+            else
+                backup_name="${dest%.*}.bak.$extension"
+            fi
         fi
 
         mv "$dest" "$backup_name"
@@ -173,6 +180,13 @@ while IFS= read -r font || [[ -n "$font" ]]; do
     # Check if font already exists
     if ls "$FONT_DIR" | grep -qi "$font"; then
         echo "$font Nerd Font is already installed. Skipping..."
+        continue
+    fi
+
+    # Ask user whether to install this font
+    read -p "Do you want to install $font Nerd Font? (y/n): " choice
+    if [[ "$choice" != "y" && "$choice" != "Y" ]]; then
+        echo "Skipping $font Nerd Font."
         continue
     fi
 
