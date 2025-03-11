@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)
 
 # Navigate to the repository
-cd "$REPO_PATH" || exit 1
+cd "$REPO_DIR" || exit 1
 
 # Check for changes
 if [[ -n $(git status --porcelain) ]]; then
