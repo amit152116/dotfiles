@@ -213,11 +213,12 @@ fi
 
 # Make auto-commit script executable if it exists
 SCRIPT_PATH="$DOTFILES_DIR/auto-commit.sh"
-if [ -f "$SCRIPT_PATH" ]; then
+
+if [[ -f "$SCRIPT_PATH" ]]; then
     chmod +x "$SCRIPT_PATH"
 
-    # Add the script to crontab if not already present
-    if ! crontab -l 2>/dev/null | grep -q "$SCRIPT_PATH"; then
+    # Check if the script is already in crontab
+    if ! crontab -l 2>/dev/null | grep -qF "$SCRIPT_PATH"; then
         (crontab -l 2>/dev/null; echo "0 22 * * * $SCRIPT_PATH") | crontab -
         echo "Auto-commit script scheduled in cron job successfully!"
     else

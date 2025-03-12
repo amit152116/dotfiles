@@ -161,6 +161,7 @@ fi
 alias cls="clear"
 alias python="python3"
 alias pip="pip3"
+alias dotfiles='cd "$(dirname "$(realpath ~/.zshrc)")"'
 
 # Utility aliases
 alias pysource='source ./myenv/bin/activate'
@@ -179,28 +180,17 @@ fi
 # SECTION: GENERAL FUNCTIONS
 #=============================================================================
 
-# Detect the user's default shell
-if [[ "$SHELL" =~ "zsh" ]]; then
-    SHELL_CONFIG="$HOME/.zshrc"
-elif [[ "$SHELL" =~ "bash" ]]; then
-    SHELL_CONFIG="$HOME/.bashrc"
-    alias bashrc="$EDITOR ~/.bashrc" 
-else
-    echo "Unsupported shell: $SHELL"
-    exit 1
-fi
-
 # Configuration reload
 reload() {
-  source "$SHELL_CONFIG"
+  source  ~/.zshrc
   
   # Reload tmux configuration if available
   if command -v tmux &>/dev/null && [[ -f ~/.tmux.conf ]]; then
     # Use command substitution to prevent interference with fzf
     command tmux source-file ~/.tmux.conf 2>/dev/null
-    echo "Reloaded $SHELL_CONFIG & ~/.tmux.conf"
+    echo "Reloaded ~/.zshrc & ~/.tmux.conf"
   else
-    echo "Reloaded $SHELL_CONFIG"
+    echo "Reloaded ~/.zshrc"
   fi
 }
 

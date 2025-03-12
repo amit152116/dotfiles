@@ -1,34 +1,98 @@
-" .ideavimrc is a configuration file for IdeaVim plugin. It uses
-"   the same commands as the original .vimrc configuration.
-" You can find a list of commands here: https://jb.gg/h38q75
-" Find more examples here: https://jb.gg/share-ideavimrc
+" Enable incremental search
+set incsearch
+set ignorecase     " Ignore case in search
+set smartcase      " Enable case-sensitive search if uppercase is used
 
-
-"" -- Suggested options --
-" Show a few lines of context around the cursor. Note that this makes the
-" text scroll if you mouse-click near the start or end of the window.
+" Set scrolloff (keep 5 lines visible above/below cursor)
 set scrolloff=5
 
-" Do incremental searching.
-set incsearch
+" Enable line numbers similar to Neovim
+set number
+set relativenumber
 
-" Don't use Ex mode, use Q for formatting.
-map Q gq
+" Enable clipboard support (mimicking Neovim's `clipboard=unnamedplus`)
+set clipboard+=unnamedplus
 
-" --- Enable IdeaVim plugins https://jb.gg/ideavim-plugins
+" Enable syntax highlighting
+set syntax=on
+
+" Set tab settings to match Neovim
+set expandtab       " Convert tabs to spaces
+set shiftwidth=2    " Set indentation width to 2 spaces
+set softtabstop=2   " Number of spaces per tab in insert mode
+set tabstop=2       " Display tabs as 2 spaces
+
+" Enable auto-indentation
+set autoindent
+set smartindent
 
 " Highlight copied text
 Plug 'machakann/vim-highlightedyank'
-" Commentary plugin
+
+" Enable comments like Neovim's `vim-commentary`
 Plug 'tpope/vim-commentary'
 
+" Enable smooth scrolling similar to AstroNvim
+map <C-d> <C-d>zz
+map <C-u> <C-u>zz
+map n nzzzv
+map N Nzzzv
 
-"" -- Map IDE actions to IdeaVim -- https://jb.gg/abva4t
-"" Map \r to the Reformat Code action
-"map \r <Action>(ReformatCode)
+" Map `Q` to format selected code (like Neovim)
+map Q gq
 
-"" Map <leader>d to start debug
-"map <leader>d <Action>(Debug)
+" Use space as leader key (like AstroNvim)
+let mapleader=" "
 
-"" Map \b to toggle the breakpoint on the current line
-"map \b <Action>(ToggleLineBreakpoint)
+" Open file search (similar to Telescope in AstroNvim)
+map <leader>ff <Action>(FindInPath)
+
+" Buffer navigation (like AstroNvim's `<Space>bb` and `<Space>bd`)
+map <leader>bb <Action>(Switcher)
+map <leader>bd <Action>(CloseContent)
+
+" Toggle file explorer (like Neotree in AstroNvim)
+map <leader>e <Action>(ActivateProjectView)
+
+" Save and quit mappings
+map <leader>w <Action>(SaveAll)
+map <leader>q <Action>(CloseActiveTab)
+map <leader>Q <Action>(CloseProject)
+
+" Search functionality (similar to AstroNvim)
+map <leader>fw <Action>(Find)
+map <leader>fr <Action>(RecentFiles)
+
+" Code formatting
+map <leader>r <Action>(ReformatCode)
+
+" Debugging (mimics AstroNvim's `<Space>d` mappings)
+map <leader>db <Action>(ToggleLineBreakpoint)
+map <leader>dt <Action>(ActivateDebugToolWindow)
+map <leader>dc <Action>(Debug)
+map <leader>dr <Action>(Resume)
+map <leader>do <Action>(StepOver)
+map <leader>di <Action>(StepInto)
+map <leader>dO <Action>(StepOut)
+map <leader>dq <Action>(Stop)
+
+" Git mappings (similar to AstroNvim's `<Space>g` mappings)
+map <leader>gs <Action>(Git.Status)
+map <leader>gc <Action>(Git.Commit)
+map <leader>gp <Action>(Git.Push)
+map <leader>gl <Action>(Git.Log)
+
+" Split navigation (similar to Neovim's `<C-h/j/k/l>`)
+map <C-h> <Action>(SelectPreviousSplitter)
+map <C-l> <Action>(SelectNextSplitter)
+map <C-j> <Action>(SelectNextTab)
+map <C-k> <Action>(SelectPreviousTab)
+
+" Commenting (works like `gcc` in Neovim)
+map <leader>/ <Action>(CommentByLineComment)
+
+" Terminal toggling (similar to AstroNvim's `<Space>th`)
+map <leader>th <Action>(ActivateTerminalToolWindow)
+
+" Enable Vim plugins in IdeaVim
+set ideavim_extensions=all
