@@ -128,9 +128,10 @@ export FZF_TMUX_OPTS=" -p70%,70% "
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
   # Debian/Ubuntu aliases
-  alias upgrade="sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && sudo apt clean"
+  alias upgrade="sudo apt update && sudo apt upgrade -y"
   alias install="sudo apt install"
   alias remove="sudo apt remove"
+  alias clean="sudo apt autoremove -y && sudo apt clean"
   alias search="apt search"
   alias update="sudo apt update"
 elif [[ -f /etc/arch-release ]]; then
