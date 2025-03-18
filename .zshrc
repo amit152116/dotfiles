@@ -376,28 +376,46 @@ if [[ "$ROS_FOUND" == "true" ]]; then
 
   # ROS2 functions
   rospkg() {
-      if [[ $# -lt 2 ]]; then
-          echo "Usage: rospkg <py|cpp> <package_name> [dependencies...]"
-          return 1
-      fi
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: rospkg <py|cpp> <package_name> [dependencies...]"
+        return 1
+    fi
 
-      local lang=$1
-      local pkg_name=$2
-      shift 2
-      local dependencies="$*"
+    # Locate the ROS 2 workspace (assumes running inside a workspace)
+    local ws_root="$(pwd)"
+    while [[ "$ws_root" != "/" && ! -d "$ws_root/src" ]]; do
+        ws_root="$(dirname "$ws_root")"
+    done
 
-      case "$lang" in
-          py)
-              ros2 pkg create "$pkg_name" --build-type ament_python --dependencies "rclpy $dependencies" --license GPL-3.0-only
-              ;;
-          cpp)
-              ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies "rclcpp $dependencies" --license GPL-3.0-only
-              ;;
-          *)
-              echo "Invalid language. Use 'py' for Python or 'cpp' for C++."
-              return 1
-              ;;
-      esac
+    # Check if src folder exists in the detected workspace
+    if [[ ! -d "$ws_root/src" ]]; then
+        echo "Error: Could not find a ROS 2 workspace (src/ folder missing)."
+        return 1
+    fi
+
+    local lang=$1
+    local pkg_name=$2
+    shift 2
+    local dependencies="$*"
+
+    # Move to src directory
+    cd "$ws_root/src" || return 1
+
+    case "$lang" in
+        py)
+            ros2 pkg create "$pkg_name" --build-type ament_python --dependencies "rclpy $dependencies" --license GPL-3.0-only
+            ;;
+        cpp)
+            ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies "rclcpp $dependencies" --license GPL-3.0-only
+            ;;
+        *)
+            echo "Invalid language. Use 'py' for Python or 'cpp' for C++."
+            return 1
+            ;;
+    esac
+
+    # Return to the original directory
+    cd - > /dev/null
   }
 
   # Fuzzy search and run a node
