@@ -339,6 +339,7 @@ fi
 if [[ "$ROS_FOUND" == "true" ]]; then
 
   # ROS settings
+  export GZ_VERSION=harmonic
   export ROS_DOMAIN_ID=0
 
   # Source ROS2 environment
@@ -466,3 +467,4 @@ source $ZSH/oh-my-zsh.sh
 
 # Source powerlevel10k configuration if it exists
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+export PATH=$PATH:/home/amit_152116/ardu_ws/Micro-XRCE-DDS-Gen/scripts
