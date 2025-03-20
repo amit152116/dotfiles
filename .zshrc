@@ -213,7 +213,7 @@ alias amend='git commit --amend --no-edit'
 # Git functions
 
 # Function to go to the root directory of the current Git repository
-groot() {
+home() {
     local git_root
     git_root=$(git rev-parse --show-toplevel 2>/dev/null)
     
