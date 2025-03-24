@@ -13,10 +13,6 @@ return {
                 n = {
                     -- second key is the lefthand side of the map
 
-                    -- navigate buffer tabs
-                    ["]b"] = { function() require("astrocore.buffer").nav(vim.v.count1) end, desc = "Next buffer" },
-                    ["[b"] = { function() require("astrocore.buffer").nav(-vim.v.count1) end, desc = "Previous buffer" },
-
                     -- mappings seen under group name "Buffer"
                     ["<Leader>bd"] = {
                         function()
@@ -55,6 +51,30 @@ return {
                         "<C-w>w",
                         desc = "Switch window",
                     },
+                    ["<Leader>r"] = {
+                        desc = "ROS2 commands",
+                    },
+                    ["<Leader>rm"] = {
+                        desc = "Ros Messages",
+                        function() require("myPlugins.ros2-nvim").messages() end,
+                    },
+                    ["<Leader>ra"] = {
+                        desc = "Ros Actions",
+                        function() require("myPlugins.ros2-nvim").actions() end,
+                    },
+                    ["<Leader>rt"] = {
+                        desc = "Ros Topics",
+                        function() require("myPlugins.ros2-nvim").topics() end,
+                    },
+                    ["<Leader>rn"] = {
+                        desc = "Ros Nodes",
+                        function() require("myPlugins.ros2-nvim").nodes() end,
+                    },
+                    ["<Leader>rs"] = {
+                        desc = "Ros Services",
+                        function() require("myPlugins.ros2-nvim").services() end,
+                    },
+
                     -- Rename the current file
                     -- ["<leader>rn"] = { ":saveas ", desc = "Rename current file" },
 

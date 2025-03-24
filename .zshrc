@@ -17,11 +17,27 @@ fi
 #=============================================================================
 
 # Paths
-export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/lib/ccache:$PATH"
 
 # Add Cargo if installed
 if [[ -d "$HOME/.cargo/bin" ]]; then
   export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# Add Micro-XRCE-DDS-Gen if installed
+if [[ -d "$HOME/ardupilot/Micro-XRCE-DDS-Gen" ]]; then
+  export PATH=$PATH:$HOME/ardupilot/Micro-XRCE-DDS-Gen/scripts
+fi
+
+# Add Ardupilot-Autopilot if installed
+if [[ -d "$HOME/ardupilot/src/ardupilot" ]]; then
+  export PATH=$PATH:$HOME/ardupilot/src/ardupilot/Tools/autotest
+fi
+
+if [[ -d "$HOME/ardupilot/src/ardupilot_gazebo" ]]; then
+  export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot/src/ardupilot_gazebo/build
+  export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot/src/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds
+  source /usr/local/share/ardupilot_gazebo/local_setup.zsh
 fi
 
 # Add Node.js if installed
@@ -31,7 +47,7 @@ fi
 
 # Add Go if installed
 if command -v go &>/dev/null; then
-  export PATH="$HOME/go/bin:$(go env GOPATH)/bin:$PATH"
+  export PATH="$(go env GOPATH)/bin:$PATH"
 fi
 
 # Set editor preferences (fallback to vim if nvim not available)
@@ -360,8 +376,8 @@ if [[ "$ROS_FOUND" == "true" ]]; then
   fi
 
   # Set GAZEBO_MODEL_PATH if required
-  if [[ -d ~/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models ]]; then
-    export GAZEBO_MODEL_PATH=~/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models:$GAZEBO_MODEL_PATH
+  if [[ -d $HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models ]]; then
+    export GAZEBO_MODEL_PATH=$HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models
   fi
 
 
@@ -467,4 +483,3 @@ source $ZSH/oh-my-zsh.sh
 
 # Source powerlevel10k configuration if it exists
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-export PATH=$PATH:/home/amit_152116/ardu_ws/Micro-XRCE-DDS-Gen/scripts

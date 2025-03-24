@@ -9,7 +9,7 @@ return {
     -- == Examples of Adding Plugins ==
 
     "andweeb/presence.nvim",
-    "ErickKramer/nvim-ros2",
+    -- "ErickKramer/nvim-ros2",
     {
         "github/copilot.vim",
     },
