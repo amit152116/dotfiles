@@ -54,32 +54,48 @@ return {
                     ["<Leader>r"] = {
                         desc = "ROS2 commands",
                     },
-                    ["<Leader>rm"] = {
-                        desc = "Ros Messages",
+                    ["<Leader>ri"] = {
+                        desc = "ROS Interfaces",
+                    },
+                    ["<Leader>rim"] = {
+                        desc = "ROS Messages",
                         function() require("myPlugins.ros2-nvim").messages() end,
                     },
-                    ["<Leader>ra"] = {
-                        desc = "Ros Actions",
+                    ["<Leader>ria"] = {
+                        desc = "ROS Actions",
                         function() require("myPlugins.ros2-nvim").actions() end,
                     },
-                    ["<Leader>rt"] = {
-                        desc = "Ros Topics",
-                        function() require("myPlugins.ros2-nvim").topics() end,
-                    },
-                    ["<Leader>rn"] = {
-                        desc = "Ros Nodes",
-                        function() require("myPlugins.ros2-nvim").nodes() end,
-                    },
-                    ["<Leader>rs"] = {
-                        desc = "Ros Services",
+                    ["<Leader>ris"] = {
+                        desc = "ROS Services",
                         function() require("myPlugins.ros2-nvim").services() end,
                     },
-
+                    ["<Leader>rt"] = {
+                        desc = "ROS Active Topics",
+                        function() require("myPlugins.ros2-nvim").active_topics() end,
+                    },
+                    ["<Leader>rn"] = {
+                        desc = "ROS Active Nodes",
+                        function() require("myPlugins.ros2-nvim").active_nodes() end,
+                    },
+                    ["<Leader>rp"] = {
+                        desc = "ROS Params",
+                        function() require("myPlugins.ros2-nvim").param() end,
+                    },
+                    ["<Leader>re"] = {
+                        desc = "ROS Execute Command",
+                    },
+                    ["<Leader>ren"] = {
+                        desc = "Execute Node",
+                        function() require("myPlugins.ros2-nvim").exec_nodes() end,
+                    },
+                    ["<Leader>rel"] = {
+                        desc = "Execute Launch File",
+                    },
                     -- Rename the current file
                     -- ["<leader>rn"] = { ":saveas ", desc = "Rename current file" },
 
                     -- Save all files
-                    -- ["<leader>W"] = { "<cmd>w<CR>", desc = "Save All Files" },
+                    ["<leader>W"] = { "<cmd>w<CR>", desc = "Save All Files" },
 
                     -- setting a mapping to false will disable it
                     -- ["<C-S>"] = false,
