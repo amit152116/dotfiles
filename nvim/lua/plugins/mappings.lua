@@ -1,5 +1,6 @@
--- if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
 local neovim_config_dir = vim.fn.stdpath "config_dirs"
+local ros2_terminal = require "myPlugins.ros2-terminal"
+local ros2_nvim = require "myPlugins.ros2-nvim"
 return {
     {
         -- AstroCore provides a central place to modify mappings, vim options, autocommands, and more!
@@ -59,37 +60,42 @@ return {
                     },
                     ["<Leader>rim"] = {
                         desc = "ROS Messages",
-                        function() require("myPlugins.ros2-nvim").messages() end,
+                        function() ros2_nvim.messages() end,
                     },
                     ["<Leader>ria"] = {
                         desc = "ROS Actions",
-                        function() require("myPlugins.ros2-nvim").actions() end,
+                        function() ros2_nvim.actions() end,
                     },
                     ["<Leader>ris"] = {
                         desc = "ROS Services",
-                        function() require("myPlugins.ros2-nvim").services() end,
+                        function() ros2_nvim.services() end,
                     },
                     ["<Leader>rt"] = {
                         desc = "ROS Active Topics",
-                        function() require("myPlugins.ros2-nvim").active_topics() end,
+                        function() ros2_nvim.active_topics() end,
                     },
                     ["<Leader>rn"] = {
                         desc = "ROS Active Nodes",
-                        function() require("myPlugins.ros2-nvim").active_nodes() end,
+                        function() ros2_nvim.active_nodes() end,
                     },
                     ["<Leader>rp"] = {
                         desc = "ROS Params",
-                        function() require("myPlugins.ros2-nvim").param() end,
+                        function() ros2_nvim.param() end,
                     },
                     ["<Leader>re"] = {
                         desc = "ROS Execute Command",
                     },
                     ["<Leader>ren"] = {
                         desc = "Execute Node",
-                        function() require("myPlugins.ros2-nvim").exec_nodes() end,
+                        function() ros2_nvim.exec_nodes() end,
                     },
                     ["<Leader>rel"] = {
                         desc = "Execute Launch File",
+                        function() ros2_nvim.exec_launch_file() end,
+                    },
+                    ["<Leader>rc"] = {
+                        function() ros2_terminal.ToggleRosTerminal() end,
+                        desc = "Toggle ROS Terminal",
                     },
                     -- Rename the current file
                     -- ["<leader>rn"] = { ":saveas ", desc = "Rename current file" },
@@ -104,6 +110,10 @@ return {
                 x = {
                     -- Replace and keep yank
                     ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
+                },
+                t = {
+
+                    ["<Esc>"] = { "<C-\\><C-n>", desc = "Normal Mode Terminal" },
                 },
                 -- Visual mode mappings
                 v = {

@@ -6,110 +6,247 @@ local conf = require("telescope.config").values
 local actions = require "telescope.actions"
 local action_state = require "telescope.actions.state"
 local previewers = require "telescope.previewers"
-local debugger = require "myPlugins.debugger"
+local utils = require "myPlugins.utils"
+local terminal = require "myPlugins.ros2-terminal"
+
+local cache_dir = vim.fn.stdpath "cache" .. "/ros2_nvim/"
+vim.fn.mkdir(cache_dir, "p")
+
 local M = {}
 
 local config = {
-    ros2_command = "ros2",
-    -- Add other telescope-specific config if needed
+    ros2_command = "ros2 ",
+    cache_timeout = 300,
+    debounce_delay = 150, -- ms for preview debouncing
 }
 
--- Helper function to execute ROS2 commands
-local function get_ros2_data(command, callback, top_pop, filter)
-    -- vim.notify("Running command: " .. config.ros2_command .. " " .. command, vim.log.levels.INFO)
-    vim.fn.jobstart(config.ros2_command .. " " .. command, {
-        stdout_buffered = true,
-        on_stdout = function(_, data)
-            if filter then
-                local results = filter(data)
-                callback(results)
-            elseif data then
-                local results = {}
-                -- vim.notify("ROS2 Output: " .. table.concat(data, "\n"), vim.log.levels.INFO)
-                if top_pop then
-                    table.remove(data, 1) -- Remove the first line which is the command itself
-                end
-                for _, line in ipairs(data) do
-                    if line ~= "" then table.insert(results, line) end
-                end
-                callback(results)
-            end
-        end,
-        -- on_stderr = function(_, err) vim.notify("ROS2 Error: " .. table.concat(err, "\n"), vim.log.levels.ERROR) end,
-    })
+local cache = {
+    data = {},
+    timestamps = {},
+    cache_timeout = {},
+}
+
+local function get_cached(command, cache_timeout)
+    -- Initialize cache entry if not exists
+    cache.cache_timeout[command] = cache.cache_timeout[command] or cache_timeout
+
+    -- Return cached data if valid
+    if
+        cache.cache_timeout[command] > 0
+        and cache.data[command]
+        and os.difftime(os.time(), cache.timestamps[command]) < cache.cache_timeout[command]
+    then
+        -- Apply optional filter
+        local results = cache.data[command]
+        return results
+    end
 end
 
--- Previewer for ROS2 message definitions
-local function create_ros_previewer(command)
+local function set_cache(command, results)
+    cache.data[command] = results
+    cache.timestamps[command] = os.time()
+end
+
+-- Asynchronous command execution with cache
+local function get_ros2_data(command, callback, opts)
+    -- Validate inputs
+    if not command or command == "" then
+        vim.notify("ROS2 Error: Empty command provided", vim.log.levels.ERROR)
+        if callback then callback {} end
+        return
+    end
+
+    if not callback then
+        vim.notify("ROS2 Error: Null callback provided", vim.log.levels.ERROR)
+        return
+    end
+
+    -- Initialize options
+    opts = opts or {}
+
+    local cache_timeout = opts.cache_timeout or config.cache_timeout
+
+    -- Check cache if enabled
+    if not opts.no_cache then
+        local results = get_cached(command, cache_timeout)
+        if results then
+            -- Apply optional filter
+            if opts.filter_callback then results = opts.filter_callback(results) end
+
+            -- Return results via callback
+            callback(results)
+            return
+        end
+    end
+
+    -- Execute ROS2 command
+    utils.run_command(
+        config.ros2_command .. command,
+        vim.schedule_wrap(function(_, data)
+            -- Process command output
+            local results = {}
+
+            if data then
+                for i = 1, #data do
+                    local line = utils.trim(data[i])
+                    if line ~= "" then table.insert(results, line) end
+                end
+            end
+
+            -- Update cache if enabled
+            if not opts.no_cache and cache_timeout > 0 then set_cache(command, results) end
+
+            -- Apply optional filter
+            if opts.filter_callback then results = opts.filter_callback(results) end
+
+            -- Return results via callback
+            callback(results)
+        end),
+        nil
+    )
+end
+
+-- Cached previewer with debounce
+local function create_ros_previewer(command, opts)
+    local previewer = {
+        timer = nil,
+        current_bufnr = nil,
+        current_cmd = nil,
+        cache = {},
+    }
+    opts = opts or {}
     return previewers.new_buffer_previewer {
-        title = "ROS2 Definition Preview",
-        get_buffer_by_name = function(_, entry) return entry.value end,
+        title = "ROS2 Preview",
+        get_buffer_by_name = function(_, entry) return command .. ":" .. entry.value end,
 
         define_preview = function(self, entry)
+            -- Safely cancel previous timer
+            if previewer.timer and vim.loop.is_closing(previewer.timer) == false then
+                previewer.timer:stop()
+                previewer.timer:close()
+                previewer.timer = nil
+            end
+
             local bufnr = self.state.bufnr
+            previewer.current_bufnr = bufnr
+            local cache_key = command .. ":" .. entry.value
+
+            -- Show cached content immediately if available
+            if previewer.cache[cache_key] then
+                vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, previewer.cache[cache_key])
+                return
+            end
+
             vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "Loading..." })
 
-            local cmd = command .. " " .. entry.value
-            get_ros2_data(cmd, function(data)
-                vim.schedule(function()
-                    if vim.api.nvim_buf_is_valid(bufnr) then
+            previewer.timer = vim.defer_fn(function()
+                local cmd = command .. " " .. entry.value
+                previewer.current_cmd = cmd
+
+                get_ros2_data(cmd, function(data)
+                    -- Only update if still relevant
+                    if previewer.current_cmd ~= cmd then return end
+                    if not vim.api.nvim_buf_is_valid(bufnr) then return end
+
+                    -- Cache results for future use
+                    previewer.cache[cache_key] = data
+
+                    pcall(function()
                         vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, data)
                         vim.api.nvim_buf_set_option(bufnr, "filetype", "rosmsg")
-                    end
-                end)
-            end)
+                    end)
+                end, { no_cache = true })
+            end, config.debounce_delay)
         end,
+
+        teardown = function(self)
+            -- Safer cleanup
+            if previewer.timer and vim.loop.is_closing(previewer.timer) == false then
+                previewer.timer:stop()
+                previewer.timer:close()
+                previewer.timer = nil
+            end
+            previewer.current_bufnr = nil
+            previewer.current_cmd = nil
+        end,
+
+        clear_cache = function() previewer.cache = {} end,
     }
+end
+local function call_picker(opts)
+    pickers
+        .new(opts.picker_opts or {}, {
+            prompt_title = opts.prompt_title,
+            finder = finders.new_table {
+                results = opts.results,
+                entry_maker = opts.entry_maker or function(entry)
+                    return {
+                        value = entry,
+                        display = entry,
+                        ordinal = entry,
+                    }
+                end,
+            },
+            previewer = opts.previewer,
+            sorter = conf.generic_sorter(opts.picker_opts),
+            attach_mappings = opts.attach_mappings,
+        })
+        :find()
 end
 
 -- Generic picker creator
 local function create_ros_picker(opts)
+    if opts.results then
+        call_picker(opts)
+        return
+    end
+
     get_ros2_data(opts.command, function(results)
-        pickers
-            .new(opts.picker_opts or {}, {
-                prompt_title = opts.prompt_title,
-                finder = finders.new_table {
-                    results = results,
-                    entry_maker = function(entry)
-                        return {
-                            value = entry,
-                            display = entry,
-                            ordinal = entry,
-                        }
-                    end,
-                },
-                previewer = opts.previewer,
-                sorter = conf.generic_sorter(opts.picker_opts),
-                attach_mappings = opts.attach_mappings,
-            })
-            :find()
-    end, opts.top_pop, opts.filter)
+        opts.results = results
+        call_picker(opts)
+    end, {
+        filter_callback = opts.filter_callback,
+        cache_timeout = opts.cache_timeout,
+    })
 end
 
 local interface_ros_previewer = create_ros_previewer "interface show"
 function M.services()
     create_ros_picker {
         command = "interface list --only-srvs",
+        filter_callback = function(results)
+            table.remove(results, 1)
+            return results
+        end,
         prompt_title = "ROS2 Services",
         previewer = interface_ros_previewer,
-        top_pop = true,
+        cache_timeout = 600,
     }
 end
 
 function M.actions()
     create_ros_picker {
         command = "interface list --only-actions",
+        filter_callback = function(results)
+            table.remove(results, 1)
+            return results
+        end,
         prompt_title = "ROS2 Actions",
+        cache_timeout = 600,
         previewer = interface_ros_previewer,
-        top_pop = true,
     }
 end
 
 function M.messages()
     create_ros_picker {
         command = "interface list --only-msgs",
+        filter_callback = function(results)
+            table.remove(results, 1)
+            return results
+        end,
         prompt_title = "ROS2 Message Types",
         previewer = interface_ros_previewer,
+        cache_timeout = 600,
         attach_mappings = function(prompt_bufnr)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
@@ -118,7 +255,6 @@ function M.messages()
             end)
             return true
         end,
-        top_pop = true,
     }
 end
 
@@ -147,8 +283,7 @@ function M.active_topics()
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = action_state.get_selected_entry()
-                vim.notify("Selected topic: " .. selection.value)
-                -- Add custom action here
+                terminal.ToggleRosTerminal("ros2 topic echo " .. selection.value)
             end)
             return true
         end,
@@ -156,157 +291,121 @@ function M.active_topics()
 end
 
 function M.exec_nodes()
+    local pkgs = {}
     create_ros_picker {
         command = "pkg executables",
+        filter_callback = function(results)
+            for _, line in ipairs(results) do
+                line = utils.trim(line)
+                local pkg, node = line:match "^(%S+)%s+(%S+)$"
+                if pkg and node then
+                    pkgs[pkg] = pkgs[pkg] or {}
+                    table.insert(pkgs[pkg], node)
+                end
+            end
+            return vim.tbl_keys(pkgs)
+        end,
         prompt_title = "ROS2 Executables Nodes",
+        entry_maker = function(pkg)
+            return {
+                value = pkg,
+                display = pkg,
+                ordinal = pkg,
+                nodes = pkgs[pkg],
+            }
+        end,
         attach_mappings = function(prompt_bufnr)
-            actions.close(prompt_bufnr)
-            local selection = action_state.get_selected_entry()
-            vim.notify("Selected topic: " .. selection.value)
+            actions.select_default:replace(function()
+                actions.close(prompt_bufnr)
+                local pkg_selected = action_state.get_selected_entry()
+
+                create_ros_picker {
+                    results = pkg_selected.nodes,
+                    prompt_title = "Nodes inside " .. pkg_selected.value,
+                    attach_mappings = function(prompt_buf)
+                        actions.select_default:replace(function()
+                            actions.close(prompt_buf)
+                            local node_selected = action_state.get_selected_entry()
+                            terminal.ToggleRosTerminal("ros2 run " .. pkg_selected.value .. " " .. node_selected.value)
+                        end)
+                        return true
+                    end,
+                }
+            end)
+            return true
         end,
     }
 end
 
 function M.exec_launch_file()
     create_ros_picker {
-        command = "pkg executables",
-        prompt_title = "ROS2 Executables Nodes",
-        attach_mappings = function(prompt_bufnr)
-            actions.close(prompt_bufnr)
-            local selection = action_state.get_selected_entry()
-            vim.notify("Selected topic: " .. selection.value)
-        end,
-    }
-end
-local function get_params_list(node)
-    create_ros_picker {
-        command = "param list " .. node,
-        prompt_title = "ROS2 Params For " .. node,
-        previewer = create_ros_previewer "param get" .. node,
+        command = "find -name '*.launch.py' -o -name '*.launch.xml' -o -name '*.launch'",
+        prompt_title = "ROS2 Executables Launch files",
+        filter_callback = function(results) utils.show_debug(results) end,
         attach_mappings = function(prompt_bufnr)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = action_state.get_selected_entry()
-                vim.notify("Selected Param: " .. selection.value)
-                -- Add custom action here
+                vim.notify("Selected topic: " .. selection.value)
             end)
-            return true
         end,
     }
 end
+
+-- Parameter handling with cached hierarchy
 function M.param()
     local nodes = {}
-    local current_node = nil
-    local nodes_list = {}
+
     create_ros_picker {
         command = "param list",
-        prompt_title = "ROS2 Params",
+        filter_callback = function(results)
+            local current_node = nil
 
-        filter = function(raw_output)
-            -- @param raw_output string[] List of Params with Nodes
-            -- @return nodes_list string[] List of Nodes which have params
-            -- Parse node hierarchy from raw output
-            debugger.show_debug(raw_output)
-            for _, line in ipairs(raw_output) do
-                if line:match "^/" then table.insert(nodes_list, line) end
+            -- Single-pass processing
+            for _, line in ipairs(results) do
+                line = utils.trim(line)
+                if line:match "^/" then
+                    current_node = line:gsub(":$", "")
+                    nodes[current_node] = {}
+                elseif current_node then
+                    table.insert(nodes[current_node], line)
+                end
             end
-            debugger.show_debug(nodes_list)
-            return nodes_list
+            return vim.tbl_keys(nodes)
+        end,
+        prompt_title = "ROS2 Parameter Nodes",
+        entry_maker = function(node)
+            return {
+                value = node,
+                display = node,
+                ordinal = node,
+                params = nodes[node],
+            }
         end,
         attach_mappings = function(prompt_bufnr)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = action_state.get_selected_entry()
-                get_params_list(selection.value)
-                -- M.show_node_parameters(selection.value, nodes[selection.value])
+
+                create_ros_picker {
+                    results = selection.params,
+                    prompt_title = "Parameters for " .. selection.value,
+                    attach_mappings = function(prompt_buf)
+                        actions.select_default:replace(function()
+                            actions.close(prompt_buf)
+                            local param = action_state.get_selected_entry().value
+                            utils.run_command(
+                                config.ros2_command .. "param get " .. selection.value .. " " .. param,
+                                function(_, data) vim.notify(table.concat(data, "\n")) end
+                            )
+                        end)
+                        return true
+                    end,
+                }
             end)
             return true
         end,
     }
-end
-
--- Update the M.param function and add helper functions
-function M.param2()
-    get_ros2_data("param list", function(raw_output)
-        -- First level picker - nodes
-        pickers
-            .new({}, {
-                prompt_title = "ROS2 Parameter Nodes",
-                finder = finders.new_table {
-                    results = vim.tbl_keys(nodes),
-                    entry_maker = function(entry)
-                        return {
-                            value = entry,
-                            display = entry,
-                            ordinal = entry,
-                        }
-                    end,
-                },
-                sorter = conf.generic_sorter {},
-                previewer = previewers.new_buffer_previewer {
-                    title = "Node Parameters Preview",
-                    define_preview = function(self, entry)
-                        local bufnr = self.state.bufnr
-                        local params = nodes[entry.value]
-                        vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {
-                            "Node: " .. entry.value,
-                            "Parameters (" .. #params .. "):",
-                            unpack(params),
-                        })
-                    end,
-                },
-            })
-            :find()
-    end)
-end
-
-function M.show_node_parameters(node_name, parameters)
-    -- Second level picker - parameters
-    pickers
-        .new({}, {
-            prompt_title = "Parameters for " .. node_name,
-            finder = finders.new_table {
-                results = parameters,
-                entry_maker = function(entry)
-                    return {
-                        value = entry,
-                        display = entry,
-                        ordinal = entry,
-                        node = node_name,
-                    }
-                end,
-            },
-            sorter = conf.generic_sorter {},
-            previewer = previewers.new_buffer_previewer {
-                title = "Parameter Value Preview",
-                define_preview = function(self, entry)
-                    local bufnr = self.state.bufnr
-                    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "Loading..." })
-
-                    get_ros2_data(string.format("param get %s %s", entry.node, entry.value), function(data)
-                        vim.schedule(function()
-                            if vim.api.nvim_buf_is_valid(bufnr) then
-                                vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {
-                                    string.format("Node: %s", entry.node),
-                                    string.format("Parameter: %s", entry.value),
-                                    "Value:",
-                                    unpack(data),
-                                })
-                            end
-                        end)
-                    end)
-                end,
-            },
-            attach_mappings = function(prompt_bufnr)
-                actions.select_default:replace(function()
-                    actions.close(prompt_bufnr)
-                    local selection = action_state.get_selected_entry()
-                    vim.notify(string.format("Selected parameter: %s/%s", selection.node, selection.value))
-                end)
-                return true
-            end,
-        })
-        :find()
 end
 
 function M.setup(user_config)
