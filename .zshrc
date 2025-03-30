@@ -462,6 +462,27 @@ if [[ "$ROS_FOUND" == "true" ]]; then
       fi
   }
 
+  # List of Launch files
+  roslaunch_files() {
+      local ros_distro=${ROS_DISTRO:-humble}  # Default to "humble" if not set
+
+      # Find system launch files
+      local system_files=()
+      while IFS= read -r file; do
+          system_files+=("$file")
+      done < <(fdfind '.*\.(launch\.py|launch\.xml|launch)$' /opt/ros/$ros_distro/share --max-depth 4 -t f)
+
+      # Find workspace launch files
+      local workspace_files=()
+      while IFS= read -r file; do
+          workspace_files+=("$file")
+      done < <(colcon list -p | xargs -I {} fdfind '.*\.(launch\.py|launch\.xml|launch)$' "{}" --max-depth 4 -t f)
+
+      # Print results
+      printf "%s\n" "${workspace_files[@]}"
+
+      printf "%s\n" "${system_files[@]}"
+  }
   # Display ROS logs in real time with filtering
   roslog() {
       journalctl -u ros2 -f --no-tail | fzf --prompt="Filter logs: "

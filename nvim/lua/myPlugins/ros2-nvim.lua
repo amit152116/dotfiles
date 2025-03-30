@@ -1,5 +1,4 @@
--- File: lua/ros2-telescope/init.lua
-
+-- Required modules and telescope components
 local pickers = require "telescope.pickers"
 local finders = require "telescope.finders"
 local conf = require("telescope.config").values
@@ -9,43 +8,48 @@ local previewers = require "telescope.previewers"
 local utils = require "myPlugins.utils"
 local terminal = require "myPlugins.ros2-terminal"
 
+-- Determine ROS distro and set cache directory
 local cache_dir = vim.fn.stdpath "cache" .. "/ros2_nvim/"
 vim.fn.mkdir(cache_dir, "p")
 
 local M = {}
 
+-- Default configuration
 local config = {
     ros2_command = "ros2 ",
-    cache_timeout = 300,
-    debounce_delay = 150, -- ms for preview debouncing
+    cache_timeout = 300, -- default cache timeout (seconds)
+    debounce_delay = 150, -- debounce delay for preview (ms)
 }
 
+-- Internal cache storage
 local cache = {
     data = {},
     timestamps = {},
-    cache_timeout = {},
+    cache_time = {},
 }
 
-local function get_cached(command, cache_timeout)
-    -- Initialize cache entry if not exists
-    cache.cache_timeout[command] = cache.cache_timeout[command] or cache_timeout
+-------------------------------------------------------
+-- Caching Helpers
+-------------------------------------------------------
 
-    -- Return cached data if valid
-    if
-        cache.cache_timeout[command] > 0
-        and cache.data[command]
-        and os.difftime(os.time(), cache.timestamps[command]) < cache.cache_timeout[command]
-    then
-        -- Apply optional filter
-        local results = cache.data[command]
-        return results
+-- Retrieve cached data if valid
+local function get_cached(command, cache_timeout)
+    cache.cache_time[command] = cache.cache_time[command] or cache_timeout
+
+    if cache.data[command] and os.difftime(os.time(), cache.timestamps[command]) < cache.cache_time[command] then
+        return cache.data[command]
     end
 end
 
+-- Update cache for a given command
 local function set_cache(command, results)
     cache.data[command] = results
     cache.timestamps[command] = os.time()
 end
+
+-------------------------------------------------------
+-- ROS2 Command Execution with Caching
+-------------------------------------------------------
 
 -- Asynchronous command execution with cache
 local function get_ros2_data(command, callback, opts)
@@ -63,7 +67,6 @@ local function get_ros2_data(command, callback, opts)
 
     -- Initialize options
     opts = opts or {}
-
     local cache_timeout = opts.cache_timeout or config.cache_timeout
 
     -- Check cache if enabled
@@ -72,8 +75,6 @@ local function get_ros2_data(command, callback, opts)
         if results then
             -- Apply optional filter
             if opts.filter_callback then results = opts.filter_callback(results) end
-
-            -- Return results via callback
             callback(results)
             return
         end
@@ -105,6 +106,10 @@ local function get_ros2_data(command, callback, opts)
         nil
     )
 end
+
+-------------------------------------------------------
+-- Previewer Creation with Debounce
+-------------------------------------------------------
 
 -- Cached previewer with debounce
 local function create_ros_previewer(command, opts)
@@ -173,7 +178,16 @@ local function create_ros_previewer(command, opts)
         clear_cache = function() previewer.cache = {} end,
     }
 end
+
+-------------------------------------------------------
+-- Picker Creation Helper
+-------------------------------------------------------
+
 local function call_picker(opts)
+    if vim.tbl_isempty(opts.results) then
+        vim.notify("No " .. opts.prompt_title, vim.log.levels.INFO)
+        return
+    end
     pickers
         .new(opts.picker_opts or {}, {
             prompt_title = opts.prompt_title,
@@ -192,13 +206,14 @@ local function call_picker(opts)
             attach_mappings = opts.attach_mappings,
         })
         :find()
+    return true
 end
 
 -- Generic picker creator
 local function create_ros_picker(opts)
     if opts.results then
         call_picker(opts)
-        return
+        return true
     end
 
     get_ros2_data(opts.command, function(results)
@@ -210,7 +225,45 @@ local function create_ros_picker(opts)
     })
 end
 
+-------------------------------------------------------
+-- ROS Functions
+-------------------------------------------------------
+
+local function roslaunch_files()
+    local home = vim.fn.expand "~"
+    local system_cmd = [[fdfind '.*\.(launch\.py|launch\.xml|launch)$' /opt/ros/$ROS_DISTRO ]]
+        .. home
+        .. [[/Documents/aim_ros2 --max-depth 5 -t f]]
+
+    local results = {}
+    local path_patterns = {
+        "/share/([^/]+)/launch/(.+)",
+        "/src/([^/]+)/launch/(.+)",
+        -- Add more patterns here if needed
+    }
+    -- Run system command
+    local system = vim.fn.systemlist(system_cmd) or {}
+    for _, file in ipairs(system) do
+        local found = false
+        for _, pattern in ipairs(path_patterns) do
+            local pkg, launch = file:match(pattern)
+            if pkg and launch then
+                found = true
+                results[pkg] = results[pkg] or {}
+                table.insert(results[pkg], launch)
+                break -- Found a match, move to next file
+            end
+        end
+        if not found then
+            results[file] = results[file] or {}
+            table.insert(results[file], file)
+        end
+    end
+    return results
+end
+
 local interface_ros_previewer = create_ros_previewer "interface show"
+
 function M.services()
     create_ros_picker {
         command = "interface list --only-srvs",
@@ -218,7 +271,7 @@ function M.services()
             table.remove(results, 1)
             return results
         end,
-        prompt_title = "ROS2 Services",
+        prompt_title = "ROS2 Services Interfaces",
         previewer = interface_ros_previewer,
         cache_timeout = 600,
     }
@@ -231,7 +284,7 @@ function M.actions()
             table.remove(results, 1)
             return results
         end,
-        prompt_title = "ROS2 Actions",
+        prompt_title = "ROS2 Actions Interfaces",
         cache_timeout = 600,
         previewer = interface_ros_previewer,
     }
@@ -244,7 +297,7 @@ function M.messages()
             table.remove(results, 1)
             return results
         end,
-        prompt_title = "ROS2 Message Types",
+        prompt_title = "ROS2 Message Interfaces",
         previewer = interface_ros_previewer,
         cache_timeout = 600,
         attach_mappings = function(prompt_bufnr)
@@ -261,7 +314,7 @@ end
 function M.active_nodes()
     create_ros_picker {
         command = "node list",
-        prompt_title = "ROS2 Nodes",
+        prompt_title = "ROS2 Active Nodes",
         previewer = create_ros_previewer "node info",
         attach_mappings = function(prompt_bufnr)
             actions.select_default:replace(function()
@@ -277,13 +330,13 @@ end
 function M.active_topics()
     create_ros_picker {
         command = "topic list",
-        prompt_title = "ROS2 Topics",
+        prompt_title = "ROS2 Active Topics",
         previewer = create_ros_previewer "topic info",
         attach_mappings = function(prompt_bufnr)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = action_state.get_selected_entry()
-                terminal.ToggleRosTerminal("ros2 topic echo " .. selection.value)
+                terminal.create_terminal("ros2 topic echo " .. selection.value)
             end)
             return true
         end,
@@ -326,7 +379,7 @@ function M.exec_nodes()
                         actions.select_default:replace(function()
                             actions.close(prompt_buf)
                             local node_selected = action_state.get_selected_entry()
-                            terminal.ToggleRosTerminal("ros2 run " .. pkg_selected.value .. " " .. node_selected.value)
+                            terminal.create_terminal("ros2 run " .. pkg_selected.value .. " " .. node_selected.value)
                         end)
                         return true
                     end,
@@ -338,16 +391,41 @@ function M.exec_nodes()
 end
 
 function M.exec_launch_file()
-    create_ros_picker {
-        command = "find -name '*.launch.py' -o -name '*.launch.xml' -o -name '*.launch'",
-        prompt_title = "ROS2 Executables Launch files",
-        filter_callback = function(results) utils.show_debug(results) end,
+    local pkgs = roslaunch_files()
+
+    return create_ros_picker {
+        results = vim.tbl_keys(pkgs),
+        prompt_title = "ROS2 Launch files",
+        entry_maker = function(pkg)
+            return {
+                value = pkg,
+                display = pkg,
+                ordinal = pkg,
+                launch = pkgs[pkg],
+            }
+        end,
         attach_mappings = function(prompt_bufnr)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                vim.notify("Selected topic: " .. selection.value)
+                local pkg_selected = action_state.get_selected_entry()
+
+                create_ros_picker {
+                    results = pkg_selected.launch,
+                    prompt_title = "Launch Files",
+                    attach_mappings = function(prompt_buf)
+                        actions.select_default:replace(function()
+                            actions.close(prompt_buf)
+                            local launch_file = action_state.get_selected_entry()
+
+                            local launch = launch_file.value:match "([^/]+%.launch%.[a-zA-Z0-9]+)$"
+                            vim.notify(launch)
+                            terminal.create_terminal("ros2 launch " .. pkg_selected.value .. " " .. launch)
+                        end)
+                        return true
+                    end,
+                }
             end)
+            return true
         end,
     }
 end

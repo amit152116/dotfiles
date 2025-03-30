@@ -44,7 +44,7 @@ return {
 
                     -- Save new file
                     ["<Leader>sf"] = {
-                        function() require("myPlugins.save_new_file").SaveFile() end,
+                        function() require("myPlugins.save_new_file").save_file() end,
                         desc = "Save File",
                     },
 
@@ -94,7 +94,7 @@ return {
                         function() ros2_nvim.exec_launch_file() end,
                     },
                     ["<Leader>rc"] = {
-                        function() ros2_terminal.ToggleRosTerminal() end,
+                        function() ros2_terminal.terminal_picker() end,
                         desc = "Toggle ROS Terminal",
                     },
                     -- Rename the current file

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source "./git_common.sh"
+
+
 # Get the directory of the script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -9,23 +12,14 @@ REPO_DIR=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)
 # Navigate to the repository
 cd "$REPO_DIR" || exit 1
 
+# Create a cron_logs folder
+mkdir -p "$REPO_DIR"/cron_logs
+
 # Check for changes
-if [[ -n $(git status --porcelain) ]]; then
-    echo "Changes detected. Committing and pushing..."
-
-    # Get system details
-    DATE=$(date "+%Y-%m-%d %H:%M:%S")
-    USERNAME=$(whoami)
-    HOSTNAME=$(hostname)
-
-    # Construct commit message
-    COMMIT_MSG="Auto-commit on $DATE by $USERNAME@$HOSTNAME"
-    # Add, commit, and push changes
-    git add .
-    git commit -m "$COMMIT_MSG"
-    git push origin "$(git rev-parse --abbrev-ref HEAD)"
-
-    echo "Changes committed and pushed successfully!"
-else
-    echo "No changes detected. Skipping commit."
+if  check_uncommitted_changes ; then
+    auto_commit_and_push "$@"
 fi
+
+
+# Rotate logs (keep last 14 days)
+find "$HOME"/.dotfiles/cron_logs -name "auto_commit.log*" -mtime +14 -delete
