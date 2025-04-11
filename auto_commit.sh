@@ -1,6 +1,5 @@
 #!/bin/bash
 
-source "./git_common.sh"
 
 
 # Get the directory of the script
@@ -15,6 +14,8 @@ cd "$REPO_DIR" || exit 1
 # Create a cron_logs folder
 mkdir -p "$REPO_DIR"/cron_logs
 
+source "$REPO_DIR/git_common.sh"
+
 # Check for changes
 if  check_uncommitted_changes ; then
     auto_commit_and_push "$@"
@@ -22,4 +23,4 @@ fi
 
 
 # Rotate logs (keep last 14 days)
-find "$HOME"/.dotfiles/cron_logs -name "auto_commit.log*" -mtime +14 -delete
+find "$REPO_DIR"/cron_logs -name "auto_commit.log*" -mtime +14 -delete

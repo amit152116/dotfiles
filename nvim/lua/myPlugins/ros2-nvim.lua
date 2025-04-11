@@ -89,7 +89,8 @@ local function get_ros2_data(command, callback, opts)
 
             if data then
                 for i = 1, #data do
-                    local line = utils.trim(data[i])
+                    local line = data[i]
+                    if opts.trim then line = utils.trim(line) end
                     if line ~= "" then table.insert(results, line) end
                 end
             end
@@ -160,13 +161,13 @@ local function create_ros_previewer(command, opts)
                         vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, data)
                         vim.api.nvim_buf_set_option(bufnr, "filetype", "rosmsg")
                     end)
-                end, { no_cache = true })
+                end, { no_cache = true, trim = false })
             end, config.debounce_delay)
         end,
 
         teardown = function(self)
             -- Safer cleanup
-            if previewer.timer and vim.loop.is_closing(previewer.timer) == false then
+            if previewer.timer and previewer.timer:is_closing(previewer.timer) == false then
                 previewer.timer:stop()
                 previewer.timer:close()
                 previewer.timer = nil
@@ -222,6 +223,7 @@ local function create_ros_picker(opts)
     end, {
         filter_callback = opts.filter_callback,
         cache_timeout = opts.cache_timeout,
+        trim = true,
     })
 end
 
@@ -343,6 +345,33 @@ function M.active_topics()
     }
 end
 
+function M.active_services()
+    local services = {}
+    create_ros_picker {
+        command = "service list -t",
+        filter_callback = function(results)
+            for _, line in ipairs(results) do
+                local srv, type = line:match "^(.*)%s%[(.*)%]"
+                if srv and type then
+                    services[srv] = services[srv] or {}
+                    table.insert(services[srv], type)
+                end
+            end
+            return vim.tbl_keys(services)
+        end,
+        prompt_title = "ROS2 Active Services",
+        previewer = create_ros_previewer "service type",
+        attach_mappings = function(prompt_bufnr)
+            actions.select_default:replace(function()
+                actions.close(prompt_bufnr)
+                local selection = action_state.get_selected_entry()
+                vim.notify(selection.value)
+            end)
+            return true
+        end,
+    }
+end
+
 function M.exec_nodes()
     local pkgs = {}
     create_ros_picker {
@@ -390,6 +419,98 @@ function M.exec_nodes()
     }
 end
 
+-- Create argument input buffer
+local function args_input_buffer(pkg, launch_file, arguments)
+    local buf = vim.api.nvim_create_buf(false, true)
+    local lines = {}
+    for key, value in pairs(arguments) do
+        table.insert(lines, string.format("%s=%s", key, value.value))
+    end
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+    -- Create floating window
+    local width = 60
+    local height = #arguments + 3
+    utils.show_debug(width, height)
+    local win = vim.api.nvim_open_win(buf, true, {
+        relative = "editor",
+        width = width,
+        height = height,
+        row = (vim.o.lines - height) / 2,
+        col = (vim.o.columns - width) / 2,
+        style = "minimal",
+        border = "rounded",
+    })
+
+    -- Set window options
+    vim.api.nvim_win_set_option(win, "winhl", "Normal:FloatNormal")
+    vim.api.nvim_buf_set_name(buf, "ROS2 Launch Arguments")
+
+    -- Store context for later execution
+    local package_context = {
+        pkg = pkg,
+        launch = launch_file,
+        args_buf = buf,
+        args_win = win,
+        args = arguments, -- Store reference to original arguments
+    }
+
+    -- Capture window close event to save arguments
+    vim.api.nvim_create_autocmd("WinClosed", {
+        pattern = tostring(win),
+        callback = function()
+            -- Get updated lines from buffer
+            local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+            for _, line in ipairs(lines) do
+                -- Parse key-value pairs (with whitespace trimming)
+                local key, value = line:match "^%s*([^=]+)%s*=%s*(.-)%s*$"
+                if key then
+                    -- Update the original arguments table if key exists
+                    if package_context.args[key] then
+                        package_context.args[key].value = value
+                    else
+                        -- Optional: Handle new keys or invalid entries
+                        vim.notify("Ignored invalid argument: " .. line, vim.log.levels.WARN)
+                    end
+                end
+            end
+            -- Cleanup buffer
+            vim.api.nvim_buf_delete(buf, { force = true })
+        end,
+    })
+end
+
+-- Get launch file arguments
+local function launch_file_args(pkg, launch_file)
+    if not (pkg and launch_file) then return end
+    local args_output = vim.fn.systemlist("ros2 launch --show-args " .. pkg .. " " .. launch_file)
+    local arguments = {}
+    local current_arg = nil
+    -- Parse arguments output
+    local arg_name_idx = nil
+    for idx, line in ipairs(args_output) do
+        line = utils.trim(line)
+        -- Match argument name line (e.g., "'fcu_url':")
+        local arg_name = line:match "^'([^']+)'%s*:$"
+        if arg_name then
+            arg_name_idx = idx
+            current_arg = arg_name
+            arguments[current_arg] = {
+                value = nil,
+                description = nil,
+            }
+        else
+            if current_arg and arg_name_idx + 1 == idx then
+                arguments[current_arg].description = line
+            else
+                local default_value = line:match "%(default:%s*(.*)%)"
+                if default_value and current_arg then arguments[current_arg].value = default_value end
+            end
+        end
+    end
+    return arguments
+end
+
 function M.exec_launch_file()
     local pkgs = roslaunch_files()
 
@@ -415,11 +536,14 @@ function M.exec_launch_file()
                     attach_mappings = function(prompt_buf)
                         actions.select_default:replace(function()
                             actions.close(prompt_buf)
-                            local launch_file = action_state.get_selected_entry()
+                            local seletecd_launch = action_state.get_selected_entry()
 
-                            local launch = launch_file.value:match "([^/]+%.launch%.[a-zA-Z0-9]+)$"
-                            vim.notify(launch)
-                            terminal.create_terminal("ros2 launch " .. pkg_selected.value .. " " .. launch)
+                            local launch_file = seletecd_launch.value:match "([^/]+%.launch%.?[a-zA-Z0-9]*)$"
+                            local arguments = launch_file_args(pkg_selected.value, launch_file)
+                            if arguments and not table.empty(arguments) then
+                                args_input_buffer(pkg_selected.value, launch_file, arguments)
+                            end
+                            -- terminal.create_terminal("ros2 launch " .. pkg_selected.value .. " " .. launch_file)
                         end)
                         return true
                     end,

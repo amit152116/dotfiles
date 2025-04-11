@@ -21,9 +21,6 @@ return {
             -- control auto formatting on save
             format_on_save = {
                 enabled = true, -- enable or disable format on save globally
-                allow_filetypes = { -- enable format on save for specified filetypes only
-                    -- "go",
-                },
                 ignore_filetypes = { -- disable format on save for specified filetypes
                     -- "python",
                 },
@@ -51,21 +48,26 @@ return {
                         full = true,
                     },
                 },
-                cmd = {
-                    "clangd",
-                    "--compile-commands-dir=build", -- Adjust if your build directory is elsewhere
-                    "--background-index", -- Enable background indexing for responsive navigation
-                    "--header-insertion=never", -- Disable automatic header insertion if not desired
-                    "--all-scopes-completion", -- Improve completion suggestions across scopes
-                    "--pch-storage=memory", -- Store precompiled headers in memory for speed
-                    "--clang-tidy", -- Optionally enable clang-tidy diagnostics
-                    "--completion-style=detailed", -- More detailed completion output
-                },
             },
             gopls = {
                 settings = {
                     usePlaceholders = false,
                     completeUnimported = true,
+                },
+            },
+            lemminx = {
+                allow_filetypes = { "xml", "urdf" },
+                settings = {
+                    xml = {
+                        fileAssociations = {
+                            systemId = "file://" .. vim.fn.expand "~/.local/share/xml/schemas/urdf.xsd",
+                            pattern = "**/*.urdf",
+                        },
+                        validation = {
+                            schema = true, -- Enable schema validation
+                            noGrammar = "hint", -- Change warning level for missing schemas
+                        },
+                    },
                 },
             },
         },

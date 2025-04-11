@@ -70,6 +70,10 @@ return {
                         desc = "ROS Services",
                         function() ros2_nvim.services() end,
                     },
+                    ["<Leader>rs"] = {
+                        desc = "ROS Active Services",
+                        function() ros2_nvim.active_services() end,
+                    },
                     ["<Leader>rt"] = {
                         desc = "ROS Active Topics",
                         function() ros2_nvim.active_topics() end,
@@ -97,6 +101,67 @@ return {
                         function() ros2_terminal.terminal_picker() end,
                         desc = "Toggle ROS Terminal",
                     },
+
+                    -- CopilotChat mapppings
+                    ["<Leader>a"] = {
+                        desc = "Copilot Assistant",
+                    },
+                    -- Chat commands
+                    ["<Leader>ac"] = {
+                        desc = "CopilotChat - Open chat",
+                        "<cmd>CopilotChat<CR>",
+                    },
+                    -- Save/Load history
+                    ["<Leader>aw"] = {
+                        desc = "CopilotChat - Save history",
+                        "<cmd>CopilotChatSave<CR>",
+                    },
+                    ["<Leader>al"] = {
+                        desc = "CopilotChat - Load history",
+                        "<cmd>CopilotChatLoad<CR>",
+                    },
+                    -- Quick actions
+                    ["<Leader>ap"] = {
+                        desc = "CopilotChat - Show prompts",
+                        "<cmd>CopilotChatPrompts<CR>",
+                    },
+                    ["<Leader>am"] = {
+                        desc = "CopilotChat - Show models",
+                        "<cmd>CopilotChatModels<CR>",
+                    },
+                    ["<Leader>aa"] = {
+                        desc = "CopilotChat - Show agents",
+                        "<cmd>CopilotChatAgents<CR>",
+                    },
+                    -- Predefined prompts
+                    ["<Leader>ae"] = {
+                        desc = "CopilotChat - Explain code",
+                        "<cmd>CopilotChatExplain<CR>",
+                    },
+                    ["<Leader>av"] = {
+                        desc = "CopilotChat - Review code",
+                        "<cmd>CopilotChatReview<CR>",
+                    },
+                    ["<Leader>af"] = {
+                        desc = "CopilotChat - Fix code",
+                        "<cmd>CopilotChatFix<CR>",
+                    },
+                    ["<Leader>ao"] = {
+                        desc = "CopilotChat - Optimize code",
+                        "<cmd>CopilotChatOptimize<CR>",
+                    },
+                    ["<Leader>ad"] = {
+                        desc = "CopilotChat - Add docs",
+                        "<cmd>CopilotChatDocs<CR>",
+                    },
+                    ["<Leader>au"] = {
+                        desc = "CopilotChat - Generate tests",
+                        "<cmd>CopilotChatTests<CR>",
+                    },
+                    ["<Leader>ai"] = {
+                        desc = "CopilotChat - Write commit message",
+                        "<cmd>CopilotChatCommit<CR>",
+                    },
                     -- Rename the current file
                     -- ["<leader>rn"] = { ":saveas ", desc = "Rename current file" },
 
@@ -110,6 +175,41 @@ return {
                 x = {
                     -- Replace and keep yank
                     ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
+                    ["<Leader>ac"] = {
+                        desc = "CopilotChat - Open chat",
+                        "<cmd>CopilotChat<CR>",
+                    },
+                    ["<Leader>a"] = {
+                        desc = "Copilot Assistant",
+                    },
+                    ["<Leader>ap"] = {
+                        desc = "CopilotChat - Show prompts",
+                        "<cmd>CopilotChatPrompts<CR>",
+                    },
+                    ["<Leader>ae"] = {
+                        desc = "CopilotChat - Explain code",
+                        "<cmd>CopilotChatExplain<CR>",
+                    },
+                    ["<Leader>av"] = {
+                        desc = "CopilotChat - Review code",
+                        "<cmd>CopilotChatReview<CR>",
+                    },
+                    ["<Leader>af"] = {
+                        desc = "CopilotChat - Fix code",
+                        "<cmd>CopilotChatFix<CR>",
+                    },
+                    ["<Leader>ao"] = {
+                        desc = "CopilotChat - Optimize code",
+                        "<cmd>CopilotChatOptimize<CR>",
+                    },
+                    ["<Leader>ad"] = {
+                        desc = "CopilotChat - Add docs",
+                        "<cmd>CopilotChatDocs<CR>",
+                    },
+                    ["<Leader>au"] = {
+                        desc = "CopilotChat - Generate tests",
+                        "<cmd>CopilotChatTests<CR>",
+                    },
                 },
                 t = {
 

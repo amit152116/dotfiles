@@ -19,11 +19,18 @@ fi
 # Paths
 export PATH="$HOME/.local/bin:/usr/local/bin:/usr/lib/ccache:$PATH"
 
+export DOCKER_HOST=unix:///var/run/docker.sock
+
 # Add Cargo if installed
 if [[ -d "$HOME/.cargo/bin" ]]; then
   export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
+# Cuda is installed
+if [[ -d "/usr/local/cuda" ]]; then
+  export PATH="/usr/local/cuda/bin:$PATH"
+  export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
+fi
 # Add Micro-XRCE-DDS-Gen if installed
 if [[ -d "$HOME/ardupilot/Micro-XRCE-DDS-Gen" ]]; then
   export PATH=$PATH:$HOME/ardupilot/Micro-XRCE-DDS-Gen/scripts
@@ -35,9 +42,13 @@ if [[ -d "$HOME/ardupilot/src/ardupilot" ]]; then
 fi
 
 if [[ -d "$HOME/ardupilot/src/ardupilot_gazebo" ]]; then
-  export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot/src/ardupilot_gazebo/build
-  export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot/src/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds
+  export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot/src/ardupilot_gazebo/build:$GZ_SIM_SYSTEM_PLUGIN_PATH
+  export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot/src/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:$GZ_SIM_RESOURCE_PATH
+  export GZ_FUEL_CACHE_ONLY=1
+  export GZ_FUEL_DOWNLOAD_MODE=none
   source /usr/local/share/ardupilot_gazebo/local_setup.zsh
+  source $HOME/ardupilot/install/setup.zsh
+
 fi
 
 # Add Node.js if installed
@@ -327,32 +338,27 @@ fi
 #=============================================================================
 
 # Check for ROS2 installations in common locations
-ROS_FOUND=false
+local ROS_WS="$HOME/Documents/aim_ros2/"
 
 # Check Humble (Ubuntu 22.04)
 if [[ -f "/opt/ros/humble/setup.zsh" ]]; then
   ROS_DISTRO="humble"
-  ROS_FOUND=true
 # Check Iron (Ubuntu 22.04)
 elif [[ -f "/opt/ros/iron/setup.zsh" ]]; then
   ROS_DISTRO="iron"
-  ROS_FOUND=true
 # Check Foxy (Ubuntu 20.04)
 elif [[ -f "/opt/ros/foxy/setup.zsh" ]]; then
   ROS_DISTRO="foxy"
-  ROS_FOUND=true
 # Check Galactic (Ubuntu 20.04)
 elif [[ -f "/opt/ros/galactic/setup.zsh" ]]; then
   ROS_DISTRO="galactic"
-  ROS_FOUND=true
 # User-defined ROS location
 elif [[ -n "$ROS_INSTALL_PATH" && -f "$ROS_INSTALL_PATH/setup.zsh" ]]; then
   ROS_DISTRO=$(basename "$ROS_INSTALL_PATH")
-  ROS_FOUND=true
 fi
 
 # Only load ROS configuration if found
-if [[ "$ROS_FOUND" == "true" ]]; then
+if ! [[ -z "$ROS_DISTRO" ]]; then
 
   # ROS settings
   export GZ_VERSION=harmonic
@@ -362,8 +368,8 @@ if [[ "$ROS_FOUND" == "true" ]]; then
   source /opt/ros/humble/setup.zsh 
   
   # Source workspace if it exists
-  if [[ -f ~/Documents/aim_ros2/install/setup.zsh ]]; then
-    source ~/Documents/aim_ros2/install/setup.zsh
+  if [[ -d "$ROS_WS" ]]; then
+    source "$ROS_WS"install/setup.zsh
   fi
   
   # Source completion scripts if they exist
@@ -390,6 +396,7 @@ if [[ "$ROS_FOUND" == "true" ]]; then
   alias rqt_console='ros2 run rqt_console rqt_console'
   alias rqt_gui='ros2 run rqt_gui rqt_gui'
   alias roslaunch='ros2 launch'
+  alias ros_ws="cd $ROS_WS"
 
   # ROS2 functions
   rospkg() {
