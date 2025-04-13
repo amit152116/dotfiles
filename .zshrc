@@ -427,10 +427,10 @@ if ! [[ -z "$ROS_DISTRO" ]]; then
 
     case "$lang" in
         py)
-            ros2 pkg create "$pkg_name" --build-type ament_python --dependencies "rclpy $dependencies" --license GPL-3.0-only
+            ros2 pkg create "$pkg_name" --build-type ament_python --dependencies rclpy "$dependencies" --license GPL-3.0-only
             ;;
         cpp)
-            ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies "rclcpp $dependencies" --license GPL-3.0-only
+            ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only
             ;;
         *)
             echo "Invalid language. Use 'py' for Python or 'cpp' for C++."

@@ -42,10 +42,32 @@ return {
         ---@diagnostic disable: missing-fields
         config = {
             clangd = {
-                capabilities = {
-                    semanticTokens = {
-                        enable = true,
-                        full = true,
+                cmd = {
+                    "clangd",
+                    "--background-index",
+                    "--clang-tidy",
+                    "--header-insertion=iwyu",
+                    "--completion-style=detailed",
+                    "--function-arg-placeholders=true",
+                },
+                -- Add init_options to improve ROS workflow
+                init_options = {
+                    clangd = {
+                        fallbackFlags = {
+                            "-std=c++17",
+                            "-Wall",
+                            -- "-I/usr/include/c++/11",
+                            -- "-I/usr/include/x86_64-linux-gnu/c++/11",
+                            -- "-I/usr/include/c++/11/bits",
+                            -- "-I/usr/include/c++/11/ext",
+                            -- "-I/usr/include/c++/11/tr1",
+                            -- "-I/usr/include/c++/11/debug",
+                            -- "-I/usr/include/c++/11/parallel",
+                        },
+                        compilationDatabasePath = ".",
+                        compilationDatabaseDirectorySearch = "Recursive",
+                        semanticHighlighting = true,
+                        includeCleaner = false,
                     },
                 },
             },
@@ -71,6 +93,12 @@ return {
                 },
             },
         },
+        -- Associate .msg, .srv, and .action files with appropriate handlers
+        { pattern = "*.msg", filetype = "rosmsg" },
+        { pattern = "*.srv", filetype = "rossrv" },
+        { pattern = "*.action", filetype = "rosaction" },
+        { pattern = "*.launch", filetype = "xml" },
+        { pattern = "*.launch.py", filetype = "python" },
         -- customize how language servers are attached
         handlers = {
             -- a function without a key is simply the default handler, functions take two parameters, the server name and the configured options table for that server

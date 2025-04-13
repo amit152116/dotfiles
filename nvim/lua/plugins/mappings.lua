@@ -162,6 +162,10 @@ return {
                         desc = "CopilotChat - Write commit message",
                         "<cmd>CopilotChatCommit<CR>",
                     },
+                    ["<Leader>ax"] = {
+                        desc = "CopilotChat - Reset Chat",
+                        "<cmd>CopilotChatReset<CR>",
+                    },
                     -- Rename the current file
                     -- ["<leader>rn"] = { ":saveas ", desc = "Rename current file" },
 
