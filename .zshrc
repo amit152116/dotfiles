@@ -232,13 +232,6 @@ fi
 # SECTION: GIT ALIASES AND FUNCTIONS
 #=============================================================================
 
-# Git aliases
-alias status='git status'
-alias logs='git log --oneline'
-alias amend='git commit --amend --no-edit'
-
-# Git functions
-
 # Function to go to the root directory of the current Git repository
 home() {
     local git_root
@@ -251,76 +244,6 @@ home() {
     fi
 }
 
-commit() {
-  if [ -z "$1" ]; then
-    echo "Usage: commit \"commit message\""
-    return 1
-  fi
-  git commit -m "$1"
-}
-
-pull() {
-  git pull "$@"
-}
-
-push() {
-  git push "$@"
-}
-
-branch() {
-	git branch "$@"
-}
-
-fetch() {
-	git fetch "$@"
-}
-
-reset() {
-	git reset "$@"
-}
-
-rebase() {
-  git rebase "$@"
-}
-
-merge() {
-	git merge "$@"
-}
-
-stash() {
-	git stash "$@"
-}
-
-pick() {
-	git cherry-pick "$@"
-}
-
-checkout() {
-  # Check if a command was provided
-  if [[ $# -eq 0 ]]; then
-  	# Show git branches and let the user select one to checkout
-		local branch
-		branch=$(git branch --color=always | fzf --ansi | sed 's/^[ *]*//')
-		if [[ -n "$branch" ]]; then
-			git checkout "$branch"
-		else
-			echo "No branch selected."
-		fi
-		return 0
-  fi
-
-
-  # If a selection is made, perform git checkout
-  if [[ -n "$selection" ]]; then
-    # Trim whitespace and checkout the selected branch
-    git checkout "$(echo "$selection" | xargs)"
-  else
-    echo "No selection made or invalid input."
-    return 1
-  fi
-}
-
-#=============================================================================
 # SECTION: ANDROID SDK SETTINGS
 #=============================================================================
 

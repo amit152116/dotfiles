@@ -45,5 +45,21 @@ return {
                 -- This can be found in the `lua/lazy_setup.lua` file
             },
         },
+        -- Configure plugins
+        autocmds = {
+            -- Add/configure only autocmds for now
+            ["urdf"] = {
+                {
+                    desc = "Set urdf filetype for .urdf files",
+                    event = { "BufRead", "BufNewFile" },
+                    pattern = "*.urdf",
+                    callback = function()
+                        vim.bo.filetype = "urdf"
+                        -- Enable XML language features
+                        vim.b.xml_syntax_folding = 1
+                    end,
+                },
+            },
+        },
     },
 }

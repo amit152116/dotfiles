@@ -11,3 +11,19 @@
 	defaultBranch = master
 [http]
 	postBuffer = 524288000
+[alias]
+	st = status
+	br = branch
+ 	scommit = "!f() { git commit -m \"$1\" -m \"Affected Files:\n$(git status --porcelain | sed 's/^/- /')\"; }; f"
+	logs = log --oneline --decorate --date=iso
+	filelog = log --oneline --follow
+  tags = tag -l --sort=-creatordate
+	amend = commit --amend --no-edit
+	pick = cherry-pick
+	unstage = reset HEAD --
+	undo = reset --soft HEAD^
+	undo2 = reset --soft HEAD~2
+	undo3 = reset --soft HEAD~3
+	undo4 = reset --soft HEAD~4
+	undo5 = reset --soft HEAD~5
+	porcelain = status --porcelain	

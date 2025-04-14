@@ -5,13 +5,11 @@ return {
     -- use mason-lspconfig to configure LSP installations
     {
         "williamboman/mason-lspconfig.nvim",
-        -- overrides `require("mason-lspconfig").setup(...)`
         opts = {
-            -- Add more LSPs as needed
             ensure_installed = {
-                "lua_ls",
-                "clangd",
-                "gopls",
+                "lua_ls", -- Lua Language Server
+                "clangd", -- C++ Language Server
+                "gopls", -- Go Language Server
             },
         },
     },

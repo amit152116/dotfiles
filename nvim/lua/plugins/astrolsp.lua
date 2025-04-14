@@ -78,27 +78,40 @@ return {
                 },
             },
             lemminx = {
-                allow_filetypes = { "xml", "urdf" },
+                filetypes = { "xml", "urdf" },
+                init_options = {
+                    documentFormatting = true,
+                },
                 settings = {
                     xml = {
-                        fileAssociations = {
-                            systemId = "file://" .. vim.fn.expand "~/.local/share/xml/schemas/urdf.xsd",
-                            pattern = "**/*.urdf",
+                        format = {
+                            enable = true,
+                            tabSize = 4,
+                            indentAttributes = true,
+                            indentInnerXml = true,
+                            splitAttributes = false,
+                            preserveEmptyAttributes = false,
+                            preserveEmptyElements = false,
                         },
-                        validation = {
-                            schema = true, -- Enable schema validation
-                            noGrammar = "hint", -- Change warning level for missing schemas
+                        validate = true,
+                        catalogs = { "file:///home/amit_152116/.local/share/xml/schemas/urdf_catalog.xml" },
+                        fileAssociations = {
+                            {
+                                systemId = "file:///home/amit_152116/.local/share/xml/schemas/urdf.xsd",
+                                pattern = "**/*.urdf",
+                            },
+                        },
+                        schemas = {
+                            {
+                                uri = "http://www.ros.org/urdf.xsd",
+                                fileMatch = { "*.urdf" },
+                                schema = "file:///home/amit_152116/.local/share/xml/schemas/urdf.xsd",
+                            },
                         },
                     },
                 },
             },
         },
-        -- Associate .msg, .srv, and .action files with appropriate handlers
-        { pattern = "*.msg", filetype = "rosmsg" },
-        { pattern = "*.srv", filetype = "rossrv" },
-        { pattern = "*.action", filetype = "rosaction" },
-        { pattern = "*.launch", filetype = "xml" },
-        { pattern = "*.launch.py", filetype = "python" },
         -- customize how language servers are attached
         handlers = {
             -- a function without a key is simply the default handler, functions take two parameters, the server name and the configured options table for that server
