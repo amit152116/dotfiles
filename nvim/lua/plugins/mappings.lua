@@ -15,6 +15,8 @@ return {
                     -- second key is the lefthand side of the map
 
                     -- mappings seen under group name "Buffer"
+                    ["<C-Q>"] = false,
+                    ["<Leader>C"] = false,
                     ["<Leader>bd"] = {
                         function()
                             require("astroui.status.heirline").buffer_picker(
@@ -178,6 +180,8 @@ return {
                 -- All Visual Mode
                 x = {
                     -- Replace and keep yank
+                    ["<C-Q>"] = false,
+                    ["<Leader>C"] = false,
                     ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
                     ["<Leader>ac"] = {
                         desc = "CopilotChat - Open chat",
@@ -221,6 +225,8 @@ return {
                 },
                 -- Visual mode mappings
                 v = {
+                    ["<C-Q>"] = false,
+                    ["<Leader>C"] = false,
                     -- Move selected lines up or down
                     ["J"] = { ":m '>+1<CR>gv=gv", desc = "Move Current Line Down", noremap = true, silent = true },
                     ["K"] = { ":m '<-2<CR>gv=gv", desc = "Move Current Line Up", noremap = true, silent = true },
