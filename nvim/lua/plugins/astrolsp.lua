@@ -83,7 +83,7 @@ return {
                     documentFormatting = true,
                 },
                 settings = {
-                    xml = {
+                    urdf = {
                         format = {
                             enable = true,
                             tabSize = 4,

@@ -16,6 +16,7 @@ return {
 
                     -- mappings seen under group name "Buffer"
                     ["<C-Q>"] = false,
+                    ["<C-R>"] = false,
                     ["<Leader>C"] = false,
                     ["<Leader>bd"] = {
                         function()
@@ -181,6 +182,7 @@ return {
                 x = {
                     -- Replace and keep yank
                     ["<C-Q>"] = false,
+                    ["<C-R>"] = false,
                     ["<Leader>C"] = false,
                     ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
                     ["<Leader>ac"] = {
@@ -226,6 +228,7 @@ return {
                 -- Visual mode mappings
                 v = {
                     ["<C-Q>"] = false,
+                    ["<C-R>"] = false,
                     ["<Leader>C"] = false,
                     -- Move selected lines up or down
                     ["J"] = { ":m '>+1<CR>gv=gv", desc = "Move Current Line Down", noremap = true, silent = true },
