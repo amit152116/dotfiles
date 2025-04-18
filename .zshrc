@@ -292,7 +292,7 @@ if ! [[ -z "$ROS_DISTRO" ]]; then
   
   # Source workspace if it exists
   if [[ -d "$ROS_WS" ]]; then
-    source "$ROS_WS"install/setup.zsh
+    # source "$ROS_WS"install/setup.zsh
   fi
   
   # Source completion scripts if they exist
