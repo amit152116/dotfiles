@@ -51,6 +51,10 @@ return {
                         desc = "Save File",
                     },
 
+                    ["<Leader>fd"] = {
+                        desc = "Find DevDocs ",
+                        "<cmd>DevdocsOpenCurrent<CR>",
+                    },
                     ["<Leader>o"] = {
                         "<C-w>w",
                         desc = "Switch window",

@@ -22,6 +22,34 @@ return {
         -- See Commands section for default commands if you want to lazy load on them
     },
     {
+        "tpope/vim-fugitive",
+    },
+    {
+        "luckasRanarison/nvim-devdocs",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            "nvim-telescope/telescope.nvim",
+            "nvim-treesitter/nvim-treesitter",
+        },
+        opts = {
+            ensure_installed = { "c", "cpp", "go", "python~3.10", "lua~5.1", "bash" },
+            -- previewer_cmd = "glow", -- for example: "glow"
+            -- cmd_args = { "-s", "dracula", "-w", "80" }, -- example using glow: { "-s", "dark", "-w", "80" }
+            cmd_ignore = {}, -- ignore cmd rendering for the listed docs
+            -- picker_cmd = "glow", -- use cmd previewer in picker preview
+            -- picker_cmd_args = { "-s", "dark", "-w", "80" }, -- example using glow: { "-s", "dark", "-w", "50" }
+        },
+    },
+    {
+        "MeanderingProgrammer/render-markdown.nvim",
+        dependencies = { "nvim-treesitter/nvim-treesitter", "echasnovski/mini.nvim" }, -- if you use the mini.nvim suite
+        -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
+        -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
+        ---@module 'render-markdown'
+        ---@type render.md.UserConfig
+        opts = {},
+    },
+    {
         "github/copilot.vim",
     },
     {
