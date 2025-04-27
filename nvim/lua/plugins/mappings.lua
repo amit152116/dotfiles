@@ -52,8 +52,12 @@ return {
                     },
 
                     ["<Leader>fd"] = {
-                        desc = "Find DevDocs ",
+                        desc = "Find Current DevDocs",
                         "<cmd>DevdocsOpenCurrent<CR>",
+                    },
+                    ["<Leader>fD"] = {
+                        desc = "Find DevDocs ",
+                        function() require("myPlugins.devdocs").open_docs_with_telescope() end,
                     },
                     ["<Leader>o"] = {
                         "<C-w>w",
@@ -145,7 +149,7 @@ return {
                         desc = "CopilotChat - Explain code",
                         "<cmd>CopilotChatExplain<CR>",
                     },
-                    ["<Leader>av"] = {
+                    ["<Leader>ar"] = {
                         desc = "CopilotChat - Review code",
                         "<cmd>CopilotChatReview<CR>",
                     },
@@ -204,7 +208,7 @@ return {
                         desc = "CopilotChat - Explain code",
                         "<cmd>CopilotChatExplain<CR>",
                     },
-                    ["<Leader>av"] = {
+                    ["<Leader>ar"] = {
                         desc = "CopilotChat - Review code",
                         "<cmd>CopilotChatReview<CR>",
                     },

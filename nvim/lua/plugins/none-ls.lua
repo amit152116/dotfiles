@@ -1,5 +1,3 @@
--- if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
-
 -- Customize None-ls sources
 
 ---@type LazySpec
@@ -7,7 +5,7 @@ return {
     "nvimtools/none-ls.nvim",
     opts = function(_, opts)
         -- opts variable is the default configuration table for the setup function call
-        -- local null_ls = require "null-ls"
+        local null_ls = require "null-ls"
 
         -- Check supported formatters and linters
         -- https://github.com/nvimtools/none-ls.nvim/tree/main/lua/null-ls/builtins/formatting
@@ -19,6 +17,34 @@ return {
             -- Set a formatter
             -- null_ls.builtins.formatting.stylua,
             -- null_ls.builtins.formatting.prettier,
+
+            null_ls.builtins.formatting.prettier.with {
+                extra_args = { "--prose-wrap", "always", "--print-width", "80" },
+                filetypes = { "markdown", "md" },
+            },
         })
+
+        -- Create autocommands for documentation-style files
+        local doc_filetypes = { "help", "markdown", "md" }
+
+        -- vim.api.nvim_create_autocmd("FileType", {
+        --     pattern = doc_filetypes,
+        --     callback = function()
+        --         -- Set text width and enable wrapping for documentation files
+        --         vim.opt_local.textwidth = 80
+        --         vim.opt_local.wrap = true
+        --     end,
+        -- })
+        --
+        -- -- Handle DevDocs and other read-only markdown files
+        -- vim.api.nvim_create_autocmd("BufReadPost", {
+        --     pattern = { "*.md", "*.markdown" },
+        --     callback = function(event)
+        --         if vim.bo[event.buf].readonly then
+        --             vim.opt_local.textwidth = 80
+        --             vim.opt_local.wrap = true
+        --         end
+        --     end,
+        -- })
     end,
 }

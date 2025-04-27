@@ -306,7 +306,13 @@ function M.messages()
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = action_state.get_selected_entry()
-                vim.notify("Selected Msg: " .. selection.value)
+                vim.cmd "tabnew" -- Open a new tab
+                local buf = vim.api.nvim_create_buf(false, true) -- Create a scratch buffer
+                vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe") -- Set buffer options
+                vim.api.nvim_set_current_buf(buf) -- Set the new buffer as the current one
+                local content = vim.fn.readfile(selection.value) -- Read the file content
+                vim.api.nvim_buf_set_lines(buf, 0, -1, false, content) -- Set the content in the buffer
+                vim.notify("Opened Msg in new tab: " .. selection.value)
             end)
             return true
         end,
@@ -333,7 +339,7 @@ function M.active_topics()
     create_ros_picker {
         command = "topic list",
         prompt_title = "ROS2 Active Topics",
-        previewer = create_ros_previewer "topic info",
+        previewer = create_ros_previewer "topic info --verbose",
         attach_mappings = function(prompt_bufnr)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
