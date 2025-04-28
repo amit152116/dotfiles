@@ -24,6 +24,16 @@ return {
     {
         "tpope/vim-fugitive",
     },
+
+    {
+        -- Pretty popups for incoming calls, outgoing calls, references
+        -- "nvimdev/lspsaga.nvim",
+    },
+
+    {
+        -- Pretty popups for incoming calls, outgoing calls, references
+        "folke/trouble.nvim",
+    },
     {
         "luckasRanarison/nvim-devdocs",
         dependencies = {

@@ -45,9 +45,16 @@ return {
                         desc = "Go to previous TreeSitter node",
                     },
 
-                    -- Save new file
-                    ["<Leader>sf"] = {
-                        function() require("myPlugins.save_new_file").save_file() end,
+                    ["<Leader>w"] = {
+                        function()
+                            if vim.fn.expand "%" == "" then
+                                -- Unsaved file, invoke custom save logic
+                                require("myPlugins.save_new_file").save_file()
+                            else
+                                -- Saved file, fallback to default behavior
+                                vim.cmd "write"
+                            end
+                        end,
                         desc = "Save File",
                     },
 
@@ -271,7 +278,7 @@ return {
             mappings = {
                 n = {
                     -- a `cond` key can provided as the string of a server capability to be required to attach, or a function with `client` and `bufnr` parameters from the `on_attach` that returns a boolean
-                    gD = {
+                    ["<Leader>ld"] = {
                         function() vim.lsp.buf.declaration() end,
                         desc = "Declaration of current symbol",
                         cond = "textDocument/declaration",
@@ -284,18 +291,16 @@ return {
                                 and vim.lsp.semantic_tokens ~= nil
                         end,
                     },
-                    grr = {
-                        function() require("vim.lsp.buf").references() end,
-                        desc = "vim.lsp.buf.references()",
+
+                    ["<leader>lr"] = {
+                        function() require("telescope.builtin").lsp_references() end,
+                        desc = "Search References",
                     },
-                    gs = {
-                        function() require("telescope.builtin").lsp_document_symbols() end,
-                        desc = "Search Document Symbols",
-                    },
-                    grw = {
-                        function() require("telescope.builtin").lsp_workspace_symbols() end,
-                        desc = "Search WorkSpace Symbols",
-                    },
+
+                    ["<Leader>ln"] = { function() vim.lsp.buf.rename() end, desc = "Rename current symbol" },
+
+                    ["<Leader>lR"] = false, -- Disable the old mapping
+                    grr = false,
                 },
                 x = {
                     -- ["<Tab>"] = {
