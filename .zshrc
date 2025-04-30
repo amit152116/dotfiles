@@ -286,6 +286,9 @@ if ! [[ -z "$ROS_DISTRO" ]]; then
   # ROS settings
   export GZ_VERSION=harmonic
   export ROS_DOMAIN_ID=0
+  export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+  export ROS_LOCALHOST_ONLY=0
+  # export CYCLONEDDS_URI=file:///home/amit_152116/Documents/aim_ros2/cyclonedds.xml
 
   # Source ROS2 environment
   source /opt/ros/humble/setup.zsh 
