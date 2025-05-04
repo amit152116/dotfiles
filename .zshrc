@@ -32,24 +32,25 @@ if [[ -d "/usr/local/cuda" ]]; then
   export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 fi
 # Add Micro-XRCE-DDS-Gen if installed
-if [[ -d "$HOME/ardupilot/Micro-XRCE-DDS-Gen" ]]; then
-  export PATH=$PATH:$HOME/ardupilot/Micro-XRCE-DDS-Gen/scripts
-fi
+# if [[ -d "$HOME/ardupilot/Micro-XRCE-DDS-Gen" ]]; then
+#   export PATH=$PATH:$HOME/ardupilot/Micro-XRCE-DDS-Gen/scripts
+# fi
 
 # Add Ardupilot-Autopilot if installed
-if [[ -d "$HOME/ardupilot/src/ardupilot" ]]; then
-  export PATH=$PATH:$HOME/ardupilot/src/ardupilot/Tools/autotest
+if [[ -d "$HOME/ardupilot" ]]; then
+  export PATH=$PATH:$HOME/ardupilot/Tools/autotest
+  source $HOME/ardupilot/Tools/completion/completion.zsh
 fi
 
-if [[ -d "$HOME/ardupilot/src/ardupilot_gazebo" ]]; then
-  export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot/src/ardupilot_gazebo/build:$GZ_SIM_SYSTEM_PLUGIN_PATH
-  export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot/src/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:$GZ_SIM_RESOURCE_PATH
-  export GZ_FUEL_CACHE_ONLY=1
-  export GZ_FUEL_DOWNLOAD_MODE=none
-  source /usr/local/share/ardupilot_gazebo/local_setup.zsh
-  source $HOME/ardupilot/install/setup.zsh
-
-fi
+# if [[ -d "$HOME/ardupilot/src/ardupilot_gazebo" ]]; then
+#   export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot/src/ardupilot_gazebo/build:$GZ_SIM_SYSTEM_PLUGIN_PATH
+#   export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot/src/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:$GZ_SIM_RESOURCE_PATH
+#   export GZ_FUEL_CACHE_ONLY=1
+#   export GZ_FUEL_DOWNLOAD_MODE=none
+#   source /usr/local/share/ardupilot_gazebo/local_setup.zsh
+#   source $HOME/ardupilot/install/setup.zsh
+#
+# fi
 
 # Add Node.js if installed
 if [[ -d "/usr/local/nodejs/bin" ]]; then
@@ -309,7 +310,7 @@ if ! [[ -z "$ROS_DISTRO" ]]; then
 
   # Set GAZEBO_MODEL_PATH if required
   if [[ -d $HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models ]]; then
-    export GAZEBO_MODEL_PATH=$HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models
+    export GAZEBO_MODEL_PATH=$HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models:$GAZEBO_MODEL_PATH
   fi
 
 
