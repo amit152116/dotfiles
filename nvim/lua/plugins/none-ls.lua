@@ -21,7 +21,7 @@ return {
 
             null_ls.builtins.formatting.prettier.with {
                 extra_args = { "--prose-wrap", "always", "--print-width", "80" },
-                filetypes = { "markdown", "md" },
+                filetypes = { "markdown", "md", "urdf" },
             },
             null_ls.builtins.diagnostics.cppcheck.with {
                 extra_args = function(params)

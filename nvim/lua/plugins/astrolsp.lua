@@ -83,34 +83,6 @@ return {
                 init_options = {
                     documentFormatting = true,
                 },
-                settings = {
-                    urdf = {
-                        format = {
-                            enable = true,
-                            tabSize = 4,
-                            indentAttributes = true,
-                            indentInnerXml = true,
-                            splitAttributes = false,
-                            preserveEmptyAttributes = false,
-                            preserveEmptyElements = false,
-                        },
-                        validate = true,
-                        catalogs = { "file:///home/amit_152116/.local/share/xml/schemas/urdf_catalog.xml" },
-                        fileAssociations = {
-                            {
-                                systemId = "file:///home/amit_152116/.local/share/xml/schemas/urdf.xsd",
-                                pattern = "**/*.urdf",
-                            },
-                        },
-                        schemas = {
-                            {
-                                uri = "http://www.ros.org/urdf.xsd",
-                                fileMatch = { "*.urdf" },
-                                schema = "file:///home/amit_152116/.local/share/xml/schemas/urdf.xsd",
-                            },
-                        },
-                    },
-                },
             },
         },
         -- customize how language servers are attached
