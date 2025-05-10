@@ -11,7 +11,7 @@ ls.add_snippets("xml", {
         t ' xmlns="',
         i(2, "https://namespace.url"),
         t '"',
-        t { "", '  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' },
+        t { "", '  xmlns:xsi="http://www.w3.org/2001/XMLSchema"' },
         t { "", '  xsi:schemaLocation="' },
         f(function(args) return args[1][1] end, { 2 }),
         t " ",
@@ -27,7 +27,7 @@ ls.add_snippets("xml", {
     s("cyclonedds", {
         t {
             '<CycloneDDS xmlns="https://cdds.io/config"',
-            '  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+            '  xmlns:xsi="http://www.w3.org/2001/XMLSchema"',
             '  xsi:schemaLocation="https://cdds.io/config ',
         },
         i(1, "https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclonedds.xsd"),
@@ -42,7 +42,7 @@ ls.add_snippets("urdf", {
         i(1, "my_robot"),
         t {
             '"',
-            '  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+            '  xmlns:xsi="http://www.w3.org/2001/XMLSchema"',
             '  xsi:schemaLocation="http://www.ros.org/urdf/xml ',
         },
         i(2, "https://raw.githubusercontent.com/ros/urdfdom/master/xsd/urdf.xsd"),
