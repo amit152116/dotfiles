@@ -223,6 +223,34 @@ reload() {
   fi
 }
 
+# Function to link the latest non-empty tmux session file
+link_latest_tmux_session() {
+  local dir="$HOME/.tmux/resurrect"
+  local files=($(find "$dir" -type f -name 'tmux_resurrect_*.txt' -size +0c | sort -r))
+
+  if (( ${#files[@]} == 0 )); then
+    echo "No non-empty tmux_resurrect files found."
+    return 1
+  fi
+
+  local target=""
+  for file in $files; do
+    echo "$file\n"
+    if [[ -s "$file" ]]; then
+      target="$file"
+      break
+    fi
+  done
+
+  if [[ -z "$target" ]]; then
+    echo "No non-empty tmux_resurrect files found."
+    return 1
+  fi
+
+  ln -sf "$target" "$dir/last"
+  echo "Symlink 'last' now points to: ${target##*/}"
+}
+
 # Run the command and pipe its output to fzf
 local selection
 if [[ -n "$*" && -t 0 ]]; then
