@@ -283,7 +283,6 @@ return {
                         desc = "Declaration of current symbol",
                         cond = "textDocument/declaration",
                     },
-
                     ["<Leader>uY"] = {
                         function() require("astrolsp.toggles").buffer_semantic_tokens() end,
                         desc = "Toggle LSP semantic highlight (buffer)",
@@ -301,7 +300,14 @@ return {
                     ["<Leader>ln"] = { function() vim.lsp.buf.rename() end, desc = "Rename current symbol" },
 
                     ["<Leader>lR"] = false, -- Disable the old mapping
-                    grr = false,
+                    grr = {
+                        function()
+                            require("telescope.builtin").lsp_references {
+                                show_line = false,
+                                initial_mode = "normal",
+                            }
+                        end,
+                    },
                 },
                 x = {
                     -- ["<Tab>"] = {
