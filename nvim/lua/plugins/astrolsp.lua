@@ -46,10 +46,13 @@ return {
                     "clangd",
                     "--background-index",
                     "--clang-tidy",
-                    "--clang-tidy-checks=performance-*,readability-*,-readability-magic-numbers,cert-dcl21-cpp,cert-dcl58-cpp,cert-err34-c,cert-err52-cpp,cert-err60-cpp,cert-flp30-c,cert-msc50-cpp,cert-msc51-cpp,cert-str34-c,cppcoreguidelines-interfaces-global-init,cppcoreguidelines-narrowing-conversions,cppcoreguidelines-pro-type-member-init,cppcoreguidelines-pro-type-static-cast-downcast,cppcoreguidelines-slicing,google-default-arguments,google-explicit-constructor,google-runtime-operator,hicpp-exception-baseclass,hicpp-multiway-paths-covered,misc-misplaced-const,misc-new-delete-overloads,misc-no-recursion,misc-non-copyable-objects,misc-throw-by-value-catch-by-reference,misc-unconventional-assign-operator,misc-uniqueptr-reset-release,mpi-buffer-deref,mpi-type-mismatch,openmp-use-default-none,performance-faster-string-find,performance-for-range-copy,performance-implicit-conversion-in-loop,performance-inefficient-algorithm,performance-inefficient-string-concatenation,performance-inefficient-vector-operation,performance-move-const-arg,performance-move-constructor-init,performance-no-automatic-move,performance-noexcept-move-constructor,performance-trivially-destructible,performance-type-promotion-in-math-fn,performance-unnecessary-copy-initialization,performance-unnecessary-value-param,readability-avoid-const-params-in-decls,readability-const-return-type,readability-container-size-empty,readability-convert-member-functions-to-static,readability-delete-null-pointer,readability-deleted-default,readability-inconsistent-declaration-parameter-name,readability-make-member-function-const,readability-misleading-indentation,readability-misplaced-array-index,readability-non-const-parameter,readability-redundant-control-flow,readability-redundant-declaration,readability-redundant-function-ptr-dereference,readability-redundant-smartptr-get,readability-redundant-string-cstr,readability-redundant-string-init,readability-simplify-subscript-expr,readability-static-accessed-through-instance,readability-static-definition-in-anonymous-namespace,readability-string-compare,readability-uniqueptr-delete-release,readability-use-anyofallof,bugprone-*,clang-analyzer-*,modernize-*,portability-*",
                     "--header-insertion=iwyu",
                     "--completion-style=detailed",
                     "--function-arg-placeholders=true",
+                    "--pch-storage=memory", -- Store PCH in memory for faster access
+                    "--enable-config", -- Enable .clangd configuration files
+                    "--malloc-trim", -- Reduce memory usage
+                    "--log=error", -- Only log errors
                 },
                 -- Add init_options to improve ROS workflow
                 init_options = {
@@ -76,7 +79,16 @@ return {
                         compilationDatabaseDirectorySearch = "Recursive",
                         semanticHighlighting = true,
                         includeCleaner = false,
+                        inlayHints = {
+                            parameterNames = true, -- Show parameter names in function calls
+                            deducedTypes = true, -- Show deduced types for auto
+                            designators = true, -- Show designators for aggregates
+                        },
                     },
+                },
+                -- Add more LSP-specific settings
+                capabilities = {
+                    offsetEncoding = { "utf-16" }, -- Important for large files
                 },
             },
             gopls = {

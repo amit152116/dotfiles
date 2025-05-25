@@ -23,21 +23,22 @@ return {
                 extra_args = { "--prose-wrap", "always", "--print-width", "80" },
                 filetypes = { "markdown", "md", "urdf" },
             },
-            null_ls.builtins.diagnostics.cppcheck.with {
-                extra_args = function(params)
-                    local args = { "--enable=all", "--suppress=missingIncludeSystem" }
-
-                    -- Locate compile_commands.json
-                    local project_root = vim.fn.findfile("compile_commands.json", ".;")
-                    if project_root ~= "" then table.insert(args, "--project=" .. project_root) end
-
-                    -- Restrict analysis to the current file
-                    table.insert(args, "--file-filter=" .. params.bufname)
-
-                    return args
-                end,
-                filetypes = { "c", "cpp", "h", "hpp" },
-            },
+            -- null_ls.builtins.diagnostics.cppcheck.with {
+            --
+            --     extra_args = function(params)
+            --         local args = { "--enable=all", "--suppress=missingIncludeSystem" }
+            --
+            --         -- Locate compile_commands.json
+            --         local project_root = vim.fn.findfile("compile_commands.json", ".;")
+            --         if project_root ~= "" then table.insert(args, "--project=" .. project_root) end
+            --
+            --         -- Restrict analysis to the current file
+            --         table.insert(args, "--file-filter=" .. params.bufname)
+            --
+            --         return args
+            --     end,
+            --     filetypes = { "c", "cpp", "h", "hpp" },
+            -- },
             null_ls.builtins.formatting.clang_format.with {
                 extra_args = { "--style=file" },
                 filetypes = { "c", "cpp", "h", "hpp" },
