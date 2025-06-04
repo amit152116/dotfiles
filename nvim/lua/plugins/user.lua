@@ -6,6 +6,30 @@
 ---@type LazySpec
 return {
 
+    -- == Neovim Themes
+    { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
+    { "folke/tokyonight.nvim" },
+    {
+        "sainnhe/gruvbox-material",
+    },
+    {
+        "Mofiqul/vscode.nvim",
+        config = function()
+            require("vscode").setup {
+                style = "dark", -- or "light"
+            }
+        end,
+    },
+    {
+        "navarasu/onedark.nvim",
+        priority = 1000, -- make sure to load this before all the other start plugins
+        config = function()
+            require("onedark").setup {
+                style = "deep",
+            }
+        end,
+    },
+
     -- == Examples of Adding Plugins ==
 
     "andweeb/presence.nvim",
