@@ -83,6 +83,8 @@ return {
                 -- - `#131a24` (dark navy/slate)
                 -- - `#14191f` (deep charcoal with a slight blue tint)
                 Normal = { bg = "#14191f" },
+                NormalFloat = { bg = "#14191f" },
+                FloatBorder = { bg = "#14191f" },
             },
         },
         text_icons = {
