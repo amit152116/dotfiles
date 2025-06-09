@@ -93,6 +93,10 @@ map <leader>/ <Action>(CommentByLineComment)
 
 " Terminal toggling (similar to AstroNvim's `<Space>th`)
 map <leader>th <Action>(ActivateTerminalToolWindow)
+map <leader>th <Action>(ToggleTerminal)
+
+:map ]f <Action>(MethodDown)
+:map [f <Action>(MethodUp)
 
 " Enable Vim plugins in IdeaVim
 set ideavim_extensions=all

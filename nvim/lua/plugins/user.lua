@@ -44,6 +44,18 @@ return {
             -- See Configuration section for options
         },
         -- See Commands section for default commands if you want to lazy load on them
+        config = function()
+            require("CopilotChat").setup {
+                model = "claude-3.7-sonnet",
+                prompts = {
+                    MyCustomPrompt = {
+                        prompt = "Explain how it works.",
+                        system_prompt = "You are very good at explaining stuff",
+                        description = "My custom prompt description",
+                    },
+                },
+            }
+        end,
     },
     {
         "tpope/vim-fugitive",
