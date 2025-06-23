@@ -8,7 +8,7 @@
 return {
     "AstroNvim/astrocommunity",
     { import = "astrocommunity.pack.lua" },
-    { import = "astrocommunity.pack.go" },
+    -- { import = "astrocommunity.pack.go" },
     { import = "astrocommunity.pack.cpp" },
     { import = "astrocommunity.pack.python" },
     { import = "astrocommunity.editing-support.todo-comments-nvim" },

@@ -9,7 +9,6 @@ return {
             ensure_installed = {
                 "lua_ls", -- Lua Language Server
                 "clangd", -- C++ Language Server
-                "gopls", -- Go Language Server
             },
         },
     },
@@ -26,7 +25,6 @@ return {
                 "autoflake", -- Python formatter/utility
                 "flake8", -- Python linter
                 "cpplint", -- C++ linter
-                "goimports", -- Go formatter
             },
         },
     },
@@ -38,7 +36,6 @@ return {
             -- Add more debuggers as needed
             ensure_installed = {
                 "codelldb", -- Debugging support for C++
-                "delve", -- Debugging support for Go
                 "cpptools",
                 "debugpy",
             },
