@@ -158,7 +158,7 @@ if [[ -f /etc/debian_version ]]; then
   # Debian/Ubuntu aliases
   alias upgrade="sudo apt update && sudo apt upgrade -y"
   alias install="sudo apt install"
-  alias remove="sudo apt remove"
+  alias remove="sudo apt purge"
   alias clean="sudo apt autoremove -y && sudo apt clean"
   alias search="apt search"
   alias update="sudo apt update"
