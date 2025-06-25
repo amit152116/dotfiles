@@ -17,7 +17,7 @@ fi
 #=============================================================================
 
 # Paths
-export PATH="$HOME/.local/bin:/usr/local/bin:/usr/lib/ccache:$PATH"
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
 
 export DOCKER_HOST=unix:///var/run/docker.sock
 
