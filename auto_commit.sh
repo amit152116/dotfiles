@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # Get the directory of the script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -16,11 +14,13 @@ mkdir -p "$REPO_DIR"/cron_logs
 
 source "$REPO_DIR/git_common.sh"
 
+# First pull any changes from the remote repository
+git_pull_changes
+
 # Check for changes
-if  check_uncommitted_changes ; then
+if check_uncommitted_changes; then
     auto_commit_and_push "$@"
 fi
-
 
 # Rotate logs (keep last 14 days)
 find "$REPO_DIR"/cron_logs -name "auto_commit.log*" -mtime +14 -delete
