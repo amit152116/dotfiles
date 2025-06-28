@@ -46,7 +46,8 @@ return {
         -- See Commands section for default commands if you want to lazy load on them
         config = function()
             require("CopilotChat").setup {
-                model = "claude-3.7-sonnet",
+                -- model = "claude-3.7-sonnet",
+                model = "gpt-4o",
                 prompts = {
                     Resuable = {
                         prompt = "Extract reusable functions or methods from this code to improve modularity and testability.",
