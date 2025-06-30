@@ -170,3 +170,5 @@ site/
 
 # Crash reports
 *.hprof
+
+cron_logs/
