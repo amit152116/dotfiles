@@ -94,8 +94,8 @@ createSymlink() {
     mkdir -p "$(dirname "$dest")"
 
     # Create symbolic link
-    echo "Setting up Git config..."
-    createSymlink "$DOTFILES_DIR/.gitconfig" "$ACTUAL_HOME/.gitconfig"
+    ln -s "$src" "$dest"
+    echo "Symlink created: $dest → $src"
 }
 
 # Setup Git Configuration

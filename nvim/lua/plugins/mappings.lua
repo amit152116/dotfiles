@@ -1,5 +1,5 @@
 local neovim_config_dir = vim.fn.stdpath "config_dirs"
-local ros2_terminal = require "myPlugins.ros2-terminal"
+local ros2_temminal = require "myPlugins.ros2-terminal"
 local ros2_nvim = require "myPlugins.ros2-nvim"
 return {
     {

@@ -37,6 +37,6 @@ vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
 })
 require "lazy_setup"
 require "polish"
-require "myPlugins.utils"
+-- require "myPlugins.utils"
 require "myPlugins.snippets"
 require "myPlugins.neotree"

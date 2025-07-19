@@ -10,8 +10,8 @@ return {
     opts = {
         -- Configuration table of features provided by AstroLSP
         features = {
-            codelens = true, -- enable/disable codelens refresh on start
-            inlay_hints = true, -- enable/disable inlay hints on start
+            codelens = true,        -- enable/disable codelens refresh on start
+            inlay_hints = true,     -- enable/disable inlay hints on start
             semantic_tokens = true, -- enable/disable semantic token highlighting
             signature_help = true,
             code_actions = true,
@@ -20,7 +20,7 @@ return {
         formatting = {
             -- control auto formatting on save
             format_on_save = {
-                enabled = true, -- enable or disable format on save globally
+                enabled = true,      -- enable or disable format on save globally
                 ignore_filetypes = { -- disable format on save for specified filetypes
                     -- "python",
                 },
@@ -50,9 +50,9 @@ return {
                     "--completion-style=detailed",
                     "--function-arg-placeholders=true",
                     "--pch-storage=memory", -- Store PCH in memory for faster access
-                    "--enable-config", -- Enable .clangd configuration files
-                    "--malloc-trim", -- Reduce memory usage
-                    "--log=error", -- Only log errors
+                    "--enable-config",      -- Enable .clangd configuration files
+                    "--malloc-trim",        -- Reduce memory usage
+                    "--log=error",          -- Only log errors
                 },
                 -- Add init_options to improve ROS workflow
                 init_options = {
@@ -81,8 +81,8 @@ return {
                         includeCleaner = false,
                         inlayHints = {
                             parameterNames = true, -- Show parameter names in function calls
-                            deducedTypes = true, -- Show deduced types for auto
-                            designators = true, -- Show designators for aggregates
+                            deducedTypes = true,   -- Show deduced types for auto
+                            designators = true,    -- Show designators for aggregates
                         },
                     },
                 },
