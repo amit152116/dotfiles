@@ -10,8 +10,8 @@ users:
 auth_attempts: 5
 block_auth_min: 15
 http_proxy: ""
-language: ""
-theme: auto
+language: en
+theme: dark
 dns:
   bind_hosts:
     - 0.0.0.0
@@ -24,6 +24,7 @@ dns:
   refuse_any: true
   upstream_dns:
     - quic://family.adguard-dns.com
+    - https://family.adguard-dns.com/dns-query
     - https://doh.familyshield.opendns.com/dns-query
     - https://doh.cleanbrowsing.org/doh/family-filter/
     - https://family.cloudflare-dns.com/dns-query
@@ -106,7 +107,7 @@ querylog:
 statistics:
   dir_path: ""
   ignored: []
-  interval: 24h
+  interval: 2160h
   enabled: true
 filters:
   - enabled: true
@@ -155,7 +156,8 @@ filters:
     id: 1752955072
 whitelist_filters: []
 user_rules:
-  - ""
+  - '@@||whatsapp.com^$important'
+  - '@@||whatsapp.net^$important'
 dhcp:
   enabled: false
   interface_name: ""
@@ -180,9 +182,14 @@ filtering:
     schedule:
       time_zone: Local
     ids:
-      - dailymotion
       - facebook
       - onlyfans
+      - twitter
+      - instagram
+      - snapchat
+      - telegram
+      - tiktok
+      - tinder
   protection_disabled_until: null
   safe_search:
     enabled: true
@@ -203,7 +210,7 @@ filtering:
   safesearch_cache_size: 1048576
   parental_cache_size: 1048576
   cache_time: 30
-  filters_update_interval: 1
+  filters_update_interval: 168
   blocked_response_ttl: 10
   filtering_enabled: true
   parental_enabled: true
