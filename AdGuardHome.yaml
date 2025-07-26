@@ -14,7 +14,7 @@ language: en
 theme: dark
 dns:
   bind_hosts:
-    - 0.0.0.0
+    - 127.0.0.1
   port: 53
   anonymize_client_ip: false
   ratelimit: 20

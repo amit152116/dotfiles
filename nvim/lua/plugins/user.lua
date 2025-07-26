@@ -7,7 +7,7 @@
 return {
 
     -- == Neovim Themes
-    { "catppuccin/nvim",      name = "catppuccin", priority = 1000 },
+    { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
     { "folke/tokyonight.nvim" },
     {
         "sainnhe/gruvbox-material",
@@ -36,17 +36,17 @@ return {
     {
         "CopilotC-Nvim/CopilotChat.nvim",
         dependencies = {
-            { "github/copilot.vim" },                       -- or zbirenbaum/copilot.lua
+            { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
             { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
         },
-        build = "make tiktoken",                            -- Only on MacOS or Linux
+        build = "make tiktoken", -- Only on MacOS or Linux
         opts = {
             -- See Configuration section for options
         },
         -- See Commands section for default commands if you want to lazy load on them
         config = function()
             require("CopilotChat").setup {
-                model = "claude-3.7-sonnet",
+                model = "claude-3.5-sonnet",
                 -- model = "gpt-4o",
                 prompts = {
                     Resuable = {
@@ -169,7 +169,7 @@ return {
     {
         "L3MON4D3/LuaSnip",
         config = function(plugin, opts)
-            require "astronvim.plugins.configs.luasnip" (plugin, opts) -- include the default astronvim config that calls the setup call
+            require "astronvim.plugins.configs.luasnip"(plugin, opts) -- include the default astronvim config that calls the setup call
             -- add more custom luasnip configuration such as filetype extend or custom snippets
             local luasnip = require "luasnip"
             luasnip.filetype_extend("javascript", { "javascriptreact" })
@@ -179,7 +179,7 @@ return {
     {
         "windwp/nvim-autopairs",
         config = function(plugin, opts)
-            require "astronvim.plugins.configs.nvim-autopairs" (plugin, opts) -- include the default astronvim config that calls the setup call
+            require "astronvim.plugins.configs.nvim-autopairs"(plugin, opts) -- include the default astronvim config that calls the setup call
             -- add more custom autopairs configuration such as custom rules
             local npairs = require "nvim-autopairs"
             local Rule = require "nvim-autopairs.rule"
@@ -187,21 +187,21 @@ return {
             npairs.add_rules(
                 {
                     Rule("$", "$", { "tex", "latex" })
-                    -- don't add a pair if the next character is %
+                        -- don't add a pair if the next character is %
                         :with_pair(
                             cond.not_after_regex "%%"
                         )
-                    -- don't add a pair if  the previous character is xxx
+                        -- don't add a pair if  the previous character is xxx
                         :with_pair(
                             cond.not_before_regex("xxx", 3)
                         )
-                    -- don't move right when repeat character
+                        -- don't move right when repeat character
                         :with_move(cond.none())
-                    -- don't delete if the next character is xx
+                        -- don't delete if the next character is xx
                         :with_del(
                             cond.not_after_regex "xx"
                         )
-                    -- disable adding a newline when you press <cr>
+                        -- disable adding a newline when you press <cr>
                         :with_cr(cond.none()),
                 },
                 -- disable for .vim files, but it work for another filetypes

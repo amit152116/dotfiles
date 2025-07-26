@@ -13,27 +13,32 @@ DOWNLOAD_URL="https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/s
 
 # Ensure the script is run as root
 if [[ $EUID -ne 0 ]]; then
-  echo "❌ Please run this script as root (use sudo)"
-  exit 1
+	echo "❌ Please run this script as root (use sudo)"
+	exit 1
 fi
 
 # Check if AdGuardHome directory exists
 if [ ! -d "$ADGUARD_DIR" ]; then
-  echo "🔽 Downloading and installing AdGuard Home..."
-  curl -sSL "$DOWNLOAD_URL" | sh -s -- -v
+	echo "🔽 Downloading and installing AdGuard Home..."
+	curl -sSL "$DOWNLOAD_URL" | sh -s -- -v
 fi
 
 echo "🔧 Ensuring dotfiles config exists..."
 if [ ! -f "$ADGUARD_CONFIG" ]; then
-  echo "❌ ERROR: $ADGUARD_CONFIG not found!"
-  exit 1
+	echo "❌ ERROR: $ADGUARD_CONFIG not found!"
+	exit 1
 fi
 
-sudo cp $ADGUARD_CONFIG "$ADGUARD_DIR/$ADGUARD_FILENAME"
+cp $ADGUARD_CONFIG "$ADGUARD_DIR/$ADGUARD_FILENAME"
+
+systemctl stop systemd-resolved
+systemctl disable systemd-resolved
+
+rm /etc/resolv.conf
+echo "nameserver 127.0.0.1" | tee /etc/resolv.conf
 
 sleep 1
 
 systemctl restart AdGuardHome.service
-
 
 echo "✅ Done: AdGuardHome now uses your custom config!"

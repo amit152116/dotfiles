@@ -298,12 +298,10 @@ if [[ -f "/opt/ros/humble/setup.zsh" ]]; then
 # Check Iron (Ubuntu 22.04)
 elif [[ -f "/opt/ros/iron/setup.zsh" ]]; then
   ROS_DISTRO="iron"
-# Check Foxy (Ubuntu 20.04)
+# Check Jazzy (Ubuntu 20.04)
 elif [[ -f "/opt/ros/foxy/setup.zsh" ]]; then
-  ROS_DISTRO="foxy"
-# Check Galactic (Ubuntu 20.04)
-elif [[ -f "/opt/ros/galactic/setup.zsh" ]]; then
-  ROS_DISTRO="galactic"
+  ROS_DISTRO="jazzy"
+
 # User-defined ROS location
 elif [[ -n "$ROS_INSTALL_PATH" && -f "$ROS_INSTALL_PATH/setup.zsh" ]]; then
   ROS_DISTRO=$(basename "$ROS_INSTALL_PATH")
@@ -320,7 +318,7 @@ if ! [[ -z "$ROS_DISTRO" ]]; then
   # export CYCLONEDDS_URI=file:///home/amit_152116/Documents/aim_ros2/cyclonedds.xml
 
   # Source ROS2 environment
-  source /opt/ros/humble/setup.zsh 
+  source /opt/ros/${ROS_DISTRO}/setup.zsh 
   
   # Source workspace if it exists
   if [[ -d "$ROS_WS" ]]; then
@@ -332,8 +330,8 @@ if ! [[ -z "$ROS_DISTRO" ]]; then
     source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.zsh
   fi
   
-  if [[ -f /opt/ros/humble/share/ros2cli/environment/ros2-argcomplete.zsh ]]; then
-    source /opt/ros/humble/share/ros2cli/environment/ros2-argcomplete.zsh
+  if [[ -f /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh ]]; then
+    source /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh
   fi
 
   # Set GAZEBO_MODEL_PATH if required
