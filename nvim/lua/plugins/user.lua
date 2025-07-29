@@ -12,6 +12,7 @@ return {
     {
         "sainnhe/gruvbox-material",
     },
+    { "nvim-treesitter/playground" },
     {
         "Mofiqul/vscode.nvim",
         config = function()
