@@ -21,6 +21,13 @@ export PATH="$HOME/.local/bin:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
 
 export DOCKER_HOST=unix:///var/run/docker.sock
 
+# C++ DEBUGGING VARIABLES
+export ASAN_OPTIONS="new_delete_type_mismatch=0:detect_leaks=1:strict_init_order=1:check_initialization_order=1:symbolize=1:verbosity=1"
+export TSAN_OPTIONS="report_signal_unsafe=0:history_size=7:second_deadlock_stack=1:verbosity=1"
+export MSAN_OPTIONS="verbosity=1"
+
+
+
 # Add Cargo if installed
 if [[ -d "$HOME/.cargo/bin" ]]; then
   export PATH="$HOME/.cargo/bin:$PATH"
