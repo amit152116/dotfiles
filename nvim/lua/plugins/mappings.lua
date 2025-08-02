@@ -35,6 +35,10 @@ return {
                     ["n"] = { "nzzzv", silent = true },
                     ["N"] = { "Nzzzv", silent = true },
 
+                    -- Remap '0' to go to first non-whitespace character
+                    ["0"] = { "^", noremap = true, silent = true },
+                    ["^"] = { "0", noremap = true, silent = true },
+
                     -- TreeSitter Node navigation
                     ["<Tab>"] = {
                         function() require("myPlugins.custom_treesitter").go_to_next_node() end,
@@ -198,6 +202,10 @@ return {
                     -- Replace and keep yank
                     ["<C-Q>"] = false,
                     ["<C-R>"] = false,
+                    -- Remap '0' to go to first non-whitespace character
+                    ["0"] = { "^", noremap = true, silent = true },
+                    ["^"] = { "0", noremap = true, silent = true },
+
                     ["<Leader>C"] = false,
                     ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
                     ["<Leader>ac"] = {
