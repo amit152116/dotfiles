@@ -1,0 +1,53 @@
+
+
+n  <Space>ll   *@<Lua 1235: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrolsp_mappings.lua:20>
+                 LSP CodeLens refresh
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>lr   *@<Lua 471: ~/.config/nvim/lua/plugins/astrolsp.lua:178>
+                 Search References
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>lA   *@<Lua 756: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrolsp_mappings.lua:14>
+                 LSP source action
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>lG   *@<Lua 374: ~/.config/nvim/lua/plugins/astrolsp.lua:219>
+                 Search Workspace Symbols (Query)
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>la   *@<Lua 736: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrolsp_mappings.lua:10>
+                 LSP code action
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>lL   *@<Lua 503: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrolsp_mappings.lua:22>
+                 LSP CodeLens run
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>lh   *@<Lua 1135: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrolsp_mappings.lua:104>
+                 Signature help
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>lf   *@<Lua 1233: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrolsp_mappings.lua:49>
+                 Format buffer
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>li   *@<Cmd>LspInfo<CR>
+                 LSP information
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>ln   *@<Lua 1228: ~/.config/nvim/lua/plugins/astrolsp.lua:193>
+                 Rename symbol
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>lI   *@<Cmd>NullLsInfo<CR>
+                 Null-ls information
+	Last set from Lua (run Nvim with -V1 for more details)
+n  <Space>ls   * <Lua 366: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/telescope.lua:83>
+                 Search symbols
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  <Space>lD   * <Lua 321: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/telescope.lua:81>
+                 Search diagnostics
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  <Space>lv   * <Cmd>VenvSelect<CR>
+                 Select VirtualEnv
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  <Space>lS   * <Lua 235: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/aerial.lua:9>
+                 Symbols outline
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  <Space>ld   * <Lua 222: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrocore_mappings.lua:116>
+                 Hover diagnostics
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+
+Error detected while processing nvim_exec2()[1]..BufWinEnter Autocommands for "*":
+E484: Can't open file /home/amit_152116/.local/state/nvim/view//~=+.dotfiles=+l_map.txt=

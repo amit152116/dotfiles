@@ -1,0 +1,106 @@
+
+
+n  gK          *@<Lua 1162: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrolsp_mappings.lua:106>
+                 Signature help
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gI          *@<Lua 1628: ~/.config/nvim/lua/plugins/astrolsp.lua:193>
+                 Goto Implementation
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gs          *@<Lua 1481: ~/.config/nvim/lua/plugins/astrolsp.lua:217>
+                 Search Document Symbols
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gw          *@<Lua 1479: ~/.config/nvim/lua/plugins/astrolsp.lua:209>
+                 Goto Type Definition
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gd          *@<Lua 1478: ~/.config/nvim/lua/plugins/astrolsp.lua:185>
+                 Goto Definition
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gy          *@<Lua 1428: ~/.config/nvim/lua/plugins/astrolsp.lua:201>
+                 Goto Type Definition
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gnn         *@<Lua 1326: ~/.local/share/nvim/lazy/nvim-treesitter/lua/nvim-treesitter/incremental_selection.lua:15>
+                 Start selecting nodes with nvim-treesitter
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  g%            <Plug>(MatchitNormalBackward)
+	Last set from /snap/nvim/4077/usr/share/nvim/runtime/pack/dist/opt/matchit/plugin/matchit.vim line 71
+n  gl          * <Lua 364: ~/.local/share/nvim/lazy/AstroNvim/lua/astronvim/plugins/_astrocore_mappings.lua:136>
+                 Hover diagnostics
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gbc         * <Lua 167: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment toggle current block
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gco         * <Lua 166: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment insert below
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gb          * <Lua 13: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment toggle blockwise
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gcO         * <Lua 14: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment insert above
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gcA         * <Lua 163: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment insert end of line
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gO          * <Lua 22: vim/_defaults.lua:0>
+                 vim.lsp.buf.document_symbol()
+	Last set from Lua (run Nvim with -V1 for more details)
+n  grt         * <Lua 21: vim/_defaults.lua:0>
+                 vim.lsp.buf.type_definition()
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gri         * <Lua 20: vim/_defaults.lua:0>
+                 vim.lsp.buf.implementation()
+	Last set from Lua (run Nvim with -V1 for more details)
+n  grr         * <Lua 19: vim/_defaults.lua:0>
+                 vim.lsp.buf.references()
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gra         * <Lua 17: vim/_defaults.lua:0>
+                 vim.lsp.buf.code_action()
+	Last set from Lua (run Nvim with -V1 for more details)
+n  grn         * <Lua 16: vim/_defaults.lua:0>
+                 vim.lsp.buf.rename()
+	Last set from Lua (run Nvim with -V1 for more details)
+n  gcc         * <Lua 164: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment toggle current line
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gc          * <Lua 168: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment toggle linewise
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+n  gx          * <Lua 10: vim/_defaults.lua:0>
+                 Opens filepath or URI under cursor with the system handler (file explorer, web browser, …)
+	Last set from Lua (run Nvim with -V1 for more details)
+
+x  grm         *@<Lua 1433: ~/.local/share/nvim/lazy/nvim-treesitter/lua/nvim-treesitter/incremental_selection.lua:127>
+                 Shrink selection to previous named node
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+x  grn         *@<Lua 201: ~/.local/share/nvim/lazy/nvim-treesitter/lua/nvim-treesitter/incremental_selection.lua:59>
+                 Increment selection to named node
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+x  grc         *@<Lua 990: ~/.local/share/nvim/lazy/nvim-treesitter/lua/nvim-treesitter/incremental_selection.lua:59>
+                 Increment selection to surrounding scope
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+x  g%            <Plug>(MatchitVisualBackward)
+	Last set from /snap/nvim/4077/usr/share/nvim/runtime/pack/dist/opt/matchit/plugin/matchit.vim line 73
+x  gb          * <Lua 12: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment toggle blockwise (visual)
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+x  gra         * <Lua 18: vim/_defaults.lua:0>
+                 vim.lsp.buf.code_action()
+	Last set from Lua (run Nvim with -V1 for more details)
+x  gc          * <Lua 165: ~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/handler/keys.lua:121>
+                 Comment toggle linewise (visual)
+	Last set from ~/.dotfiles/nvim/init.lua (run Nvim with -V1 for more details)
+x  gx          * <Lua 11: vim/_defaults.lua:0>
+                 Opens filepath or URI under cursor with the system handler (file explorer, web browser, …)
+	Last set from Lua (run Nvim with -V1 for more details)
+
+
+No mapping found
+
+o  g%            <Plug>(MatchitOperationBackward)
+	Last set from /snap/nvim/4077/usr/share/nvim/runtime/pack/dist/opt/matchit/plugin/matchit.vim line 75
+o  gc          * <Lua 15: vim/_defaults.lua:0>
+                 Comment textobject
+	Last set from Lua (run Nvim with -V1 for more details)
+
+
+No mapping found

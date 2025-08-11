@@ -3,6 +3,8 @@
 -- NOTE: We highly recommend setting up the Lua Language Server (`:LspInstall lua_ls`)
 --       as this provides autocomplete and documentation while editing
 
+local astro = require "astrocore"
+local is_available = astro.is_available
 ---@type LazySpec
 return {
     "AstroNvim/astrolsp",
@@ -10,8 +12,8 @@ return {
     opts = {
         -- Configuration table of features provided by AstroLSP
         features = {
-            codelens = true,        -- enable/disable codelens refresh on start
-            inlay_hints = true,     -- enable/disable inlay hints on start
+            codelens = true, -- enable/disable codelens refresh on start
+            inlay_hints = true, -- enable/disable inlay hints on start
             semantic_tokens = true, -- enable/disable semantic token highlighting
             signature_help = true,
             code_actions = true,
@@ -20,7 +22,7 @@ return {
         formatting = {
             -- control auto formatting on save
             format_on_save = {
-                enabled = true,      -- enable or disable format on save globally
+                enabled = true, -- enable or disable format on save globally
                 ignore_filetypes = { -- disable format on save for specified filetypes
                     -- "python",
                 },
@@ -50,9 +52,9 @@ return {
                     "--completion-style=detailed",
                     "--function-arg-placeholders=true",
                     "--pch-storage=memory", -- Store PCH in memory for faster access
-                    "--enable-config",      -- Enable .clangd configuration files
-                    "--malloc-trim",        -- Reduce memory usage
-                    "--log=error",          -- Only log errors
+                    "--enable-config", -- Enable .clangd configuration files
+                    "--malloc-trim", -- Reduce memory usage
+                    "--log=error", -- Only log errors
                 },
                 -- Add init_options to improve ROS workflow
                 init_options = {
@@ -81,8 +83,8 @@ return {
                         includeCleaner = false,
                         inlayHints = {
                             parameterNames = true, -- Show parameter names in function calls
-                            deducedTypes = true,   -- Show deduced types for auto
-                            designators = true,    -- Show designators for aggregates
+                            deducedTypes = true, -- Show deduced types for auto
+                            designators = true, -- Show designators for aggregates
                         },
                     },
                 },
@@ -143,5 +145,90 @@ return {
             -- this would disable semanticTokensProvider for all clients
             -- client.server_capabilities.semanticTokensProvider = nil
         end,
+
+        mappings = {
+            -- a `cond` key can provided as the string of a server capability to be required to attach,
+            -- or a function with `client` and `bufnr` parameters from the `on_attach` that returns a boolean
+            n = {
+                -- `gcc` - Toggles the current line using linewise comment
+                -- `gbc` - Toggles the current line using blockwise comment
+                -- `[count]gcc` - Toggles the number of line given as a prefix-count using linewise
+                -- `[count]gbc` - Toggles the number of line given as a prefix-count using blockwise
+                -- `gc[count]{motion}` - (Op-pending) Toggles the region using linewise comment
+                -- `gb[count]{motion}` - (Op-pending) Toggles the region using blockwise comment
+
+                ["gra"] = false,
+                ["gri"] = false,
+                ["grn"] = false,
+                ["grr"] = false,
+                ["grt"] = false,
+                ["<Leader>lG"] = false, -- original Workspace Symbols
+                ["<Leader>ls"] = false, -- original lsp_document_symbols
+                ["<Leader>lR"] = false, -- original references
+                ["gd"] = {
+                    function()
+                        require("telescope.builtin").lsp_definitions {
+                            reuse_win = true,
+                        }
+                    end,
+                    desc = "Goto Definition",
+                },
+                ["gI"] = {
+                    function()
+                        require("telescope.builtin").lsp_implementations {
+                            reuse_win = true,
+                        }
+                    end,
+                    desc = "Goto Implementation",
+                },
+
+                ["gs"] = {
+                    function()
+                        require("telescope.builtin").lsp_document_symbols {}
+                    end,
+                    desc = "Search Document Symbols",
+                },
+
+                ["gy"] = {
+                    function()
+                        require("telescope.builtin").lsp_type_definitions {
+                            reuse_win = true,
+                        }
+                    end,
+                    desc = "Goto Type Definition",
+                },
+                ["gw"] = {
+                    function()
+                        require("telescope.builtin").lsp_workspace_symbols()
+                    end,
+                    desc = "Workspace Symbols",
+                },
+                -- Disable original mappings
+                ["<Leader>lr"] = {
+                    function() require("telescope.builtin").lsp_references() end,
+                    desc = "Search References",
+                },
+                ["<Leader>ln"] = {
+                    function() vim.lsp.buf.rename() end,
+                    desc = "Rename symbol",
+                },
+
+                ["<Leader>uY"] = {
+                    function()
+                        require("astrolsp.toggles").buffer_semantic_tokens()
+                    end,
+                    desc = "Toggle LSP semantic highlight (buffer)",
+                    cond = function(client)
+                        return client.supports_method "textDocument/semanticTokens/full"
+                            and vim.lsp.semantic_tokens ~= nil
+                    end,
+                },
+            },
+            x = {
+                -- `gc` - Toggles the region using linewise comment
+                -- `gb` - Toggles the region using blockwise comment
+                ["gra"] = false,
+            },
+        },
     },
 }

@@ -9,41 +9,18 @@ return {
     -- == Neovim Themes
     { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
     { "folke/tokyonight.nvim" },
-    {
-        "sainnhe/gruvbox-material",
-    },
     { "nvim-treesitter/playground" },
-    {
-        "Mofiqul/vscode.nvim",
-        config = function()
-            require("vscode").setup {
-                style = "dark", -- or "light"
-            }
-        end,
-    },
-    {
-        "navarasu/onedark.nvim",
-        priority = 1000, -- make sure to load this before all the other start plugins
-        config = function()
-            require("onedark").setup {
-                style = "deep",
-            }
-        end,
-    },
-
-    -- == Examples of Adding Plugins ==
-
-    "andweeb/presence.nvim",
     {
         "CopilotC-Nvim/CopilotChat.nvim",
         dependencies = {
-            { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
+            { "github/copilot.vim", enabled = false }, -- or zbirenbaum/copilot.lua
             { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
         },
         build = "make tiktoken", -- Only on MacOS or Linux
         opts = {
             -- See Configuration section for options
         },
+
         -- See Commands section for default commands if you want to lazy load on them
         config = function()
             require("CopilotChat").setup {
@@ -79,10 +56,13 @@ return {
             }
         end,
     },
+    { "tpope/vim-fugitive" },
     {
-        "tpope/vim-fugitive",
+        "hrsh7th/cmp-cmdline",
+        config = function()
+            -- require("cmp_cmdline").
+        end,
     },
-
     {
         -- Pretty popups for incoming calls, outgoing calls, references
         -- "nvimdev/lspsaga.nvim",
@@ -91,6 +71,40 @@ return {
     {
         -- Pretty popups for incoming calls, outgoing calls, references
         "folke/trouble.nvim",
+        opts = {}, -- for default options, refer to the configuration section for custom setup.
+        cmd = "Trouble",
+        keys = {
+            -- {
+            --     "<leader>xX",
+            --     "<cmd>Trouble diagnostics toggle<cr>",
+            --     desc = "Diagnostics (Trouble)",
+            -- },
+            {
+                "<leader>xx",
+                "<cmd>Trouble diagnostics toggle focus=true<cr> filter.buf=0<cr>",
+                desc = "Buffer Diagnostics (Trouble)",
+            },
+            {
+                "<leader>xs",
+                "<cmd>Trouble symbols toggle focus=false<cr>",
+                desc = "Symbols (Trouble)",
+            },
+            {
+                "<leader>xl",
+                "<cmd>Trouble lsp toggle focus=false win.position=right<cr>",
+                desc = "LSP Definitions / references / ... (Trouble)",
+            },
+            {
+                "<leader>xL",
+                "<cmd>Trouble loclist toggle<cr>",
+                desc = "Location List (Trouble)",
+            },
+            {
+                "<leader>xQ",
+                "<cmd>Trouble qflist toggle<cr>",
+                desc = "Quickfix List (Trouble)",
+            },
+        },
     },
     {
         "luckasRanarison/nvim-devdocs",
@@ -123,7 +137,10 @@ return {
     },
     {
         "MeanderingProgrammer/render-markdown.nvim",
-        dependencies = { "nvim-treesitter/nvim-treesitter", "echasnovski/mini.nvim" }, -- if you use the mini.nvim suite
+        dependencies = {
+            "nvim-treesitter/nvim-treesitter",
+            "echasnovski/mini.nvim",
+        }, -- if you use the mini.nvim suite
         -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
         -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
         ---@module 'render-markdown'
@@ -197,13 +214,17 @@ return {
                             cond.not_before_regex("xxx", 3)
                         )
                         -- don't move right when repeat character
-                        :with_move(cond.none())
+                        :with_move(
+                            cond.none()
+                        )
                         -- don't delete if the next character is xx
                         :with_del(
                             cond.not_after_regex "xx"
                         )
                         -- disable adding a newline when you press <cr>
-                        :with_cr(cond.none()),
+                        :with_cr(
+                            cond.none()
+                        ),
                 },
                 -- disable for .vim files, but it work for another filetypes
                 Rule("a", "a", "-vim")
