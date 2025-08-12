@@ -6,13 +6,29 @@ if true then return end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
 
 -- Set up custom filetypes
 vim.filetype.add {
-    extension = {
-        foo = "fooscript",
-    },
-    filename = {
-        ["Foofile"] = "fooscript",
-    },
-    pattern = {
-        ["~/%.config/foo/.*"] = "fooscript",
-    },
+  extension = {
+    foo = "fooscript",
+    urdf = "urdf",
+  },
+  filename = {
+    ["Foofile"] = "fooscript",
+  },
+  pattern = {
+    ["~/%.config/foo/.*"] = "fooscript",
+  },
 }
+
+-- Make .urdf files use XML syntax highlighting
+vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
+  pattern = "*.urdf",
+  callback = function()
+    -- Set the filetype for snippets
+    vim.bo.filetype = "urdf"
+    -- Use XML syntax for highlighting
+    vim.bo.syntax = "xml"
+    -- Optional: enable XML indentation
+    vim.bo.shiftwidth = 2
+    vim.bo.tabstop = 2
+    vim.bo.expandtab = true
+  end,
+})

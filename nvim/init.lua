@@ -11,31 +11,10 @@ vim.opt.rtp:prepend(lazypath)
 if not pcall(require, "lazy") then
   -- stylua: ignore
   vim.api.nvim_echo({ { ("Unable to load lazy from: %s\n"):format(lazypath), "ErrorMsg" }, { "Press any key to exit...", "MoreMsg" } }, true, {})
-    vim.fn.getchar()
-    vim.cmd.quit()
+  vim.fn.getchar()
+  vim.cmd.quit()
 end
 
-vim.filetype.add {
-    extension = {
-        urdf = "urdf", -- Not "xml" - we want a distinct filetype
-    },
-}
-
--- Make .urdf files use XML syntax highlighting
-vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
-    pattern = "*.urdf",
-    callback = function()
-        -- Set the filetype for snippets
-        vim.bo.filetype = "urdf"
-        -- Use XML syntax for highlighting
-        vim.bo.syntax = "xml"
-        -- Optional: enable XML indentation
-        vim.bo.shiftwidth = 2
-        vim.bo.tabstop = 2
-        vim.bo.expandtab = true
-    end,
-})
 require "lazy_setup"
 require "polish"
-require "myPlugins.utils"
 require "myPlugins.snippets"
