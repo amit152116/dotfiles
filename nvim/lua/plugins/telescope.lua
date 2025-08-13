@@ -2,7 +2,7 @@ require("telescope").load_extension "fzf"
 local actions = require "telescope.actions"
 local action_state = require "telescope.actions.state"
 local utils = require "myPlugins.utils"
-local search = require "myPlugins.workspace_search"
+local multigrep = require "myPlugins.multigrep"
 
 local function replace_preview(prompt_bufnr)
   local search_text = action_state.get_current_line()
@@ -28,7 +28,8 @@ local function grep_with_replace(opts)
     return true
   end
 
-  require("telescope.builtin").live_grep(opts)
+  -- require("telescope.builtin").live_grep(opts)
+  multigrep.live_multigrep(opts)
 end
 
 return {
@@ -57,6 +58,7 @@ return {
         n = {
           ["<Leader>fW"] = {
             function()
+              -- require("myPlugins.multigrep").live_multigrep()
               grep_with_replace {
                 additional_args = { "--hidden", "--no-ignore" },
               }
