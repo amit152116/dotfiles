@@ -7,6 +7,199 @@ local conf = require("telescope.config").values
 local previewers = require "telescope.previewers"
 local make_entry = require "telescope.make_entry"
 
+-- Custom grep previewer with green highlight on match
+
+local Path = require "plenary.path"
+local from_entry = require "telescope.from_entry"
+
+local ns_previewer = vim.api.nvim_create_namespace "telescope.previewers"
+
+-- Green background for matches
+vim.api.nvim_set_hl(0, "TelescopePreviewMatch", {
+  fg = "#FFFFFF",
+  bg = "#005500",
+  blend = 25, -- 0 = opaque, 100 = fully transparent
+})
+
+vim.api.nvim_set_hl(0, "TelescopePreviewReplace", {
+  fg = "#000000",
+  bg = "#CC4444", -- dark red  #AA3939
+  blend = 25, -- 0 = opaque, 100 = fully transparent
+})
+
+local function custom_vimgrep(opts)
+  opts = opts or {}
+  local cwd = opts.cwd or vim.loop.cwd()
+  opts.flag = false
+
+  local jump_to_line = function(self, bufnr, entry)
+    -- Cache in previewer state instead of global table
+    self._original_lines = self._original_lines or {}
+
+    -- Highlight entire range of matched lines uniformly
+    local hl_group = "TelescopePreviewLine"
+
+    -- Compute zero-based start/end lines & columns
+    local start_ln = entry.lnum - 1
+    local end_ln = (entry.lnend and entry.lnend > entry.lnum)
+        and (entry.lnend - 1)
+      or start_ln
+    local col, colend = 0, -1
+    local replace_col, replace_colend = 0, -1
+
+    if entry.col then col = entry.col - 1 end
+
+    for ln = start_ln, end_ln do
+      if not self._original_lines[ln] then
+        local line_text =
+          vim.api.nvim_buf_get_lines(bufnr, ln, ln + 1, false)[1]
+        self._original_lines[ln] = line_text
+      end
+
+      -- Update from cached original
+      local original_line = self._original_lines[ln]
+
+      -- Build a pattern that captures the entire match
+      local find_pat
+      if opts.use_regex then
+        find_pat = "()(" .. opts.find_text .. ")"
+      else
+        find_pat = "(" .. vim.pesc(opts.find_text) .. ")"
+      end
+
+      local replace_pat = ""
+      if opts.replace_text == nil or opts.replace_text == "" then
+        -- No explicit replace_text: default to the first capture group
+        replace_pat = "%1"
+      else
+        -- User provided replace_text: translate \1 → %1, \2 → %2, etc.
+        replace_pat = opts.replace_text:gsub("\\(%d+)", "%%%1")
+        hl_group = "TelescopePreviewMatch"
+      end
+
+      -- Perform substitution with callback to expand %1, %2, … against captures
+      local replace_line = original_line:gsub(
+        find_pat,
+        function(start, full, ...)
+          local caps = { ... }
+          -- Expand all %n references in raw_replace
+          local rep = replace_pat:gsub(
+            "%%(%d+)",
+            function(n) return caps[tonumber(n)] or "" end
+          )
+          -- Compute lengths
+          col = start - 1
+          colend = col + #full
+          replace_col = col
+          replace_colend = replace_col + #rep
+
+          return rep
+        end
+      )
+
+      if opts.replace_text and opts.replace_text ~= "" then
+        -- Prefix lines for user-friendly diff-like preview
+        local orig_display = "- " .. original_line
+        local replace_display = "+ " .. replace_line
+        local n = 2
+        col = col + n
+        colend = colend + n
+        replace_col = replace_col + 2
+        replace_colend = replace_colend + 2
+        opts.flag = true
+
+        -- Update buffer: overwrite the original line and then insert the replaced_line below it
+        vim.api.nvim_buf_set_lines(
+          bufnr,
+          ln, -- start at this line
+          ln + 1, -- replace exactly one line
+          false, -- strict indexing
+          { orig_display } -- restore original (unmodified) line
+        )
+        vim.api.nvim_buf_set_lines(
+          bufnr,
+          ln + 1, -- insert after the original
+          ln + 2, -- replace one line
+          false,
+          { replace_display }
+        )
+      else
+        vim.api.nvim_buf_set_lines(
+          bufnr,
+          ln, -- start at this line
+          ln + 1, -- replace exactly one line
+          false, -- strict indexing
+          { original_line } -- restore original (unmodified) line
+        )
+        if opts.flag then
+          vim.api.nvim_buf_set_lines(
+            bufnr,
+            ln + 1, -- insert after the original
+            ln + 2, -- replace one line
+            false,
+            {}
+          )
+        end
+      end
+    end
+
+    for ln = start_ln, end_ln do
+      vim.api.nvim_buf_add_highlight(
+        bufnr,
+        ns_previewer,
+        hl_group,
+        ln,
+        col,
+        colend
+      )
+    end
+
+    if opts.replace_text and opts.replace_text ~= "" then
+      for ln = start_ln, end_ln do
+        vim.api.nvim_buf_add_highlight(
+          bufnr,
+          ns_previewer,
+          "TelescopePreviewReplace",
+          ln + 1,
+          replace_col,
+          replace_colend
+        )
+      end
+    end
+    -- TelescopePreviewLine
+
+    -- Center the first matched line in the window
+    -- Clamp the target line within buffer bounds
+    local middle_ln = math.floor(start_ln + (end_ln - start_ln) / 2)
+    pcall(vim.api.nvim_win_set_cursor, self.state.winid, { middle_ln + 1, 0 })
+    vim.api.nvim_buf_call(bufnr, function() vim.cmd "norm! zz" end)
+  end
+
+  return previewers.new_buffer_previewer {
+    title = "Grep Preview",
+    dyn_title = function(_, entry)
+      return Path:new(from_entry.path(entry, false, false)):normalize(cwd)
+    end,
+
+    get_buffer_by_name = function(_, entry)
+      return from_entry.path(entry, false, false)
+    end,
+
+    define_preview = function(self, entry)
+      local p = from_entry.path(entry, true, false)
+      if not p or p == "" then return end
+
+      conf.buffer_previewer_maker(p, self.state.bufnr, {
+        bufname = self.state.bufname,
+        winid = self.state.winid,
+        preview = opts.preview,
+        callback = function(bufnr) jump_to_line(self, bufnr, entry) end,
+        file_encoding = opts.file_encoding,
+      })
+    end,
+  }
+end
+
 -- RECOMMENDED: Space-separated with intuitive keywords
 -- Structure: FIND_TERM [r:REPLACE] [t:TYPES] [x:EXCLUDE]
 --
@@ -28,13 +221,12 @@ local function parse_filters(filter_str)
   end
   return filter_list
 end
-local query = {}
+
 local function parse_telescope_prompt(prompt, opts)
+  opts.find_text = nil
+  opts.replace_text = nil
+  opts.use_regex = true
   if not prompt or prompt == "" then return nil end
-  query = {
-    find_text = nil,
-    replace = nil,
-  }
   local args = { "rg" }
 
   if opts and opts.additional_args then
@@ -51,12 +243,12 @@ local function parse_telescope_prompt(prompt, opts)
   if #positions > 0 then
     -- Sort by position
     table.sort(positions, function(a, b) return a.pos < b.pos end)
-    query.find_text = vim.trim(prompt:sub(1, positions[1].pos - 1))
+    opts.find_text = vim.trim(prompt:sub(1, positions[1].pos - 1))
   else
-    query.find_text = vim.trim(prompt)
+    opts.find_text = vim.trim(prompt)
   end
 
-  vim.list_extend(args, { "-e", query.find_text })
+  vim.list_extend(args, { "-e", opts.find_text })
 
   -- Process each directive
   for i = 1, #positions do
@@ -68,7 +260,7 @@ local function parse_telescope_prompt(prompt, opts)
     local value = vim.trim(prompt:sub(directive_start, next_pos - 1))
 
     if current.type == "r" then
-      query.replace_text = value
+      opts.replace_text = value
     elseif current.type == "t" then
       -- Add include types
       for _, ext in ipairs(parse_filters(value)) do
@@ -167,7 +359,8 @@ function M.live_multigrep(opts)
   opts = opts or {}
   opts.cwd = opts.cwd or vim.uv.cwd()
   opts.default_text = opts.default_text or ""
-  opts.prompt_title = opts.prompt_title or "Multi Grep (Smart Hybrid)"
+  opts.prompt_title = opts.prompt_title .. "(Multi-grep)"
+    or "Multi Grep (Smart Hybrid)"
 
   local finder = finders.new_async_job {
     command_generator = function(prompt)
@@ -182,7 +375,7 @@ function M.live_multigrep(opts)
       prompt_title = opts.prompt_title,
       finder = finder,
       default_text = opts.default_text,
-      previewer = conf.grep_previewer(opts),
+      previewer = custom_vimgrep(opts),
       sorter = require("telescope.sorters").empty(),
       attach_mappings = function(prompt_bufnr, map)
         local function do_replace()
@@ -205,33 +398,8 @@ function M.live_multigrep(opts)
 
           actions.close(prompt_bufnr)
 
-          -- for _, item in ipairs(collected_results) do
-          --   -- Handle display function vs string
-          --   local display_text = ""
-          --   if type(item.display) == "function" then
-          --     display_text = "display_function"
-          --   elseif type(item.display) == "string" then
-          --     display_text = item.display
-          --   else
-          --     display_text = "no_display"
-          --   end
-          --
-          --   local info = string.format(
-          --     "File: %s | Line: %s | Text: %s | Display: %s",
-          --     item.filename or "no_file",
-          --     item.lnum or "no_line",
-          --     item.text or item.value or "no_content",
-          --     display_text
-          --   )
-          --   vim.notify(info)
-          -- end
-
           -- Execute your replace function
-          execute_replace(
-            query.find_text,
-            query.replace_text,
-            collected_results
-          )
+          execute_replace(opts.find_text, opts.replace_text, collected_results)
         end
         map({ "n", "i" }, "<C-y>", do_replace)
         return true
@@ -239,5 +407,5 @@ function M.live_multigrep(opts)
     })
     :find()
 end
-M.live_multigrep()
+-- M.live_multigrep()
 return M

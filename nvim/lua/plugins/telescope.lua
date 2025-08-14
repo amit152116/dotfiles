@@ -58,7 +58,6 @@ return {
         n = {
           ["<Leader>fW"] = {
             function()
-              -- require("myPlugins.multigrep").live_multigrep()
               grep_with_replace {
                 additional_args = { "--hidden", "--no-ignore" },
               }
@@ -71,6 +70,14 @@ return {
             desc = "Find words",
           },
 
+          ["<Leader>pw"] = {
+            function()
+              grep_with_replace {
+                cwd = vim.fs.joinpath(vim.fn.stdpath "data", "lazy"),
+              }
+            end,
+            desc = "Find words",
+          },
           ["<Leader>pf"] = {
             function()
               require("telescope.builtin").find_files {

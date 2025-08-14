@@ -45,6 +45,11 @@ return {
       },
     })
 
+    -- Vale linter, only if .vale.ini exists
+    null_ls.builtins.diagnostics.vale.with {
+      condition = function(utils) return utils.root_has_file { ".vale.ini" } end,
+    }
+
     -- Create autocommands for documentation-style files
     local doc_filetypes = { "help", "markdown", "md" }
 

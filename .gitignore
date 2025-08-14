@@ -172,3 +172,4 @@ site/
 *.hprof
 
 cron_logs/
+*.txt
