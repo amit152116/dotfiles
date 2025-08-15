@@ -1,18 +1,6 @@
 require("telescope").load_extension "fzf"
-local actions = require "telescope.actions"
-local action_state = require "telescope.actions.state"
 local utils = require "myPlugins.utils"
 local multigrep = require "myPlugins.multigrep"
-
-local function replace_preview(prompt_bufnr)
-  local search_text = action_state.get_current_line()
-  actions.close(prompt_bufnr)
-  vim.schedule(
-    function()
-      require("myPlugins.workspace_search").create_replace_picker(search_text)
-    end
-  )
-end
 
 -- Common live_grep with <C-r> mapping
 local function grep_with_replace(opts)
@@ -20,7 +8,6 @@ local function grep_with_replace(opts)
   local user_attach = opts.attach_mappings -- save any user-supplied attach_mappings
 
   opts.attach_mappings = function(_, map)
-    map({ "i", "n" }, "<C-r>", replace_preview)
     if user_attach then
       -- allow the mapping caller to add more attach logic
       return user_attach(_, map)
@@ -85,14 +72,6 @@ return {
               }
             end,
             desc = "Plugins files",
-          },
-          ["<c-t>"] = {
-            function() require("trouble.sources.telescope").open() end,
-          },
-        },
-        i = {
-          ["<c-t>"] = {
-            function() require("trouble.sources.telescope").open() end,
           },
         },
         x = {

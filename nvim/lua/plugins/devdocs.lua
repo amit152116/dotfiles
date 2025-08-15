@@ -30,6 +30,21 @@ return {
       },
       cmd_ignore = {}, -- ignore cmd rendering for the listed docs
     },
+
+    keys = {
+      {
+        "<Leader>fd",
+        "<cmd>DevdocsOpenCurrent<CR>",
+        mode = "n",
+        desc = "Current DevDocs",
+      },
+      {
+        "<Leader>fD",
+        function() require("nvim-devdocs")._open_docs_with_telescope() end,
+        mode = "n",
+        desc = "FindDevDocs",
+      },
+    },
     config = function(_, opts)
       local devdocs = require "nvim-devdocs"
       local devdocs_list = require "nvim-devdocs.list"
@@ -39,7 +54,7 @@ return {
       -- Function to open docs with Telescope
       local function get_docs_list() return devdocs_list.get_installed_alias() end
 
-      local function open_docs_with_telescope()
+      function devdocs._open_docs_with_telescope()
         local docs = get_docs_list()
         require("telescope.pickers")
           .new({}, {
@@ -65,20 +80,6 @@ return {
           })
           :find()
       end
-
-      -- Optional: map a key to open the picker
-      vim.keymap.set(
-        "n",
-        "<leader>fD",
-        open_docs_with_telescope,
-        { desc = "Find DevDocs" }
-      )
-      vim.keymap.set(
-        "n",
-        "<leader>fd",
-        "<cmd>DevdocsOpenCurrent<CR>",
-        { desc = "Current DevDocs" }
-      )
     end,
   },
 }

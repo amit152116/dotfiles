@@ -33,7 +33,7 @@ return {
         signcolumn = "yes", -- sets vim.opt.signcolumn to yes
         wrap = false, -- sets vim.opt.wrap
         scrolloff = 10,
-        colorcolumn = "80",
+        columns = 80,
         undodir = os.getenv "HOME" .. "/.vim/undodir",
         undofile = true,
         ignorecase = true,
@@ -99,16 +99,6 @@ return {
         -- Remap '0' to go to first non-whitespace character
         -- ["0"] = { "^", noremap = true, silent = true },
         -- ["^"] = { "0", noremap = true, silent = true },
-
-        -- TreeSitter Node navigation
-        ["<Tab>"] = {
-          function() require("myPlugins.custom_treesitter").go_to_next_node() end,
-          desc = "Go to next TreeSitter node",
-        },
-        ["<S-Tab>"] = {
-          function() require("myPlugins.custom_treesitter").go_to_prev_node() end,
-          desc = "Go to previous TreeSitter node",
-        },
 
         ["<Leader>w"] = {
           function()
@@ -185,9 +175,6 @@ return {
           function() ros2_temminal.terminal_picker() end,
           desc = "Toggle ROS Terminal",
         },
-
-        -- Save all files
-        ["<leader>W"] = { "<cmd>w<CR>", desc = "Save All Files" },
       },
       -- All Visual Mode
       x = {

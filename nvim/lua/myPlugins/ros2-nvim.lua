@@ -94,7 +94,7 @@ local function get_ros2_data(command, callback, opts)
       if data then
         for i = 1, #data do
           local line = data[i]
-          if opts.trim then line = utils.trim(line) end
+          if opts.trim then line = vim.trim(line) end
           if line ~= "" then table.insert(results, line) end
         end
       end
@@ -401,7 +401,7 @@ function M.exec_nodes()
     command = "pkg executables",
     filter_callback = function(results)
       for _, line in ipairs(results) do
-        line = utils.trim(line)
+        line = vim.trim(line)
         local pkg, node = line:match "^(%S+)%s+(%S+)$"
         if pkg and node then
           pkgs[pkg] = pkgs[pkg] or {}
@@ -518,7 +518,7 @@ local function launch_file_args(pkg, launch_file)
   -- Parse arguments output
   local arg_name_idx = nil
   for idx, line in ipairs(args_output) do
-    line = utils.trim(line)
+    line = vim.trim(line)
     -- Match argument name line (e.g., "'fcu_url':")
     local arg_name = line:match "^'([^']+)'%s*:$"
     if arg_name then
@@ -573,7 +573,7 @@ function M.exec_launch_file()
                 seletecd_launch.value:match "([^/]+%.launch%.?[a-zA-Z0-9]*)$"
               local arguments =
                 launch_file_args(pkg_selected.value, launch_file)
-              if arguments and not table.empty(arguments) then
+              if arguments and not vim.tbl_isempty(arguments) then
                 args_input_buffer(pkg_selected.value, launch_file, arguments)
               end
               -- terminal.create_terminal("ros2 launch " .. pkg_selected.value .. " " .. launch_file)
@@ -598,7 +598,7 @@ function M.param()
 
       -- Single-pass processing
       for _, line in ipairs(results) do
-        line = utils.trim(line)
+        line = vim.trim(line)
         if line:match "^/" then
           current_node = line:gsub(":$", "")
           nodes[current_node] = {}

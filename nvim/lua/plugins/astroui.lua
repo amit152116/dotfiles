@@ -89,10 +89,10 @@ return {
       -- you can use any unicode character or string here
       -- File = "󰈙 ",
       -- Folder = "󰉋 ",
-      -- LSP = "󰒘 ",
-      -- Git = "󰊢 ",
-      -- Diagnostics = "󰗣 ",
-      -- Search = "󰊄 ",
+      LSP = "󰒘 ",
+      Git = "󰊢 ",
+      Diagnostics = "󰗣 ",
+      Search = "󰊄 ",
     },
     -- Icons can be configured throughout the interface
     icons = {

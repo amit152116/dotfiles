@@ -359,8 +359,11 @@ function M.live_multigrep(opts)
   opts = opts or {}
   opts.cwd = opts.cwd or vim.uv.cwd()
   opts.default_text = opts.default_text or ""
-  opts.prompt_title = opts.prompt_title .. "(Multi-grep)"
-    or "Multi Grep (Smart Hybrid)"
+  if opts.prompt_title then
+    opts.prompt_title = opts.prompt_title .. " (Multi-grep)"
+  else
+    opts.prompt_title = "Multi Grep (Smart Hybrid)"
+  end
 
   local finder = finders.new_async_job {
     command_generator = function(prompt)

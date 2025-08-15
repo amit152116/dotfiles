@@ -10,27 +10,29 @@ return {
   ---@type AstroCoreOpts
   opts = {
     autocmds = {
-      -- {
-      --   event = "FileType",
-      --   pattern = "qf",
-      --   desc = "Close quickfix window safely",
-      --   callback = function()
-      --     vim.defer_fn(function() pcall(vim.cmd, "cclose") end, 50)
-      --   end,
-      -- },
-      -- -- Open Trouble instead of quickfix UI
-      -- ["QuickFixCmdPost"] = {
-      --   callback = function()
-      --     vim.schedule(function()
-      --       local trouble = require "trouble"
-      --       if trouble.is_open() and trouble.get_mode() == "quickfix" then
-      --         trouble.refresh()
-      --       else
-      --         trouble.open "quickfix"
-      --       end
-      --     end)
-      --   end,
-      -- },
+      trouble = {
+        -- {
+        --   event = "FileType",
+        --   pattern = "qf",
+        --   desc = "Close quickfix window safely",
+        --   callback = function() end,
+        -- },
+        -- Open Trouble instead of quickfix UI
+        {
+          event = "QuickFixCmdPost",
+          callback = function()
+            vim.schedule(function()
+              vim.defer_fn(function() pcall(vim.cmd, "cclose") end, 50)
+              local trouble = require "trouble"
+              if trouble.is_open() and trouble.get_mode() == "quickfix" then
+                trouble.refresh()
+              else
+                trouble.open "quickfix"
+              end
+            end)
+          end,
+        },
+      },
     },
   },
 }

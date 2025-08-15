@@ -44,7 +44,7 @@ local function get_fd_command()
   return nil
 end
 
-local function create_telescope_picker(file_name)
+local function create_telescope_picker(file_name, opts)
   local cwd = vim.fn.getcwd()
   local fd_cmd = get_fd_command()
   local finder
@@ -120,7 +120,8 @@ local function create_telescope_picker(file_name)
   pickers.new(opts, opts):find()
 end
 
-function M.save_file()
+function M.save_file(opts)
+  opts = opts or {}
   vim.ui.input({
     prompt = "Enter file name: ",
     default = last_used_dir and vim.fn.fnamemodify(last_used_dir, ":t") or "",
@@ -134,7 +135,7 @@ function M.save_file()
       if buf_ft ~= "" then input = input .. "." .. buf_ft end
     end
 
-    create_telescope_picker(input)
+    create_telescope_picker(input, opts)
   end)
 end
 

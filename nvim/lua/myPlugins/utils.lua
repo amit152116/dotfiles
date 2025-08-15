@@ -30,23 +30,27 @@ function M.run_command(command, stdout, stderr)
   })
 end
 
-function table.empty(self)
-  for _, _ in pairs(self) do
-    return false
-  end
-  return true
-end
-
-function M.trim(str) return str:match "^%s*(.-)%s*$" end
-
 function M.ReloadConfig()
+  -- Save all buffers
+  vim.cmd "wall"
+
+  -- Clear all loaded Lua modules from your config so they get reloaded
   for name, _ in pairs(package.loaded) do
-    if name:match "^user" then -- replace 'user' with your config module prefix
+    if
+      name:match "^user" -- Change "user" to your config's Lua module root
+      or name:match "^plugins"
+      or name:match "^config"
+    then
       package.loaded[name] = nil
     end
   end
-  local config_file = vim.fn.stdpath "config" .. "/init.lua"
-  dofile(config_file)
+
+  -- Source init.lua
+  dofile(vim.fn.stdpath "config" .. "/init.lua")
+
+  -- Reload lazy.nvim setup
+  require("lazy").reload {}
+
   vim.notify("Neovim config reloaded!", vim.log.levels.INFO)
 end
 
@@ -71,5 +75,5 @@ function M.search_selected(opts)
 end
 
 -- Create a command and keymap
-vim.api.nvim_create_user_command("SourceConfig", M.ReloadConfig, {})
+vim.api.nvim_create_user_command("ReloadConfig", M.ReloadConfig, {})
 return M
