@@ -7,10 +7,10 @@ ACTUAL_USER=${SUDO_USER:-$USER}
 ACTUAL_HOME=$(eval echo ~$ACTUAL_USER)
 
 # Check if running with sudo/root privileges
-if [ "$EUID" -ne 0 ]; then
-    echo "This script requires root privileges. Please run with sudo."
-    exit 1
-fi
+# if [ "$EUID" -ne 0 ]; then
+#     echo "This script requires root privileges. Please run with sudo."
+#     exit 1
+# fi
 
 # Define dotfiles directory
 DOTFILES_DIR=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -39,11 +39,11 @@ PACKAGES=(
 )
 # Update package lists and install missing packages
 echo "Updating system packages..."
-apt update && apt upgrade -y
+sudo apt update && apt upgrade -y
 
 echo "Installing required packages..."
-apt install -y "${PACKAGES[@]}"
-apt autoremove -y
+sudo apt install -y "${PACKAGES[@]}"
+sudo apt autoremove -y
 
 # Function to safely create symbolic links
 createSymlink() {
@@ -105,7 +105,7 @@ if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
     sudo apt install snapd -y
     # Install Neovim via Snap
     echo "Installing Neovim..."
-    snap install nvim --classic
+    sudo snap install nvim --classic
 
     echo "Setting up Neovim..."
     mkdir -p "$ACTUAL_HOME/.config/nvim"
@@ -150,7 +150,7 @@ else
     if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
         echo "Installing fzf..."
         git clone --depth 1 https://github.com/junegunn/fzf.git "$ACTUAL_HOME/.fzf"
-        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.fzf"
+        sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.fzf"
         su -c "$ACTUAL_HOME/.fzf/install --all" - "$ACTUAL_USER"
     fi
 fi
@@ -170,7 +170,7 @@ for plugin in "${!plugins[@]}"; do
     if [ ! -d "$ZSH_CUSTOM/plugins/$plugin" ]; then
         echo "Installing $plugin..."
         git clone --depth=1 "${plugins[$plugin]}" "$ZSH_CUSTOM/plugins/$plugin"
-        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ZSH_CUSTOM/plugins/$plugin"
+        sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ZSH_CUSTOM/plugins/$plugin"
     else
         echo "$plugin is already installed, skipping..."
     fi
@@ -180,7 +180,7 @@ done
 echo "Installing Powerlevel10k..."
 if [ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]; then
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
-    chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ZSH_CUSTOM/themes/powerlevel10k"
+    sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ZSH_CUSTOM/themes/powerlevel10k"
 fi
 
 # Setup Powerlevel10k
@@ -232,22 +232,19 @@ if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
             unzip -o "$temp_dir/$font.zip" -d "$FONT_DIR" 2>/dev/null
             rm "$temp_dir/$font.zip"
             rm -rf "$temp_dir"
-            chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$FONT_DIR"
+            sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$FONT_DIR"
         else
             echo "Failed to download $font Nerd Font."
         fi
     done <"$FONTS_FILE"
 fi
 
-# Refresh font cache
-fc-cache -fv
-
 echo "Fonts installed successfully!"
 
 # Change default shell to Zsh
 if [[ "$(getent passwd "$ACTUAL_USER" | cut -d: -f7)" != "$(which zsh)" ]]; then
     echo "Changing default shell to Zsh for $ACTUAL_USER..."
-    if chsh -s "$(which zsh)" "$ACTUAL_USER"; then
+    if sudo chsh -s "$(which zsh)" "$ACTUAL_USER"; then
         echo "Shell changed successfully! Restart your terminal."
     else
         echo "Failed to change shell. Try running: sudo chsh -s $(which zsh) $ACTUAL_USER"
@@ -257,19 +254,24 @@ fi
 # Make auto-commit script executable if it exists
 SCRIPT_PATH="$DOTFILES_DIR/auto-commit.sh"
 
-if [[ -f "$SCRIPT_PATH" ]]; then
-    chmod +x "$SCRIPT_PATH"
+read -r -p "Do you want to setup the auto commit script? (y/n): " choice
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+    if [[ -f "$SCRIPT_PATH" ]]; then
+        sudo chmod +x "$SCRIPT_PATH"
 
-    # Check if the script is already in crontab for the actual user
-    if ! su -c "crontab -l 2>/dev/null" - "$ACTUAL_USER" | grep -qF "$SCRIPT_PATH"; then
-        (
-            su -c "crontab -l 2>/dev/null" - "$ACTUAL_USER"
-            echo "0 22 * * * $SCRIPT_PATH"
-        ) | su -c "crontab -" - "$ACTUAL_USER"
-        echo "Auto-commit script scheduled in cron job successfully!"
-    else
-        echo "Auto-commit script is already scheduled. Skipping..."
+        # Check if the script is already in crontab for the actual user
+        if ! su -c "crontab -l 2>/dev/null" - "$ACTUAL_USER" | grep -qF "$SCRIPT_PATH"; then
+            (
+                su -c "crontab -l 2>/dev/null" - "$ACTUAL_USER"
+                echo "0 22 * * * $SCRIPT_PATH"
+            ) | su -c "crontab -" - "$ACTUAL_USER"
+            echo "Auto-commit script scheduled in cron job successfully!"
+        else
+            echo "Auto-commit script is already scheduled. Skipping..."
+        fi
     fi
 fi
 
+# Refresh font cache
+sudo fc-cache -fv
 echo "Dotfiles setup complete! Restart your terminal for changes to take effect."
