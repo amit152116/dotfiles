@@ -35,7 +35,7 @@ fi
 
 # Define list of required packages
 PACKAGES=(
-    snapd zsh tmux xclip fzf ripgrep fd-find curl git wget unzip python3-pip btop gh python3-pygments bat
+    zsh tmux xclip fzf ripgrep fd-find curl git wget unzip python3-pip btop gh python3-pygments bat
 )
 # Update package lists and install missing packages
 echo "Updating system packages..."
@@ -44,18 +44,6 @@ apt update && apt upgrade -y
 echo "Installing required packages..."
 apt install -y "${PACKAGES[@]}"
 apt autoremove -y
-
-# Install Neovim via Snap
-echo "Installing Neovim..."
-snap install nvim --classic
-
-# Ask user whether to install Docker
-read -r -p "Do you want to install Docker? (y/n): " choice
-if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
-    # Install Docker
-    curl -sSL https://get.docker.com | sh
-    usermod -aG docker "$ACTUAL_USER"
-fi
 
 # Function to safely create symbolic links
 createSymlink() {
@@ -107,13 +95,30 @@ echo "Setting up btop config..."
 mkdir -p "$ACTUAL_HOME/.config/btop"
 createSymlink "$DOTFILES_DIR/btop" "$ACTUAL_HOME/.config/btop"
 
-echo "Setting up Neovim..."
-mkdir -p "$ACTUAL_HOME/.config/nvim"
-createSymlink "$DOTFILES_DIR/nvim" "$ACTUAL_HOME/.config/nvim"
-
 # Setup Tmux
 echo "Setting up Tmux..."
 createSymlink "$DOTFILES_DIR/.tmux.conf" "$ACTUAL_HOME/.tmux.conf"
+
+# Ask user whether to install Neovim
+read -r -p "Do you want to install Neovim? (y/n): " choice
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+    sudo apt install snapd -y
+    # Install Neovim via Snap
+    echo "Installing Neovim..."
+    snap install nvim --classic
+
+    echo "Setting up Neovim..."
+    mkdir -p "$ACTUAL_HOME/.config/nvim"
+    createSymlink "$DOTFILES_DIR/nvim" "$ACTUAL_HOME/.config/nvim"
+fi
+
+# Ask user whether to install Docker
+read -r -p "Do you want to install Docker? (y/n): " choice
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+    # Install Docker
+    curl -sSL https://get.docker.com | sh
+    usermod -aG docker "$ACTUAL_USER"
+fi
 
 # Install TPM (Tmux Plugin Manager)
 if [ ! -d "$ACTUAL_HOME/.tmux/plugins/tpm" ]; then
@@ -125,20 +130,29 @@ fi
 echo "Setting up Zsh..."
 createSymlink "$DOTFILES_DIR/.zshrc" "$ACTUAL_HOME/.zshrc"
 
-# Install Oh My Zsh if not installed
-if [ ! -d "$ACTUAL_HOME/.oh-my-zsh" ]; then
-    echo "Installing Oh My Zsh..."
-    su -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --unattended" - "$ACTUAL_USER"
+# Ask user whether to install OMZ
+read -r -p "Do you want to install OMZ? (y/n): " choice
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+    # Install Oh My Zsh if not installed
+    if [ ! -d "$ACTUAL_HOME/.oh-my-zsh" ]; then
+        echo "Installing Oh My Zsh..."
+        su -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --unattended" - "$ACTUAL_USER"
+    fi
 fi
 
 # Ensure `fzf` is installed (interactive fuzzy finder)
 if command -v fzf &>/dev/null || [ -d "$ACTUAL_HOME/.fzf" ]; then
     echo "fzf is already installed. Skipping installation."
 else
-    echo "Installing fzf..."
-    git clone --depth 1 https://github.com/junegunn/fzf.git "$ACTUAL_HOME/.fzf"
-    chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.fzf"
-    su -c "$ACTUAL_HOME/.fzf/install --all" - "$ACTUAL_USER"
+
+    # Ask user whether to install OMZ
+    read -r -p "Do you want to install interactive fzf? (y/n): " choice
+    if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+        echo "Installing fzf..."
+        git clone --depth 1 https://github.com/junegunn/fzf.git "$ACTUAL_HOME/.fzf"
+        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.fzf"
+        su -c "$ACTUAL_HOME/.fzf/install --all" - "$ACTUAL_USER"
+    fi
 fi
 
 # Install zsh plugins
@@ -173,49 +187,57 @@ fi
 echo "Setting up Powerlevel10k..."
 createSymlink "$DOTFILES_DIR/.p10k.zsh" "$ACTUAL_HOME/.p10k.zsh"
 
-# Install IDEAVim Configuration
-echo "Setting up IDEAVim..."
-createSymlink "$DOTFILES_DIR/.ideavimrc" "$ACTUAL_HOME/.ideavimrc"
+# Ask user whether to install ideavimrc
+read -r -p "Do you want to setup .ideavimrc ? (y/n): " choice
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+    # Install IDEAVim Configuration
+    echo "Setting up IDEAVim..."
+    createSymlink "$DOTFILES_DIR/.ideavimrc" "$ACTUAL_HOME/.ideavimrc"
+fi
 
-# Install fonts
-echo "Installing Nerd Fonts..."
+# Ask user whether to install fonts
+read -r -p "Do you want to install fonts ? (y/n): " choice
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+    # Install fonts
+    echo "Installing Nerd Fonts..."
 
-FONT_DIR="$ACTUAL_HOME/.local/share/fonts"
-mkdir -p "$FONT_DIR"
+    FONT_DIR="$ACTUAL_HOME/.local/share/fonts"
+    mkdir -p "$FONT_DIR"
 
-# Read fonts from the file and download them
-FONTS_FILE="$DOTFILES_DIR/fonts.txt"
-while IFS= read -r font || [[ -n "$font" ]]; do
-    # Ignore empty lines
-    if [[ -z "$font" ]]; then
-        continue
-    fi
+    # Read fonts from the file and download them
+    FONTS_FILE="$DOTFILES_DIR/fonts.txt"
+    while IFS= read -r font || [[ -n "$font" ]]; do
+        # Ignore empty lines
+        if [[ -z "$font" ]]; then
+            continue
+        fi
 
-    # Check if font already exists - properly handle special characters
-    font_pattern="${font// /_}*" # Convert spaces to _ for matching
-    if find "$FONT_DIR" -name "$font_pattern" -o -name "${font}*.ttf" -o -name "${font}*.otf" 2>/dev/null | grep -q .; then
-        echo "$font Nerd Font is already installed. Skipping..."
-        continue
-    fi
+        # Check if font already exists - properly handle special characters
+        font_pattern="${font// /_}*" # Convert spaces to _ for matching
+        if find "$FONT_DIR" -name "$font_pattern" -o -name "${font}*.ttf" -o -name "${font}*.otf" 2>/dev/null | grep -q .; then
+            echo "$font Nerd Font is already installed. Skipping..."
+            continue
+        fi
 
-    # Ask user whether to install this font
-    read -r -p "Do you want to install $font Nerd Font? (y/n): " choice
-    if [[ "$choice" != "y" && "$choice" != "Y" ]]; then
-        echo "Skipping $font Nerd Font."
-        continue
-    fi
+        # Ask user whether to install this font
+        read -r -p "Do you want to install $font Nerd Font? (y/n): " choice
+        if [[ "$choice" != "y" && "$choice" != "Y" ]]; then
+            echo "Skipping $font Nerd Font."
+            continue
+        fi
 
-    echo "Downloading $font Nerd Font..."
-    temp_dir=$(mktemp -d)
-    if wget -q --show-progress -O "$temp_dir/$font.zip" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/$font.zip"; then
-        unzip -o "$temp_dir/$font.zip" -d "$FONT_DIR" 2>/dev/null
-        rm "$temp_dir/$font.zip"
-        rm -rf "$temp_dir"
-        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$FONT_DIR"
-    else
-        echo "Failed to download $font Nerd Font."
-    fi
-done <"$FONTS_FILE"
+        echo "Downloading $font Nerd Font..."
+        temp_dir=$(mktemp -d)
+        if wget -q --show-progress -O "$temp_dir/$font.zip" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/$font.zip"; then
+            unzip -o "$temp_dir/$font.zip" -d "$FONT_DIR" 2>/dev/null
+            rm "$temp_dir/$font.zip"
+            rm -rf "$temp_dir"
+            chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$FONT_DIR"
+        else
+            echo "Failed to download $font Nerd Font."
+        fi
+    done <"$FONTS_FILE"
+fi
 
 # Refresh font cache
 fc-cache -fv
