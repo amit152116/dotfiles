@@ -190,12 +190,6 @@ return {
           end,
           desc = "Workspace Symbols",
         },
-        ["<Leader>lw"] = {
-          function()
-            require("telescope.builtin").lsp_dynamic_workspace_symbols()
-          end,
-          desc = "Workspace Symbols",
-        },
         -- Disable original mappings
         ["<Leader>lr"] = {
           function() require("telescope.builtin").lsp_references() end,
