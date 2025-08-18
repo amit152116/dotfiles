@@ -6,12 +6,6 @@ set -e # Exit immediately if a command exits with a non-zero status
 ACTUAL_USER=${SUDO_USER:-$USER}
 ACTUAL_HOME=$(eval echo ~$ACTUAL_USER)
 
-# Check if running with sudo/root privileges
-# if [ "$EUID" -ne 0 ]; then
-#     echo "This script requires root privileges. Please run with sudo."
-#     exit 1
-# fi
-
 # Define dotfiles directory
 DOTFILES_DIR=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$DOTFILES_DIR" ]; then
@@ -129,6 +123,8 @@ fi
 # Setup Zsh
 echo "Setting up Zsh..."
 createSymlink "$DOTFILES_DIR/.zshrc" "$ACTUAL_HOME/.zshrc"
+# Symlink the entire .zsh folder
+createSymlink "$DOTFILES_DIR/.zsh" "$ACTUAL_HOME/.zsh"
 
 # Ask user whether to install OMZ
 read -r -p "Do you want to install OMZ? (y/n): " choice
