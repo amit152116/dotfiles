@@ -1,5 +1,12 @@
-# Source fzf configuration
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+
+if ! command -v fzf &>/dev/null && [ ! -d "$HOME/.fzf" ]; then
+    echo "Installing fzf..."
+    git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
+    "$HOME/.fzf/install" --all
+fi
+
+
 
 # FZF Default Options
 export FZF_DEFAULT_OPTS='

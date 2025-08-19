@@ -29,7 +29,7 @@ fi
 
 # Define list of required packages
 PACKAGES=(
-	zsh tmux xclip fzf ripgrep fd-find curl git wget unzip python3-pip btop gh python3-pygments bat
+	zsh tmux xclip ripgrep fd-find curl git wget unzip python3-pip btop gh python3-pygments bat
 )
 # Update package lists and install missing packages
 echo "Updating system packages..."
@@ -125,59 +125,6 @@ echo "Setting up Zsh..."
 createSymlink "$DOTFILES_DIR/.zshrc" "$ACTUAL_HOME/.zshrc"
 # Symlink the entire .zsh folder
 createSymlink "$DOTFILES_DIR/.zsh" "$ACTUAL_HOME/.zsh"
-
-# Ask user whether to install OMZ
-read -r -p "Do you want to install OMZ? (y/n): " choice
-if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
-	# Install Oh My Zsh if not installed
-	if [ ! -d "$ACTUAL_HOME/.oh-my-zsh" ]; then
-		echo "Installing Oh My Zsh..."
-		su -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --unattended" - "$ACTUAL_USER"
-	fi
-fi
-
-# Ensure `fzf` is installed (interactive fuzzy finder)
-if command -v fzf &>/dev/null || [ -d "$ACTUAL_HOME/.fzf" ]; then
-	echo "fzf is already installed. Skipping installation."
-else
-
-	# Ask user whether to install OMZ
-	read -r -p "Do you want to install interactive fzf? (y/n): " choice
-	if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
-		echo "Installing fzf..."
-		git clone --depth 1 https://github.com/junegunn/fzf.git "$ACTUAL_HOME/.fzf"
-		sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.fzf"
-		su -c "$ACTUAL_HOME/.fzf/install --all" - "$ACTUAL_USER"
-	fi
-fi
-
-# Install zsh plugins
-echo "Installing Zsh plugins..."
-ZSH_CUSTOM="$ACTUAL_HOME/.oh-my-zsh/custom"
-declare -A plugins=(
-	["zsh-autosuggestions"]="https://github.com/zsh-users/zsh-autosuggestions"
-	["zsh-completions"]="https://github.com/zsh-users/zsh-completions"
-	["zsh-history-substring-search"]="https://github.com/zsh-users/zsh-history-substring-search"
-	["alias-tips"]="https://github.com/djui/alias-tips"
-	["zsh-syntax-highlighting"]="https://github.com/zsh-users/zsh-syntax-highlighting"
-)
-# Loop through plugins and install if missing
-for plugin in "${!plugins[@]}"; do
-	if [ ! -d "$ZSH_CUSTOM/plugins/$plugin" ]; then
-		echo "Installing $plugin..."
-		git clone --depth=1 "${plugins[$plugin]}" "$ZSH_CUSTOM/plugins/$plugin"
-		sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ZSH_CUSTOM/plugins/$plugin"
-	else
-		echo "$plugin is already installed, skipping..."
-	fi
-done
-
-# Install Powerlevel10k theme
-echo "Installing Powerlevel10k..."
-if [ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]; then
-	git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
-	sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ZSH_CUSTOM/themes/powerlevel10k"
-fi
 
 # Setup Powerlevel10k
 echo "Setting up Powerlevel10k..."

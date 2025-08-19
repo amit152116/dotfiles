@@ -60,7 +60,7 @@ tmux_resurrect() {
 }
 
 # Function to link the latest non-empty tmux session file
-link_latest_tmux_session() {
+_link_tmux_session() {
   local dir="$HOME/.tmux/resurrect"
   [[ -d "$dir" ]] || { echo "Resurrect dir not found: $dir"; return 1 }
 
@@ -84,12 +84,12 @@ ta() {
   if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]]; then
     _zsh_tmux_plugin_run attach "$@" || {
       echo "Attach failed, trying to fix resurrect link..."
-      link_latest_tmux_session && _zsh_tmux_plugin_run attach "$@"
+      _link_tmux_session && _zsh_tmux_plugin_run attach "$@"
     }
   else
     _zsh_tmux_plugin_run attach -t "$@" || {
       echo "Attach failed, trying to fix resurrect link..."
-      link_latest_tmux_session && _zsh_tmux_plugin_run attach -t "$@"
+      _link_tmux_session && _zsh_tmux_plugin_run attach -t "$@"
     }
   fi
 }

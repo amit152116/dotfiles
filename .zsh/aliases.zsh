@@ -4,6 +4,9 @@ alias python="python3"
 # alias pip="pip3"
 alias dotfiles='cd "$(dirname "$(realpath ~/.zshrc)")"'
 
+alias cd='z'
+alias home='builtin cd ~'
+
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
   # Debian/Ubuntu aliases

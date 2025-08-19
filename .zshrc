@@ -1,33 +1,32 @@
-#############################################################################
-#                            ZSH CONFIGURATION                              #
-#############################################################################
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
 
-#=============================================================================
-# SECTION: OH-MY-ZSH CONFIGURATION
-#=============================================================================
+# 0️⃣ Environment exports (PATH, etc.)
+source ~/.zsh/exports.zsh
 
-# Oh My Zsh setup
-export ZSH="$HOME/.oh-my-zsh"
-ZSH_TMUX_AUTOSTART_ONCE=true
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# 1️⃣ Load Oh My Zsh first
+source ~/.zsh/omz.zsh
 
-# Hyphen-insensitive completion
-HYPHEN_INSENSITIVE="true"
+# 2️⃣ Load FZF
+source ~/.zsh/fzf.zsh
 
-# Enable command auto-correction
-ENABLE_CORRECTION="true"
+# 3️⃣ Load completion
+source ~/.zsh/completions.zsh
 
-# Display red dots while waiting for completion
-COMPLETION_WAITING_DOTS="true"
+# 4️⃣ Load functions
+source ~/.zsh/functions.zsh
 
-# Auto-update behavior
-zstyle ':omz:update' mode auto
+# 5️⃣ Load aliases
+source ~/.zsh/aliases.zsh
 
-#=============================================================================
-# SECTION: Source Modular 
-#=============================================================================
-# Source all configs from ~/.zsh
-for config in ~/.zsh/*.zsh; do
-  source $config
-done
+# 6️⃣ Load ROS configs
+source ~/.zsh/ros.zsh
+
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

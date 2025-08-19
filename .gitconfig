@@ -41,3 +41,5 @@
     if [ \"$#\" -lt 1 ]; then echo 'Usage: git tag-add <tag>'; exit 1; fi; \
     git tag \"$1\" && git push origin \"$1\"; \
   }; f"
+[diff]
+	tool = nvimdiff

@@ -22,6 +22,20 @@ fi
 # Lazy loading ROS configuration 
 _ros_loaded=false
 
+ros2(){
+ unset -f ros2
+ unset -f ros
+ _load_ros
+ ros2 "$@"
+}
+
+ros(){
+ unset -f ros
+ unset -f ros2
+ _load_ros
+ ros2 "$@"
+}
+
 # Function to load ROS environment
 _load_ros() {
     if [[ "$_ros_loaded" == "true" ]]; then
@@ -121,17 +135,18 @@ _load_ros() {
         journalctl -u ros2 -f --no-tail | fzf --prompt="Filter logs: "
     }
 
-    # Fuzzy search and run a node
-    rosrun() {
-        package=$(ros2 pkg list | fzf --prompt="Select a package: ")
-        [ -z "$package" ] && echo "No package selected. Exiting..." && return 1
+}
 
-        node=$(ros2 pkg executables "$package" | awk '{print $2}' | fzf --prompt="Select a node: ")
-        [ -z "$node" ] && echo "No node selected. Exiting..." && return 1
+# Fuzzy search and run a node
+rosrun() {
+    package=$(ros2 pkg list | fzf --prompt="Select a package: ")
+    [ -z "$package" ] && echo "No package selected. Exiting..." && return 1
 
-        echo "Running: ros2 run $package $node"
-        ros2 run "$package" "$node"
-    }
+    node=$(ros2 pkg executables "$package" | awk '{print $2}' | fzf --prompt="Select a node: ")
+    [ -z "$node" ] && echo "No node selected. Exiting..." && return 1
+
+    echo "Running: ros2 run $package $node"
+    ros2 run "$package" "$node"
 }
 
 # Auto-load when entering ROS workspace
