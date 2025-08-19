@@ -21,10 +21,16 @@ GH_LIST="/etc/apt/sources.list.d/github-cli.list"
 # Install GitHub CLI repository if missing
 if ! grep -q "^deb .*github.com/packages" "$GH_LIST" 2>/dev/null; then
 	echo "Setting up GitHub CLI repository..."
-	mkdir -p -m 755 /etc/apt/keyrings
-	wget -qO- "$GH_REPO/githubcli-archive-keyring.gpg" | tee "$GH_KEYRING" >/dev/null
+	sudo mkdir -p -m 755 /etc/apt/keyrings
+
+	# Download key
+	wget -qO- "$GH_REPO/githubcli-archive-keyring.gpg" | sudo tee "$GH_KEYRING" >/dev/null
+
 	sudo chmod go+r "$GH_KEYRING"
-	echo "deb [arch=$(dpkg --print-architecture) signed-by=$GH_KEYRING] $GH_REPO stable main" | tee "$GH_LIST" >/dev/null
+
+	# Add repo
+	echo "deb [arch=$(dpkg --print-architecture) signed-by=$GH_KEYRING] $GH_REPO stable main" |
+		sudo tee "$GH_LIST" >/dev/null
 fi
 
 # Define list of required packages
@@ -33,7 +39,7 @@ PACKAGES=(
 )
 # Update package lists and install missing packages
 echo "Updating system packages..."
-sudo apt update && apt upgrade -y
+sudo apt update && sudo apt upgrade -y
 
 echo "Installing required packages..."
 sudo apt install -y "${PACKAGES[@]}"
