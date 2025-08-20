@@ -97,7 +97,7 @@ createSymlink "$DOTFILES_DIR/btop" "$ACTUAL_HOME/.config/btop"
 
 # Setup Tmux
 echo "Setting up Tmux..."
-createSymlink "$DOTFILES_DIR/.tmux.conf" "$ACTUAL_HOME/.tmux.conf"
+createSymlink "$DOTFILES_DIR/tmux/.tmux.conf" "$ACTUAL_HOME/.tmux.conf"
 
 # Ask user whether to install Neovim
 read -r -p "Do you want to install Neovim? (y/n): " choice
@@ -181,7 +181,6 @@ if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
 			unzip -o "$temp_dir/$font.zip" -d "$FONT_DIR" 2>/dev/null
 			rm "$temp_dir/$font.zip"
 			rm -rf "$temp_dir"
-			sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$FONT_DIR"
 		else
 			echo "Failed to download $font Nerd Font."
 		fi

@@ -39,7 +39,7 @@ git-home() {
 }
 
 # Function to load tmux resurrect sessions
-tmux_resurrect() {
+tmux-resurrect() {
   local dir="$HOME/.tmux/resurrect"
 
   if [[ ! -d $dir ]]; then
@@ -60,7 +60,7 @@ tmux_resurrect() {
 }
 
 # Function to link the latest non-empty tmux session file
-_link_tmux_session() {
+__link_tmux_session() {
   local dir="$HOME/.tmux/resurrect"
   [[ -d "$dir" ]] || { echo "Resurrect dir not found: $dir"; return 1 }
 
@@ -84,12 +84,12 @@ ta() {
   if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]]; then
     _zsh_tmux_plugin_run attach "$@" || {
       echo "Attach failed, trying to fix resurrect link..."
-      _link_tmux_session && _zsh_tmux_plugin_run attach "$@"
+      __link_tmux_session && _zsh_tmux_plugin_run attach "$@"
     }
   else
     _zsh_tmux_plugin_run attach -t "$@" || {
       echo "Attach failed, trying to fix resurrect link..."
-      _link_tmux_session && _zsh_tmux_plugin_run attach -t "$@"
+      __link_tmux_session && _zsh_tmux_plugin_run attach -t "$@"
     }
   fi
 }

@@ -27,6 +27,10 @@ source ~/.zsh/aliases.zsh
 # 6️⃣ Load ROS configs
 source ~/.zsh/ros.zsh
 
+source ~/.zsh/keybindings.zsh
+
+
+eval "$(zoxide init --cmd cd zsh)"
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

@@ -53,9 +53,9 @@ plugins=(
 	web-search
 	docker 
 	sudo 
+	vi-mode
 	jsontools
 	eza
-	zoxide
 )
 
 

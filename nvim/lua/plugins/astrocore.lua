@@ -71,6 +71,46 @@ return {
         ["<C-Q>"] = false,
         ["<C-R>"] = false,
         ["<Leader>C"] = false,
+        ["<C-f>"] = {
+          "<cmd>silent !tmux neww tmux-sessionizer<CR>",
+          desc = "Open tmux-sessionizer",
+        },
+        ["<M-h>"] = {
+          function()
+            -- Ask the user for a session index
+            local idx = vim.fn.input "Enter session index: "
+
+            -- Validate input is a number
+            if idx == "" or not idx:match "^%d+$" then
+              print "Invalid session index"
+              return
+            end
+
+            -- Run tmux-sessionizer with the entered index
+            vim.cmd("silent !tmux neww tmux-sessionizer -s " .. idx)
+          end,
+          desc = "Tmux sessionizer Program",
+        },
+        ["<Leader>D"] = {
+          desc = "Delete file",
+          function()
+            local file = vim.fn.expand "%:p" -- full path
+            if file == "" then
+              print "No file to delete"
+              return
+            end
+            local choice =
+              vim.fn.confirm("Delete file?\n" .. file, "&Yes\n&No", 2)
+            if choice == 1 then
+              local file = vim.fn.expand "%"
+              vim.cmd "silent! bdelete" -- close buffer first
+              os.remove(file) -- delete file using Lua's os.remove
+              print("Deleted file: " .. file)
+            else
+              print "File deletion cancelled"
+            end
+          end,
+        },
         ["<Leader>bd"] = {
           function()
             require("astroui.status.heirline").buffer_picker(

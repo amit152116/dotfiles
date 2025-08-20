@@ -1,6 +1,6 @@
 
 # Paths
-export PATH="$HOME/.local/bin:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
 
 # Cargo [Rust Manager]
 if [[ -d "$HOME/.cargo/bin" ]]; then

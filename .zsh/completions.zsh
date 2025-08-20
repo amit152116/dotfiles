@@ -1,6 +1,8 @@
+# autoload -U +X bashcompinit && bashcompinit
+# autoload -U +X compinit && compinit
+autoload -Uz bashcompinit; compinit
+autoload -Uz compinit; compinit
 
-autoload -U +X bashcompinit && bashcompinit
-autoload -U +X compinit && compinit
 
 # Alias completion
 for alias_name in $(alias | awk -F= '{print $1}' | awk '{print $2}'); do
@@ -8,7 +10,7 @@ for alias_name in $(alias | awk -F= '{print $1}' | awk '{print $2}'); do
 done
 
 # Autocomplete for tmux_resurrect
-_tmux_resurrect_complete() {
+__tmux_resurrect_complete() {
   local cur dir sessions
   cur=${words[CURRENT]}           # what user typed so far
   dir="$HOME/.tmux/resurrect"
@@ -28,9 +30,8 @@ for s in $sessions; do
     "+%Y-%m-%d %H:%M:%S")
     matches+=$pretty_date done
 
-  # feed to compadd (Zsh handles filtering with $cur automatically)
   compadd -Q -d matches -- $sessions
 }
 
 # Tmux resurrect completion
-compdef _tmux_resurrect_complete tmux_resurrect
+compdef __tmux_resurrect_complete tmux-resurrect

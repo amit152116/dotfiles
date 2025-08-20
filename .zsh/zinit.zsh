@@ -48,4 +48,3 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={a-zA-Z}'
 
 
 
-eval "$(zoxide init zsh --cmd cd)"

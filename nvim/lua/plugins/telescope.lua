@@ -73,6 +73,31 @@ return {
             end,
             desc = "Plugins files",
           },
+          ["<Leader>fp"] = {
+            function()
+              local path =
+                vim.fn.input("Directory path: ", vim.fn.getcwd(), "dir")
+
+              -- Run telescope live_grep in that directory
+              if path and path ~= "" then
+                require("telescope.builtin").live_grep { search_dirs = { path } }
+              end
+            end,
+            desc = "Live Grep in Selected Directory",
+          },
+
+          ["<Leader>cd"] = {
+            function()
+              local path =
+                vim.fn.input("Change directory to: ", vim.fn.getcwd(), "dir")
+
+              if path and path ~= "" then
+                vim.cmd("cd " .. vim.fn.fnameescape(path))
+                print("Changed directory to " .. path)
+              end
+            end,
+            desc = "Change Neovim Working Directory",
+          },
         },
         x = {
           ["<Leader>fw"] = {
