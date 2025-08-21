@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# man-fzf: Browse man pages with fzf + extras
+
+# Get list of all man pages
+list_tldr() {
+	tldr -l 2>/dev/null | sort -u
+	# | awk -F' - ' '{print $1}'
+}
+# Choose a man page via fzf
+selection=$(
+	list_tldr |
+		fzf --ansi \
+			--preview 'page=$(echo {} | awk "{print \$1}"); man -P cat "$page" 2>/dev/null | col -bx | head -n 40' \
+			--bind "enter:accept" \
+			--bind "ctrl-v:toggle-preview" \
+			--bind "ctrl-o:execute(echo {} | awk '{print \$1}' | xargs -r man -P cat | less -R)" \
+			--header $'↵:open  ctrl-v:toggle preview  ctrl-o:open raw\n'
+)
+
+# --preview-window=down,60%,wrap \
+
+# Exit if nothing was selected
+[[ -z "$selection" ]] && exit 0
+
+tldr "$selection"

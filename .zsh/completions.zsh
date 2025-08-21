@@ -11,8 +11,7 @@ done
 
 # Autocomplete for tmux_resurrect
 __tmux_resurrect_complete() {
-  local cur dir sessions
-  cur=${words[CURRENT]}           # what user typed so far
+  local dir sessions
   dir="$HOME/.tmux/resurrect"
   [[ -d $dir ]] || return
 
@@ -31,6 +30,27 @@ for s in $sessions; do
     matches+=$pretty_date done
 
   compadd -Q -d matches -- $sessions
+}
+
+__tmux_resurrect_complete() {
+  local cur dir sessions
+  cur=${words[CURRENT]}           # what user typed so far
+  dir="$HOME/.tmux/resurrect"
+  [[ -d $dir ]] || return
+
+  # collect files -> keep full filenames (just strip path)
+  sessions=(${dir}/tmux_resurrect_*.txt(N))
+  sessions=(${sessions##*/})  # remove path, keep prefix and suffix
+
+  # Filter matching current input
+  local matches=()
+  for s in $sessions; do
+    if [[ $s == $cur* ]]; then
+      matches+=$s
+    fi
+  done
+
+  compadd -Q -d "Resurrect sessions" -- $matches
 }
 
 # Tmux resurrect completion

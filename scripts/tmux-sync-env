@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 ENVS=$(tmux show-env | awk '!/^-/{printf "export %s; ", $0}')
-tmux-broadcast "$ENVS"
+tmux-broadcast -s "$ENVS"

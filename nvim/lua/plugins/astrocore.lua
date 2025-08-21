@@ -75,21 +75,39 @@ return {
           "<cmd>silent !tmux neww tmux-sessionizer<CR>",
           desc = "Open tmux-sessionizer",
         },
-        ["<M-h>"] = {
-          function()
-            -- Ask the user for a session index
-            local idx = vim.fn.input "Enter session index: "
-
-            -- Validate input is a number
-            if idx == "" or not idx:match "^%d+$" then
-              print "Invalid session index"
-              return
-            end
-
-            -- Run tmux-sessionizer with the entered index
-            vim.cmd("silent !tmux neww tmux-sessionizer -s " .. idx)
-          end,
-          desc = "Tmux sessionizer Program",
+        ["<M-b>"] = {
+          "<cmd>silent !tmux neww tmux-sessionizer -s 1<cr>",
+          desc = "Btop",
+        },
+        ["<M-m>"] = {
+          "<cmd>silent !tmux neww tmux-sessionizer -s 0<cr>",
+          desc = "Man Pages Fzf",
+        },
+        ["<C-o>"] = {
+          "<cmd>:silent !xdg-open .<cr>",
+          desc = "Open File Explorer",
+        },
+        ["<M-l>"] = {
+          "<cmd>:silent !tmux switch-client -l<cr>",
+          desc = "Prev Tmux Session",
+        },
+        ["<M-w>"] = {
+          "<cmd>:silent !tmux last-window<cr>",
+          desc = "Prev Tmux Window",
+        },
+        ["<M-o>"] = {
+          function() require("myPlugins.buffer_history").switch_prev_buffer() end,
+          desc = "Switch buffers",
+        },
+        ["<Tab>"] = {
+          ":bnext<CR>",
+          desc = "Next buffers",
+          silent = true,
+        },
+        ["<S-Tab>"] = {
+          ":bprev<CR>",
+          desc = "Prev buffer",
+          silent = true,
         },
         ["<Leader>D"] = {
           desc = "Delete file",

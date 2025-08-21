@@ -5,6 +5,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+eval "$(zoxide init zsh)"
 
 # 0️⃣ Environment exports (PATH, etc.)
 source ~/.zsh/exports.zsh
@@ -21,16 +22,15 @@ source ~/.zsh/completions.zsh
 # 4️⃣ Load functions
 source ~/.zsh/functions.zsh
 
-# 5️⃣ Load aliases
-source ~/.zsh/aliases.zsh
-
-# 6️⃣ Load ROS configs
+# 5️⃣  Load ROS configs
 source ~/.zsh/ros.zsh
+
+# 6️⃣  Load aliases
+source ~/.zsh/aliases.zsh
 
 source ~/.zsh/keybindings.zsh
 
 
-eval "$(zoxide init --cmd cd zsh)"
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

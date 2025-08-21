@@ -11,6 +11,39 @@ disable_sanitizers() {
   unset ASAN_OPTIONS TSAN_OPTIONS MSAN_OPTIONS
   echo "C++ sanitizers disabled ❌"
 }
+# Backup the original cd
+builtin_cd() {
+    command cd "$@"
+}
+
+# Override cd
+z() {
+    if [ $# -eq 0 ]; then
+        # No arguments → use fzf/zoxide
+        local dir=$(
+            zoxide query --list --score  |
+            fzf --height 40% --layout reverse --info inline \
+                --nth 2.. --tac --query "$*" \
+                --bind 'enter:become:echo {2..}'
+        )
+        if [ -n "$dir" ]; then
+          builtin_cd "$dir"
+            # command cd "$dir"
+        fi
+    else
+        # Arguments given → normal cd
+        # command cd "$@"
+          builtin_cd "$dir"
+    fi
+}
+# z() {
+#   local dir=$(
+#     zoxide query --list --score |
+#     fzf --height 40% --layout reverse --info inline \
+#         --nth 2.. --tac  --query "$*" \
+#         --bind 'enter:become:echo {2..}'
+#   ) && cd "$dir"
+# }
 
 # Configuration reload
 reload() {
@@ -47,7 +80,7 @@ tmux-resurrect() {
     return 1
   fi
 
-  local session_file="$dir/$1"
+  local session_file="$dir/tmux_resurrect_$1.txt"
 
   if [[ ! -f $session_file ]]; then
     echo "Resurrect file not found: $session_file"

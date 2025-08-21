@@ -1,28 +1,42 @@
 #!/usr/bin/env bash
 
+# tmux-broadcast.sh
+#
+# Broadcast a command to all panes running a shell.
+#
 # Usage:
-#   tmux-broadcast [-s] <command>
-#   -s : run silently
+#   ./tmux-broadcast.sh [-s] "your command here"
+#
+# Options:
+#   -s    Silent mode (just send command + Enter, no extra keys)
+#   -h    Show this help message
 
 SILENT=0
+help_info() {
 
-# Parse options
-while getopts "s" opt; do
-	case "$opt" in
-	s) SILENT=1 ;;
-	*)
-		echo "Usage: tmux-broadcast [-s] <command>"
-		echo " -s : run silently"
-		exit 1
+	echo "Usage: tmux-broadcast [-s, --slient] <command>"
+	echo
+	echo "Options:"
+	echo "  -s    Silent mode"
+	echo "  -h    Show this help message"
+}
+# Parse flags
+while [[ "$1" == -* ]]; do
+	case "$1" in
+	-s | --slient) SILENT=1 ;;
+	-h | --help)
+		help_info
+		exit 0
 		;;
+	*) echo "Unknown option: $1" && exit 1 ;;
 	esac
+	shift
 done
-shift $((OPTIND - 1))
 
 CMD="$*"
 
 if [ -z "$CMD" ]; then
-	echo "Usage: tmux-broadcast -s <command>"
+	help_info
 	exit 1
 fi
 
@@ -34,7 +48,11 @@ tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index} #{pane_curr
 
 		case "$cmd" in
 		bash | zsh | fish | sh) # only send to shells
-			tmux send-keys -t "$pane" "$CMD" C-b C-m
+			if [[ $SILENT -eq 1 ]]; then
+				tmux send-keys -t "$pane" "$CMD" C-b C-m
+			else
+				tmux send-keys -t "$pane" "$CMD" C-m
+			fi
 			;;
 		esac
 	done

@@ -71,5 +71,9 @@ COMPLETION_WAITING_DOTS="true"
 # Auto-update behavior
 zstyle ':omz:update' mode auto
 
+# Optional: Enable history completion in fzf-tab
+zstyle ':completion:*:fzf-tab:*' history 'yes'
+zstyle ':completion:*:fzf-tab:*' select-prompt 'History> '
+
 # Source Oh My Zsh
 source $ZSH/oh-my-zsh.sh

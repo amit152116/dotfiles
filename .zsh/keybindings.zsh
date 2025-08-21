@@ -5,6 +5,9 @@ bindkey '^P' history-beginning-search-backward
 bindkey '^N' history-beginning-search-forward
 
 
+bindkey '^R' fzf-history-widget
+# bindkey -r '^S'  # remove Ctrl+S binding
+
 setopt NO_NOTIFY      # don’t print “done” when background jobs finish
 setopt NO_BG_NICE     # don’t lower priority of background jobs
 unsetopt MONITOR      # disable job control entirely (optional, also hides [&] messages)
@@ -12,7 +15,7 @@ unsetopt MONITOR      # disable job control entirely (optional, also hides [&] m
 # Open file explorer in current directory
 __open_file_explorer() {
  {
-    nohup xdg-open . >/dev/null 2>&1 &
+    xdg-open . 
   } always {
     zle reset-prompt
   }
@@ -21,11 +24,30 @@ zle -N __open_file_explorer
 bindkey '^o' __open_file_explorer
 
 
-export_display(){
-    export DISPLAY=${DISPLAY}
-}
+# Man FZF
+if [[ ! -n "$TMUX" ]]; then
+  __man_fzf(){
+    man-pages
+  }
 
-zle -N export_display
+  zle -N __man_fzf
+  bindkey '\em' __man_fzf
+fi
+
+
+
+# Define a ZLE widget
+__silent_run() {
+  # Run the current buffer silently
+  eval "$BUFFER" &>/dev/null
+  # Remove the command from the line
+  zle kill-whole-line
+  # Redraw prompt
+  zle reset-prompt
+}
+zle -N __silent_run
+bindkey '^B' __silent_run
+
 
 # TMUX BINDINGS
 if [[ -n "$TMUX" ]]; then
@@ -47,47 +69,40 @@ if [[ -n "$TMUX" ]]; then
   zle -N __tmux_sessionizer_s2
   zle -N __tmux_sessionizer_s3
 
-  bindkey '\eh' __tmux_sessionizer_s0
-  bindkey '\et' __tmux_sessionizer_s1
+  bindkey '\em' __tmux_sessionizer_s0
+  bindkey '\eb' __tmux_sessionizer_s1
   bindkey '\en' __tmux_sessionizer_s2
   bindkey '\es' __tmux_sessionizer_s3
 
-  # tmux-kill variants
-  __tmux_kill_session() {
-    tmux kill-session -t "$TMUX_PANE"; tmux switch-client -p
-  }
   __tmux_kill_pane() {
-    tmux kill-pane -t "$TMUX_PANE"; tmux switch-client -p
-  }
-  __tmux_kill_window() {
-    tmux kill-window -t "$TMUX_PANE"; tmux switch-client -p
+    current_pane=$TMUX_PANE
+    panes=$(tmux list-panes -s | wc -l)
+
+    # Only switch if there is more than 1 pane
+    if [ "$panes" -eq 1 ]; then
+      tmux switch-client -p
+    fi
+
+    # Kill the current pane
+    tmux kill-pane -t "$current_pane"
   }
 
-  zle -N __tmux_kill_session
   zle -N __tmux_kill_pane
-  zle -N __tmux_kill_window
 
-  bindkey '\es' __tmux_kill_session
-  bindkey '\ep' __tmux_kill_pane
-  bindkey '\ew' __tmux_kill_window
+  bindkey '\eq' __tmux_kill_pane
+
+  __tmux_switch_session(){
+    tmux switch-client -l
+  }
+  zle -N __tmux_switch_session
+  bindkey '\el' __tmux_switch_session
+
+  __tmux_switch_window(){
+    tmux last-window
+  }
+  zle -N __tmux_switch_window
+  bindkey '\ew' __tmux_switch_window
 
 
 fi
 
-# Define a ZLE widget
-__silent_run() {
-  # Run the current buffer silently
-  eval "$BUFFER" &>/dev/null
-
-  # Remove the command from the line
-  zle kill-whole-line
-
-  # Redraw prompt
-  zle reset-prompt
-}
-
-# 2. Tell zsh this function is a ZLE widget
-zle -N __silent_run
-
-# 3. Bind the widget to Ctrl-B (you can choose any key)
-bindkey '^B' __silent_run

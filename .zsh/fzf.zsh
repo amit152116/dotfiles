@@ -7,25 +7,39 @@ if ! command -v fzf &>/dev/null && [ ! -d "$HOME/.fzf" ]; then
 fi
 
 
-
-# FZF Default Options
-export FZF_DEFAULT_OPTS='
---height=50%                        
---layout=reverse                    
---border                            
---style=minimal
---preview="batcat --style=numbers --color=always --line-range :100 {}"  
---preview-window="right:50%"        
---info=inline                       
+export FZF_DEFAULT_COMMAND="fdfind --type f --strip-cwd-prefix --hidden --follow --exclude .git"
+export FZF_COMMON_OPTS='
 --prompt="❯ "                
 --pointer="➤ "                       
 --marker="✓ "                        
---color=bg+:#282c34,bg:#21252b,spinner:#61afef,hl:#e06c75
---color=fg:#abb2bf,header:#56b6c2,info:#c678dd,pointer:#e5c07b
 --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
 '
 
-export FZF_DEFAULT_COMMAND="fdfind --type f --strip-cwd-prefix --hidden --follow --exclude .git"
+# FZF Default Options
+export FZF_DEFAULT_OPTS="
+$FZF_COMMON_OPTS
+--height=50%                        
+--layout=reverse                    
+--border=rounded                           
+--style=minimal
+--preview='
+  if [ -f {} ]; then
+    batcat --style=numbers --color=always --line-range :100 {}
+  elif [ -d {} ]; then
+    tree -C -L 2 {}
+  fi
+'
+--preview-window='right:50%'        
+--info=inline                       
+--color=fg:#e8e6e9,bg:#111111,fg+:#e8e6e9,bg+:#484867,spinner:#6d6dc9,header:#6ab6bd,info:#c6a642,pointer:#e1a51c,marker:#48a842,hl:#d61d52,hl+:#e15877,prompt:#5556d3
+"
+
 export FZF_TMUX_OPTS=" -p70%,70% "
 
+
+export FZF_CTRL_R_OPTS="
+    --no-preview
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
 
