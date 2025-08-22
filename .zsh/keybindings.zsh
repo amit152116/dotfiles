@@ -35,6 +35,17 @@ if [[ ! -n "$TMUX" ]]; then
 fi
 
 
+if [[ ! -n "$TMUX" ]]; then
+
+# Define ZLE widget to exit Zsh
+__exit_zsh() {
+  exit
+}
+
+zle -N __exit_zsh
+bindkey '\eq' __exit_zsh   # Alt+Q
+  
+fi
 
 # Define a ZLE widget
 __silent_run() {
@@ -102,7 +113,6 @@ if [[ -n "$TMUX" ]]; then
   }
   zle -N __tmux_switch_window
   bindkey '\ew' __tmux_switch_window
-
 
 fi
 

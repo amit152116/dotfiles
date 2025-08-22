@@ -22,6 +22,20 @@ $FZF_COMMON_OPTS
 --layout=reverse                    
 --border=rounded                           
 --style=minimal
+--no-preview
+--info=inline                       
+--color=fg:#e8e6e9,bg:#111111,fg+:#e8e6e9,bg+:#484867,spinner:#6d6dc9,header:#6ab6bd,info:#c6a642,pointer:#e1a51c,marker:#48a842,hl:#d61d52,hl+:#e15877,prompt:#5556d3
+"
+
+# export FZF_TMUX_OPTS=" -p70%,70% "
+
+export FZF_ALT_C_OPTS="
+--preview='tree -C -L 2 {}'
+--preview-window='right:50%'        
+"
+
+export FZF_CTRL_T_OPTS="
+--preview-window='right:50%'        
 --preview='
   if [ -f {} ]; then
     batcat --style=numbers --color=always --line-range :100 {}
@@ -29,16 +43,9 @@ $FZF_COMMON_OPTS
     tree -C -L 2 {}
   fi
 '
---preview-window='right:50%'        
---info=inline                       
---color=fg:#e8e6e9,bg:#111111,fg+:#e8e6e9,bg+:#484867,spinner:#6d6dc9,header:#6ab6bd,info:#c6a642,pointer:#e1a51c,marker:#48a842,hl:#d61d52,hl+:#e15877,prompt:#5556d3
 "
 
-export FZF_TMUX_OPTS=" -p70%,70% "
-
-
 export FZF_CTRL_R_OPTS="
-    --no-preview
   --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
   --color header:italic
   --header 'Press CTRL-Y to copy command into clipboard'"
