@@ -5,7 +5,6 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-eval "$(zoxide init zsh)"
 
 # 0️⃣ Environment exports (PATH, etc.)
 source ~/.zsh/exports.zsh
@@ -18,6 +17,8 @@ source ~/.zsh/fzf.zsh
 
 # 3️⃣ Load completion
 source ~/.zsh/completions.zsh
+
+eval "$(zoxide init zsh)"
 
 # 4️⃣ Load functions
 source ~/.zsh/functions.zsh
