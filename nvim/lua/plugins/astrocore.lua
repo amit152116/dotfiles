@@ -71,9 +71,27 @@ return {
         ["<C-Q>"] = false,
         ["<C-R>"] = false,
         ["<Leader>C"] = false,
+        ["<Leader>q"] = {
+          function()
+            -- Check if more than one window is open
+            if vim.fn.winnr "$" > 1 then
+              vim.cmd "confirm q"
+            else
+              vim.notify(
+                "This is the last window, not quitting!",
+                vim.log.levels.WARN
+              )
+            end
+          end,
+          desc = "Quit Window",
+        },
         ["<C-f>"] = {
           "<cmd>silent !tmux neww tmux-sessionizer<CR>",
           desc = "Open tmux-sessionizer",
+        },
+        ["<M-q>"] = {
+          "<Cmd>confirm qall<CR>",
+          desc = "Exit AstroNvim",
         },
         ["<M-b>"] = {
           "<cmd>silent !tmux neww tmux-sessionizer -s 1<cr>",
@@ -96,7 +114,8 @@ return {
           desc = "Prev Tmux Window",
         },
         ["<M-o>"] = {
-          function() require("myPlugins.buffer_history").switch_prev_buffer() end,
+          "<cmd>b#<cr>",
+          -- function() require("myPlugins.buffer_history").switch_prev_buffer() end,
           desc = "Switch buffers",
         },
         ["<Tab>"] = {

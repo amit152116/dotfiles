@@ -27,7 +27,6 @@ $FZF_COMMON_OPTS
 --color=fg:#e8e6e9,bg:#111111,fg+:#e8e6e9,bg+:#484867,spinner:#6d6dc9,header:#6ab6bd,info:#c6a642,pointer:#e1a51c,marker:#48a842,hl:#d61d52,hl+:#e15877,prompt:#5556d3
 "
 
-# export FZF_TMUX_OPTS=" -p70%,70% "
 
 export FZF_ALT_C_OPTS="
 --preview='tree -C -L 2 {}'
