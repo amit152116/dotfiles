@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# Swap with an existing window index if it exists,
+# otherwise move the current window there.
+#
+
+target="$1"
+if [ -z "$target" ]; then
+	echo "Usage: $0 <window-index>"
+	exit 1
+fi
+
+if tmux list-windows -F "#I" | grep -qx "$target"; then
+	tmux swap-window -t "$target"
+else
+	tmux move-window -t "$target"
+fi

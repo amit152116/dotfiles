@@ -5,6 +5,7 @@ alias python="python3"
 alias dotfiles='cd "$(dirname "$(realpath ~/.zshrc)")"'
 
 alias home='builtin cd ~'
+alias ls="eza -g --icons"
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
   # Debian/Ubuntu aliases
