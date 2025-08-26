@@ -10,6 +10,7 @@ mkdir -p "$SCRIPT_DIR/logs"
 # --- Default options ---
 DRY_RUN=0
 GREP_FILTER=""
+ONLY_ENV=0
 INIT=0
 
 # --- Help ---
@@ -18,8 +19,9 @@ show_help() {
 Usage: $(basename "$0") [OPTIONS] [GREP_FILTER]
 
 Options:
-  --dry      Perform a dry run (no scripts will actually execute)
-  --init     Run minimal initial setup (packages, env, auto-commit)
+  --dry      		 Perform a dry run (no scripts will actually execute)
+  --init     		 Run minimal initial setup (packages, env, auto-commit)
+  --env      		 Only link environment files from dotfiles
   -h, --help     Show this help message
 
 GREP_FILTER:
@@ -37,6 +39,7 @@ while [[ $# -gt 0 ]]; do
 	case "$1" in
 	--dry) DRY_RUN=1 ;;
 	--init) INIT=1 ;;
+	--env) ONLY_ENV=1 ;;
 	--help | -h) show_help ;;
 	*) GREP_FILTER="$1" ;;
 	esac
@@ -160,12 +163,13 @@ run_env() {
 	declare -A FILES_TO_LINK=(
 		["$DOTFILES_DIR/btop"]="$HOME/.config/btop"
 		["$DOTFILES_DIR/env/.gitconfig"]="$HOME/.gitconfig"
+		["$DOTFILES_DIR/env/.gitignore"]="$HOME/.gitignore"
 		["$DOTFILES_DIR/env/.ideavimrc"]="$HOME/.ideavimrc"
-		# ["$DOTFILES_DIR/nvim"]="$HOME/.config/nvim"
-		# ["$DOTFILES_DIR/env/.tmux.conf"]="$HOME/.tmux.conf"
-		# ["$DOTFILES_DIR/env/.zshrc"]="$HOME/.zshrc"
-		# ["$DOTFILES_DIR/env/.zsh"]="$HOME/.zsh"
-		# ["$DOTFILES_DIR/env/.p10k.zsh"]="$HOME/.p10k.zsh"
+		["$DOTFILES_DIR/nvim"]="$HOME/.config/nvim"
+		["$DOTFILES_DIR/env/.tmux.conf"]="$HOME/.tmux.conf"
+		["$DOTFILES_DIR/env/.zshrc"]="$HOME/.zshrc"
+		["$DOTFILES_DIR/env/.zsh"]="$HOME/.zsh"
+		["$DOTFILES_DIR/env/.p10k.zsh"]="$HOME/.p10k.zsh"
 	)
 
 	for src in "${!FILES_TO_LINK[@]}"; do
@@ -190,6 +194,8 @@ if [[ $INIT -eq 1 ]]; then
 	run_installs
 	run_env
 	setup_auto_commit
+elif [[ $ONLY_ENV -eq 1 ]]; then
+	run_env
 else
 	run_installs
 fi

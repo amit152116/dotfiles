@@ -5,7 +5,7 @@
 	helper = !/usr/bin/gh auth git-credential
 [core]
 	autocrlf = input
-	excludesfile = /home/amit_152116/.dotfiles/.gitignore
+	excludesfile = ~/.gitignore
 [init]
 	defaultBranch = master
 [http]

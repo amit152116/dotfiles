@@ -8,6 +8,7 @@ alias home='builtin cd ~'
 alias ls="eza -g --icons"
 alias la="eza -gla --icons"
 alias ll="eza -gl --icons"
+
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
   # Debian/Ubuntu aliases

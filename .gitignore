@@ -1,175 +1,106 @@
-################################################################################
-#                             Global Git Ignore File                           #
-################################################################################
+# Created by https://www.toptal.com/developers/gitignore/api/lua,vim,zsh
+# Edit at https://www.toptal.com/developers/gitignore?templates=lua,vim,zsh
 
-########################################
-#           Build Artifacts            #
-########################################
-# General build directories
-build/
-bin/
-dist/
-out/
-target/
-*.out
+### Lua ###
+# Compiled Lua sources
+luac.out
 
-# Compiled binaries
-*.exe
-*.dll
-*.so
-*.dylib
-*.app
-*.jar
-*.war
-*.nar
-*.ear
+# luarocks build files
+*.src.rock
+*.zip
+*.tar.gz
 
 # Object files
 *.o
-*.obj
+*.os
 *.ko
+*.obj
 *.elf
-*.pch
+
+# Precompiled Headers
 *.gch
+*.pch
 
-# Debug files
-*.pdb
-*.idb
-*.su
-*.dSYM/
-*.ilk
-*.map
-
-# Package files
-*.zip
-*.tar.gz
-*.rar
-*.egg
-*.whl
-
-########################################
-#          Development Tools           #
-########################################
-# Android Studio
-.gradle/
-.externalNativeBuild
-.cxx/
-captures/
-*.apk
-*.iml
-local.properties
-output.json
-
-# JetBrains IDEs (IntelliJ, PyCharm, CLion, etc)
-.idea/
-*.iml
-*.iws
-cmake-build-*/
-.idea_modules/
-
-# VS Code
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.history/
-*.vsix
-
-########################################
-#         Language-Specific            #
-########################################
-### Python ###
-__pycache__/
-*.py[cod]
-*.py,cover
-.python-version
-env/
-venv/
-.venv/
-.env
-.pytype/
-.mypy_cache/
-.pytest_cache/
-
-### Go ###
-go.work
-go.work.sum
-vendor/
-*.test
-
-### C/C++ ###
-*.a
+# Libraries
 *.lib
-*.dylib
-*.lo
+*.a
 *.la
-*.mod
-*.cmd
-.deps/
-_deps/
+*.lo
+*.def
+*.exp
 
-### Kotlin ###
-*.class
-.mtj.tmp/
-hs_err_pid*
-.kotlin/
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
 
-### Lua ###
-luac.out
-*.src.rock
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
 
-########################################
-#         Environment/Config           #
-########################################
-# Local configuration
-local.properties
-google-services.json
-*.jks
-*.keystore
 
-# Environment files
-.env
-.env.*
-!.env.example
+### Vim ###
+# Swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
 
-# Log files
-*.log
+# Session
+Session.vim
+Sessionx.vim
 
-########################################
-#         Dependency Management        #
-########################################
-# Python
-pip-log.txt
-pip-delete-this-directory.txt
-*.egg-info/
-.installed.cfg
-
-# Node.js
-node_modules/
-
-# Rust
-/target/
-
-########################################
-#         Documentation                #
-########################################
-docs/_build/
-site/
-
-########################################
-#         Temporary Files              #
-########################################
-*.swp
-*.swo
+# Temporary
+.netrwhist
 *~
-*.tmp
-*.bak
-*.rej
-*.orig
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
 
-# Crash reports
-*.hprof
+### Zsh ###
+# Zsh compiled script + zrecompile backup
+*.zwc
+*.zwc.old
 
-cron_logs/
-*.txt
+# Zsh completion-optimization dumpfile
+*zcompdump*
+
+# Zsh history
+.zsh_history
+
+# Zsh sessions
+.zsh_sessions
+
+# Zsh zcalc history
+.zcalc_history
+
+# A popular plugin manager's files
+._zinit
+.zinit_lstupd
+
+# zdharma/zshelldoc tool's files
+zsdoc/data
+
+# robbyrussell/oh-my-zsh/plugins/per-directory-history plugin's files
+# (when set-up to store the history in the local directory)
+.directory_history
+
+# MichaelAquilina/zsh-autoswitch-virtualenv plugin's files
+# (for Zsh plugins using Python)
+.venv
+
+# Zunit tests' output
+/tests/_output/*
+!/tests/_output/.gitkeep
+
+# End of https://www.toptal.com/developers/gitignore/api/lua,vim,zsh
+cron_logs
+logs/

@@ -32,6 +32,8 @@ plugins=(
 	fzf
 	fzf-tab
 	tmux
+	git
+	gitignore
 	aliases
 	common-aliases
 	web-search

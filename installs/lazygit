@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[INFO] Installing lazygit..."
+
+LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" |
+	grep -Po '"tag_name": *"v\K[^"]*')
+
+if [[ -z "$LAZYGIT_VERSION" ]]; then
+	echo "[ERROR] Failed to determine latest lazygit version." >&2
+	exit 1
+fi
+
+echo "[INFO] Latest version: v${LAZYGIT_VERSION}"
+
+# Use temporary directory for download/extraction
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+cd "$TMPDIR"
+
+ARCHIVE="lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+URL="https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/${ARCHIVE}"
+
+echo "[INFO] Downloading $URL"
+if ! curl -fsSL -o lazygit.tar.gz "$URL"; then
+	echo "[ERROR] Failed to download lazygit archive." >&2
+	exit 1
+fi
+
+echo "[INFO] Extracting..."
+tar xf lazygit.tar.gz lazygit
+
+echo "[INFO] Installing to /usr/local/bin (sudo required)"
+sudo install lazygit -D -t /usr/local/bin/
+
+echo "[SUCCESS] LazyGit v${LAZYGIT_VERSION} installed."

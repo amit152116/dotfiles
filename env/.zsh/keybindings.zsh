@@ -91,7 +91,9 @@ if [[ -n "$TMUX" ]]; then
 
     # Only switch if there is more than 1 pane
     if [ "$panes" -eq 1 ]; then
-      tmux switch-client -p
+      if ! tmux switch-client -l 2>/dev/null; then
+        tmux switch-client -p
+      fi
     fi
 
     # Kill the current pane
