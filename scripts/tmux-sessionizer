@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 CONFIG_FILE_NAME="tmux-sessionizer.conf"
-CONFIG_DIR=$HOME/.dotfiles/tmux
+CONFIG_DIR=$HOME/.dotfiles/scripts
 CONFIG_FILE="$CONFIG_DIR/$CONFIG_FILE_NAME"
 PANE_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-sessionizer"
 PANE_CACHE_FILE="$PANE_CACHE_DIR/panes.cache"
 
 if [[ -f "$CONFIG_FILE" ]]; then
 	source "$CONFIG_FILE"
-fi
-
-if [[ -f "$CONFIG_FILE_NAME" ]]; then
-	source "$CONFIG_FILE_NAME"
 fi
 
 if [[ $TS_LOG != "true" ]]; then

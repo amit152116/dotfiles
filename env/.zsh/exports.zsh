@@ -2,6 +2,8 @@
 # Paths
 export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$HOME/.fzf/bin:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
 
+export DOTFILES_DIR=$HOME/.dotfiles
+
 # Cargo [Rust Manager]
 if [[ -d "$HOME/.cargo/bin" ]]; then
   export PATH="$HOME/.cargo/bin:$PATH"

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Variables ---
+INSTALL_URL="https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh"
+
+log() {
+	echo "[INFO] $1"
+}
+
+warn() {
+	echo "[WARN] $1"
+}
+
+# --- Check if zoxide is already installed ---
+if command -v zoxide >/dev/null 2>&1; then
+	log "zoxide is already installed at $(command -v zoxide). Skipping installation."
+	exit 0
+fi
+
+# --- Ensure required dependencies ---
+if ! command -v curl >/dev/null 2>&1; then
+	log "curl not found. Installing..."
+	sudo apt update -y
+	sudo apt install -y curl
+fi
+
+# --- Install zoxide ---
+log "Installing zoxide..."
+curl -sSfL "$INSTALL_URL" | sh
+
+# --- Verify installation ---
+if command -v zoxide >/dev/null 2>&1; then
+	log "✅ zoxide installed successfully at $(command -v zoxide)."
+else
+	warn "❌ zoxide installation failed."
+	exit 1
+fi

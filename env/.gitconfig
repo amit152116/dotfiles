@@ -11,8 +11,6 @@
 [http]
 	postBuffer = 524288000
 [alias]
-	st = status
-	br = branch
  	scommit = "!f() { git commit -m \"$1\" -m \"Affected Files:\n$(git diff --cached --name-status | sed 's/^/- /')\"; }; f"
 	; scommit= '!f() { git commit -e -m "$1" -m "$2" -m "Affected Files: $(git diff --cached --name-status | sed "s/^/- /")"; }; f'
 	logs = log --oneline --decorate --date=iso

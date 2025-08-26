@@ -4,22 +4,6 @@
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_CUSTOM="$ZSH/custom"
 
-if [ ! -d "$ZSH" ]; then
-    echo "Installing Oh My Zsh..."
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-fi
-
-# Install Powerlevel10k theme if missing
-if [ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]; then
-    echo "Installing Powerlevel10k..."
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
-fi
-
-# Install zoxide if missing
-if ! command -v zoxide &>/dev/null; then
-    echo "Installing zoxide..."
-    curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
-fi
 
 typeset -A custom_plugins
 custom_plugins=(
@@ -70,10 +54,6 @@ COMPLETION_WAITING_DOTS="true"
 
 # Auto-update behavior
 zstyle ':omz:update' mode auto
-
-# Optional: Enable history completion in fzf-tab
-zstyle ':completion:*:fzf-tab:*' history 'yes'
-zstyle ':completion:*:fzf-tab:*' select-prompt 'History> '
 
 # Source Oh My Zsh
 source $ZSH/oh-my-zsh.sh

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Install Docker using official convenience script
+curl -fsSL https://get.docker.com | sudo sh
+
+# Ensure docker group exists
+if ! getent group docker >/dev/null 2>&1; then
+	echo "[INFO] Creating docker group..."
+	sudo groupadd docker
+fi
+
+# Add current user to docker group
+if id -nG "$USER" | grep -qw docker; then
+	echo "[INFO] $USER is already in docker group."
+else
+	echo "[INFO] Adding $USER to docker group..."
+	sudo usermod -aG docker "$USER"
+fi
+
+echo "[INFO] Docker installation complete."
+echo "👉 Log out and log back in (or run: newgrp docker) to use Docker without sudo."

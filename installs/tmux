@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail # safer bash
+
+# --- Variables ---
+DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../" >/dev/null 2>&1 && pwd)}"
+TPM_DIR="$HOME/.tmux/plugins/tpm"
+
+# --- Ensure dependencies ---
+echo "[INFO] Updating package lists..."
+sudo apt update -y
+
+echo "[INFO] Installing tmux and git..."
+sudo apt install -y tmux git
+
+# Load the createSymlink function
+source "$DOTFILES_DIR/symlink.sh"
+
+# --- Setup Tmux config ---
+echo "[INFO] Setting up Tmux configuration..."
+createSymlink "$DOTFILES_DIR/env/.tmux.conf" "$HOME/.tmux.conf"
+
+# --- Install TPM (Tmux Plugin Manager) ---
+if [ ! -d "$TPM_DIR" ]; then
+	echo "[INFO] Installing TPM (Tmux Plugin Manager)..."
+	git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
+else
+	echo "[INFO] TPM already installed at $TPM_DIR"
+fi
+
+echo "[INFO] Tmux setup complete!"
