@@ -19,6 +19,9 @@ if [[ -z "$ROS_DISTRO" ]]; then
   return 0
 fi
 
+# Source ROS2 environment
+source /opt/ros/${ROS_DISTRO}/setup.zsh 
+
 # Lazy loading ROS configuration 
 _ros_loaded=false
 
@@ -50,8 +53,6 @@ _load_ros() {
     export ROS_LOCALHOST_ONLY=0
     # export CYCLONEDDS_URI=file:///home/amit_152116/Documents/aim_ros2/cyclonedds.xml
     
-    # Source ROS2 environment
-    source /opt/ros/${ROS_DISTRO}/setup.zsh 
     
     # Check for ROS2 installations in common locations
     local ROS_WS="$HOME/Documents/aim_ros2/"
