@@ -20,7 +20,6 @@ return {
       help = false,
     },
   },
-  config = function() require("copilot").setup {} end,
   specs = {
     {
       "AstroNvim/astrocore",

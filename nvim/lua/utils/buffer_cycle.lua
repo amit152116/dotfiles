@@ -1,84 +1,66 @@
 local M = {}
+local debounce_timer = nil
+local Snacks = require "snacks"
 
---- Gets a list of active buffers, sorted by the most recently used.
----@param options? { include_unlisted?: boolean } An optional table to include unlisted buffers.
----@return table[] A list of buffer information tables.
-function M.GetBuffersByLastUsed(options)
-  options = options or {}
+Snacks.picker.buffers {
+  focus = "list",
+  layout = { preset = "select" },
+  on_show = function(picker)
+    -- This correctly triggers the sequence on open
+    picker:action "list_down"
+    picker:action "auto_confirm"
+  end,
+  actions = {
+    -- Add this to your auto_confirm function
+    auto_confirm = function(picker, _)
+      vim.notify("[SNACKS] auto_confirm called", vim.log.levels.INFO)
 
-  local items = {}
-  local current_buf = vim.api.nvim_get_current_buf()
+      -- Cancel existing timer if running
+      if debounce_timer then
+        vim.notify("[SNACKS] > Stopping existing timer", vim.log.levels.INFO)
+        debounce_timer:stop()
+        debounce_timer:close()
+        debounce_timer = nil
+      end
 
-  -- Loop through all buffer numbers in the current Neovim instance.
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    -- We will apply some filters to get only "useful" buffers.
-    -- 1. Buffer must be loaded in memory.
-    -- 2. Buffer must not be a "nofile" type (e.g., terminals, help pages).
-    -- 3. Buffer must be "listed" (appears in the buffer list), unless overridden by options.
-    local is_valid = vim.api.nvim_buf_is_loaded(buf)
-      and vim.bo[buf].buftype ~= "nofile"
-      and (options.include_unlisted or vim.bo[buf].buflisted)
-
-    if is_valid then
-      local name = vim.api.nvim_buf_get_name(buf)
-      if name == "" then name = "[No Name]" end
-
-      -- getbufinfo is the key to finding the 'lastused' timestamp.
-      local info = vim.fn.getbufinfo(buf)[1]
-
-      -- Add a table with the buffer's info to our list.
-      table.insert(items, {
-        bufnr = buf,
-        name = name,
-        lastused = info.lastused, -- The timestamp we will sort by.
-        is_current = (buf == current_buf),
-        is_modified = info.changed == 1,
-      })
+      -- Create new timer
+      vim.notify("[SNACKS] > Starting new 500ms timer...", vim.log.levels.INFO)
+      debounce_timer = vim.uv.new_timer()
+      debounce_timer:start(500, 0, function()
+        -- This message should ONLY appear after the delay
+        vim.notify("[SNACKS] >> TIMER FIRED!", vim.log.levels.WARN)
+        vim.schedule(function()
+          if picker and not picker.closed and debounce_timer then
+            picker:close()
+            local item = picker:current { fallback = true }
+            if not item then return end
+            vim.cmd("buffer " .. item.buf)
+            vim.notify(
+              "[SNACKS] >>> Switched to buffer " .. item.buf,
+              vim.log.levels.INFO
+            )
+          end
+        end)
+      end)
+    end,
+  },
+  on_close = function()
+    -- Cleanup timer when picker closes
+    if debounce_timer then
+      debounce_timer:stop()
+      debounce_timer:close()
+      debounce_timer = nil
     end
-  end
-
-  -- Sort the collected items table.
-  -- The function `a.info.lastused > b.info.lastused` sorts the list in
-  -- descending order, so the highest timestamp (most recent) comes first.
-  table.sort(items, function(a, b) return a.lastused > b.lastused end)
-
-  return items
-end
-
---- Cycles to the next or previous buffer based on most recently used order.
----@param direction "next" | "prev" The direction to cycle in.
-function M.CycleBuffer(direction)
-  -- 1. Get the fresh, perfectly sorted list of buffers, every single time.
-  local sorted_buffers = M.GetBuffersByLastUsed()
-
-  -- If we have 1 or fewer buffers, there's nowhere to cycle to.
-  if #sorted_buffers <= 1 then return end
-
-  -- 2. Find the index of our current buffer in that list.
-  local current_bufnr = vim.api.nvim_get_current_buf()
-  local current_index = -1
-  for i, buf_info in ipairs(sorted_buffers) do
-    if buf_info.bufnr == current_bufnr then
-      current_index = i
-      break
-    end
-  end
-
-  -- If the current buffer isn't in our list for some reason, do nothing.
-  if current_index == -1 then return end
-
-  -- 3. Calculate the index of the next buffer, with wrapping.
-  local next_index
-  if direction == "prev" then
-    -- The modulo operator wraps around from the end back to the beginning.
-    next_index = (current_index % #sorted_buffers) + 1
-  else -- direction == "prev"
-    -- This calculation correctly wraps around from the beginning to the end.
-    next_index = (current_index - 2 + #sorted_buffers) % #sorted_buffers + 1
-  end
-
-  -- 4. Get the buffer number for our target buffer and switch to it.
-  local next_bufnr = sorted_buffers[next_index].bufnr
-  vim.cmd.buffer(next_bufnr)
-end
+  end,
+  win = {
+    list = {
+      keys = {
+        ["<C-n>"] = { { "list_down", "auto_confirm" }, mode = { "n", "i" } },
+        ["<C-p>"] = { { "list_up", "auto_confirm" }, mode = { "n", "i" } },
+        ["j"] = { "list_down", "auto_confirm" },
+        ["k"] = { "list_up", "auto_confirm" },
+      },
+    },
+  },
+}
 return M

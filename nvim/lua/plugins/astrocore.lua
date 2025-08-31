@@ -8,6 +8,10 @@ return {
   "AstroNvim/astrocore",
   ---@type AstroCoreOpts
   opts = {
+    -- Configure project root detection, check status with `:AstroRootInfo`
+    rooter = {
+      autochdir = false,
+    },
     -- Configure core features of AstroNvim
     features = {
       large_buf = { size = 1.5 * 1024 * 1024, lines = 10000 }, -- set global limits for large files for disabling features like treesitter
@@ -192,7 +196,7 @@ return {
               vim.api.nvim_feedkeys(":", "n", false) -- just open empty cmdline if no history
             end
           end,
-          desc = "Edit last command",
+          desc = "Last command",
         },
 
         -- mappings seen under group name "Buffer"
@@ -208,6 +212,11 @@ return {
         ["<Leader>uD"] = {
           function() require("astrocore.toggles").diagnostics() end,
           desc = "Toggle diagnostics",
+        },
+        ["<Leader>pr"] = {
+          "<cmd>AstroRoot<CR>",
+          desc = "AstroRoot",
+          silent = true,
         },
       },
       -- All Visual Mode

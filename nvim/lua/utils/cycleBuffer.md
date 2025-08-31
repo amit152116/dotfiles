@@ -10,18 +10,18 @@ The goal is to avoid calling `GetBuffersByLastUsed()` on *every single* press of
 
 When does the order change?
 
-1.  When you enter any buffer (it becomes the new \#1 most recently used).
-2.  When you open a new buffer.
-3.  When you close a buffer.
+1. When you enter any buffer (it becomes the new \#1 most recently used).
+2. When you open a new buffer.
+3. When you close a buffer.
 
 We can use Neovim's event system to detect this. The most important event is `BufEnter`, which fires every time you switch to a different buffer. We'll set up an autocommand that listens for this event and simply "invalidates" our stored list.
 
 **The Optimized Workflow:**
 
-1.  Press `<Tab>`. The cycle function checks if it has a stored (cached) list.
-2.  If it doesn't, it calls `GetBuffersByLastUsed()` once, stores the result, and cycles to the next buffer.
-3.  Because you entered a new buffer, the `BufEnter` event fires automatically, which clears our stored list.
-4.  You press `<Tab>` again. The function sees the stored list is gone, so it re-calculates a fresh one and cycles to the next buffer.
+1. Press `<Tab>`. The cycle function checks if it has a stored (cached) list.
+2. If it doesn't, it calls `GetBuffersByLastUsed()` once, stores the result, and cycles to the next buffer.
+3. Because you entered a new buffer, the `BufEnter` event fires automatically, which clears our stored list.
+4. You press `<Tab>` again. The function sees the stored list is gone, so it re-calculates a fresh one and cycles to the next buffer.
 
 This is more performant because if you were to, for example, run a command *without* switching buffers and then press `<Tab>`, the list would not be re-calculated.
 

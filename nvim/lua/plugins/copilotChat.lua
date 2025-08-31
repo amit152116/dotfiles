@@ -53,7 +53,10 @@ return {
           mappings = {
             n = {
               ["<Leader>a"] = { name = "AI" },
-              ["<Leader>aa"] = { "<cmd>CopilotChat<CR>", desc = "Toggle chat" },
+              ["<Leader>aa"] = {
+                "<cmd>CopilotChatToggle<CR>",
+                desc = "Toggle chat",
+              },
               ["<Leader>aw"] = {
                 "<cmd>CopilotChatSave<CR>",
                 desc = "Write history",
@@ -104,7 +107,10 @@ return {
             },
             x = {
               ["<Leader>a"] = { name = "AI" },
-              ["<Leader>aa"] = { "<cmd>CopilotChat<CR>", desc = "Toggle chat" },
+              ["<Leader>aa"] = {
+                "<cmd>CopilotChatToggle<CR>",
+                desc = "Toggle chat",
+              },
               ["<Leader>ap"] = {
                 "<cmd>CopilotChatPrompts<CR>",
                 desc = "Show prompts",

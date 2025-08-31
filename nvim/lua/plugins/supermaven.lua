@@ -1,14 +1,14 @@
 ---@type LazySpec
 return {
   "supermaven-inc/supermaven-nvim",
-  enabled = false,
-  event = "InsertEnter",
   cmd = { "SupermavenUseFree", "SupermavenUsePro" },
+  event = "InsertEnter",
   opts = {
-    disable_inline_completion = false,
-    keymaps = {
-      accept_suggestion = "<Tab>",
-    },
+    disable_inline_completion = true,
+    disable_keymaps = true,
+    -- keymaps = {
+    --   accept_suggestion = "<Tab>",
+    -- },
   },
   specs = {
     {

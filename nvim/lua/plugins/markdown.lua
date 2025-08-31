@@ -9,7 +9,10 @@ return {
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
     config = function()
-      require("render-markdown").setup { latex = { enabled = false }, completions = { blink = { enabled = true } } }
+      require("render-markdown").setup {
+        latex = { enabled = false },
+        completions = { blink = { enabled = true } },
+      }
     end,
   },
 }
