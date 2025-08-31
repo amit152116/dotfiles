@@ -1,43 +1,46 @@
--- Customize Mason plugins
+-- Customize Mason
 
 ---@type LazySpec
 return {
-  -- use mason-lspconfig to configure LSP installations
+  -- use mason-tool-installer for automatically installing Mason packages
   {
-    "williamboman/mason-lspconfig.nvim",
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    -- overrides `require("mason-tool-installer").setup(...)`
     opts = {
+      -- Make sure to use the names found in `:Mason`
       ensure_installed = {
-        "lua_ls", -- Lua Language Server
-        "clangd", -- C++ Language Server
-      },
-    },
-  },
+        -- install language servers
+        "lua-language-server",
 
-  -- use mason-null-ls to configure Formatters/Linter installation for null-ls sources
-  {
-    "jay-babu/mason-null-ls.nvim",
-    -- overrides `require("mason-null-ls").setup(...)`
-    opts = {
-      -- Add more formatters/linters as needed
-      ensure_installed = {
-        "stylua", -- Lua formatter
-        "black", -- Python formatter
-        "autoflake", -- Python formatter/utility
-        "flake8", -- Python linter
-        "cpplint", -- C++ linter
-      },
-    },
-  },
+        -- install formatters
+        "stylua",
 
-  {
-    "jay-babu/mason-nvim-dap.nvim",
-    -- overrides `require("mason-nvim-dap").setup(...)`
-    opts = {
-      -- Add more debuggers as needed
-      ensure_installed = {
-        "codelldb", -- Debugging support for C++
-        "cpptools",
+        -- install debuggers
         "debugpy",
+
+        -- install any other package
+        "tree-sitter-cli",
+
+        -- C++ Language Server
+        "clangd",
+
+        "cpptools",
+        "cpplint", -- C++ linter
+        "gopls",
+        "ruff",
+        "bash-language-server",
+        "delve",
+        "selene",
+        "markdownlint",
+        "flake8",
+        "shellcheck",
+        "hadolint",
+        "clang-format",
+        "cmakelang",
+        "goimports",
+        "isort",
+        "shfmt",
+        "beautysh",
       },
     },
   },

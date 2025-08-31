@@ -1,6 +1,6 @@
 -- AstroLSP allows you to customize the features in AstroNvim's LSP configuration engine
 -- Configuration documentation can be found with `:h astrolsp`
-
+local Snacks = require "snacks"
 ---@type LazySpec
 return {
   "AstroNvim/astrolsp",
@@ -19,6 +19,9 @@ return {
       -- control auto formatting on save
       format_on_save = {
         enabled = true, -- enable or disable format on save globally
+        allow_filetypes = { -- enable format on save for specified filetypes only
+          -- "go",
+        },
         ignore_filetypes = { -- disable format on save for specified filetypes
           -- "python",
         },
@@ -34,7 +37,7 @@ return {
     },
     -- enable servers that you already have installed without mason
     servers = {
-      -- "pyright",
+      -- "pyright"
     },
     -- customize language server configuration options passed to `lspconfig`
     ---@diagnostic disable: missing-fields
@@ -52,43 +55,10 @@ return {
           "--malloc-trim", -- Reduce memory usage
           "--log=error", -- Only log errors
         },
-        -- Add init_options to improve ROS workflow
-        init_options = {
-          clangd = {
-            fallbackFlags = {
-              "-std=c++17",
-              "-Wall",
-              -- "-I/usr/include/c++/11",
-              -- "-I/usr/include/x86_64-linux-gnu/c++/11",
-              -- "-I/usr/include/c++/11/bits",
-              -- "-I/usr/include/c++/11/ext",
-              -- "-I/usr/include/c++/11/tr1",
-              -- "-I/usr/include/c++/11/debug",
-              -- "-I/usr/include/c++/11/parallel",
-              "-I/usr/include/eigen3",
-              "-I/usr/include",
-              "-I/usr/include/c++/11",
-              "-I/usr/include/x86_64-linux-gnu/c++/11",
-              "-Wextra",
-              "-isystem/usr/include",
-              "-isystem/usr/local/include",
-            },
-            compilationDatabasePath = ".",
-            compilationDatabaseDirectorySearch = "Recursive",
-            semanticHighlighting = true,
-            includeCleaner = false,
-            inlayHints = {
-              parameterNames = true, -- Show parameter names in function calls
-              deducedTypes = true, -- Show deduced types for auto
-              designators = true, -- Show designators for aggregates
-            },
-          },
-        },
-        -- Add more LSP-specific settings
-        capabilities = {
-          offsetEncoding = { "utf-16" }, -- Important for large files
-        },
+        init_options = {},
+        capabilities = { offsetEncoding = "utf-16" },
       },
+
       gopls = {
         settings = {
           usePlaceholders = false,
@@ -135,36 +105,22 @@ return {
         },
       },
     },
-    -- A custom `on_attach` function to be run after the default `on_attach` function
-    -- takes two parameters `client` and `bufnr`  (`:h lspconfig-setup`)
-    on_attach = function(client, bufnr)
-      -- this would disable semanticTokensProvider for all clients
-      -- client.server_capabilities.semanticTokensProvider = nil
-    end,
-
+    -- mappings to be set up on attaching of a language server
     mappings = {
-      -- a `cond` key can provided as the string of a server capability to be required to attach,
-      -- or a function with `client` and `bufnr` parameters from the `on_attach` that returns a boolean
       n = {
-        -- `gcc` - Toggles the current line using linewise comment
-        -- `gbc` - Toggles the current line using blockwise comment
-        -- `[count]gcc` - Toggles the number of line given as a prefix-count using linewise
-        -- `[count]gbc` - Toggles the number of line given as a prefix-count using blockwise
-        -- `gc[count]{motion}` - (Op-pending) Toggles the region using linewise comment
-        -- `gb[count]{motion}` - (Op-pending) Toggles the region using blockwise comment
+        -- a `cond` key can provided as the string of a server capability to be required to attach, or a function with `client` and `bufnr` parameters from the `on_attach` that returns a boolean
 
-        ["gra"] = false,
-        ["gri"] = false,
-        ["grn"] = false,
-        ["grr"] = false,
-        ["grt"] = false,
         ["gK"] = false,
         ["<Leader>lG"] = false, -- original Workspace Symbols
-        ["<Leader>lS"] = false, -- original lsp_document_symbols
         ["<Leader>lR"] = false, -- original references
+        -- ["<Leader>lD"] = false,
+        -- ["<Leader>ld"] = {
+        --   function() Snacks.picker.diagnostics() end,
+        --   desc = "Search Diagnostics",
+        -- },
         ["gd"] = {
           function()
-            require("telescope.builtin").lsp_definitions {
+            Snacks.picker.lsp_definitions {
               reuse_win = true,
             }
           end,
@@ -172,56 +128,42 @@ return {
         },
 
         ["gs"] = {
-          function() require("telescope.builtin").lsp_document_symbols {} end,
+          function() Snacks.picker.lsp_symbols() end,
           desc = "Search Document Symbols",
         },
 
         ["gy"] = {
           function()
-            require("telescope.builtin").lsp_type_definitions {
+            Snacks.picker.lsp_type_definitions {
               reuse_win = true,
             }
           end,
           desc = "Goto Type Definition",
         },
         ["gw"] = {
-          function()
-            require("telescope.builtin").lsp_dynamic_workspace_symbols()
-          end,
+          function() Snacks.picker.lsp_workspace_symbols() end,
+          desc = "Workspace Symbols",
+        },
+        ["<Leader>lw"] = {
+          function() Snacks.picker.lsp_workspace_symbols() end,
           desc = "Workspace Symbols",
         },
         -- Disable original mappings
         ["<Leader>lr"] = {
-          function() require("telescope.builtin").lsp_references() end,
+          function() Snacks.picker.lsp_references() end,
           desc = "Search References",
-        },
-        ["<Leader>ld"] = {
-          function() require("telescope.builtin").diagnostics() end,
-          desc = "Search Diagnostics",
-        },
-        ["<Leader>lD"] = false,
-        ["<Leader>ls"] = {
-          "<cmd>Trouble symbols toggle<cr>",
-          desc = "Symbols Outline",
         },
         ["<Leader>ln"] = {
           function() vim.lsp.buf.rename() end,
           desc = "Rename symbol",
         },
-        ["<Leader>xx"] = {
-          "<cmd>Trouble<cr>",
-          desc = "Toggle Trouble",
-        },
-        ["<Leader>xt"] = {
-          "<cmd>Trouble lsp toggle focus=false win.position=right<cr>",
-          desc = "LSP Definitions / references / ... (Trouble)",
-        },
-      },
-      x = {
-        -- `gc` - Toggles the region using linewise comment
-        -- `gb` - Toggles the region using blockwise comment
-        ["gra"] = false,
       },
     },
+    -- A custom `on_attach` function to be run after the default `on_attach` function
+    -- takes two parameters `client` and `bufnr`  (`:h lspconfig-setup`)
+    on_attach = function(client, bufnr)
+      -- this would disable semanticTokensProvider for all clients
+      -- client.server_capabilities.semanticTokensProvider = nil
+    end,
   },
 }

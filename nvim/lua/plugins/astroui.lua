@@ -1,56 +1,8 @@
 -- AstroUI provides the basis for configuring the AstroNvim User Interface
 -- Configuration documentation can be found with `:h astroui`
+-- NOTE: We highly recommend setting up the Lua Language Server (`:LspInstall lua_ls`)
+--       as this provides autocomplete and documentation while editing
 
-local astrodark_themes = {
-  navy_blue = {
-    background = "#1a1b26",
-    foreground = "#c0caf5",
-    comment = "#565f89",
-    accent = "#7aa2f7",
-  },
-  deep_space = {
-    background = "#11121d",
-    foreground = "#c0caf5",
-    comment = "#565f89",
-    accent = "#7aa2f7",
-  },
-  moonfly = {
-    background = "#1a1a2a",
-    foreground = "#b2b2b2",
-    comment = "#626880",
-    accent = "#80a0ff",
-  },
-  gruvbox_dark = {
-    background = "#1d2021",
-    foreground = "#ebdbb2",
-    comment = "#928374",
-    accent = "#fabd2f",
-  },
-  oxocarbon = {
-    background = "#16161d",
-    foreground = "#c0caf5",
-    comment = "#565f89",
-    accent = "#7aa2f7",
-  },
-  palenight = {
-    background = "#0f111a",
-    foreground = "#c0caf5",
-    comment = "#565f89",
-    accent = "#7aa2f7",
-  },
-  dark_navy = {
-    background = "#131a24",
-    foreground = "#c0caf5",
-    comment = "#565f89",
-    accent = "#7aa2f7",
-  },
-  deep_charcoal = {
-    background = "#14191f",
-    foreground = "#c0caf5",
-    comment = "#565f89",
-    accent = "#7aa2f7",
-  },
-}
 ---@type LazySpec
 return {
   "AstroNvim/astroui",

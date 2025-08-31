@@ -3,11 +3,11 @@
 ---@type LazySpec
 return {
   "nvim-treesitter/nvim-treesitter",
-  ---@type
   opts = {
     ensure_installed = {
       "lua",
       "vim",
+      "latex",
       -- add more arguments for adding more treesitter parsers
     },
   },

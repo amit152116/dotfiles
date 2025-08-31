@@ -2,6 +2,7 @@
 return {
   {
     "luckasRanarison/nvim-devdocs",
+    enabled = false,
 
     dependencies = {
       "nvim-lua/plenary.nvim",
@@ -51,11 +52,8 @@ return {
       -- Setup with given options
       devdocs.setup(opts)
 
-      -- Function to open docs with Telescope
-      local function get_docs_list() return devdocs_list.get_installed_alias() end
-
       function devdocs._open_docs_with_telescope()
-        local docs = get_docs_list()
+        local docs = devdocs_list.get_installed_alias()
         require("telescope.pickers")
           .new({}, {
             prompt_title = "Select Documentation",
@@ -65,8 +63,7 @@ return {
             sorter = require("telescope.config").values.generic_sorter {},
             attach_mappings = function(_, map)
               map("i", "<CR>", function(prompt_bufnr)
-                local selection =
-                  require("telescope.actions.state").get_selected_entry()
+                local selection = require("telescope.actions.state").get_selected_entry()
                 require("telescope.actions").close(prompt_bufnr)
                 vim.cmd("DevdocsOpen " .. selection.value)
               end)

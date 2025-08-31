@@ -1,68 +1,17 @@
+-- You can also add or configure plugins by creating files in this `plugins/` folder
+-- PLEASE REMOVE THE EXAMPLES YOU HAVE NO INTEREST IN BEFORE ENABLING THIS FILE
+-- Here are some examples:
+
 ---@type LazySpec
 return {
 
-  -- == Neovim Themes
+  -- == Examples of Adding Plugins ==
+  { "andweeb/presence.nvim" },
   { "nvim-treesitter/playground" },
-  { "tpope/vim-fugitive" },
-  -- {
-  --     "hrsh7th/cmp-cmdline",
-  --     config = function()
-  --         -- require("cmp_cmdline").
-  --     end,
-  -- },
-  {
-    -- Pretty popups for incoming calls, outgoing calls, references
-    -- "nvimdev/lspsaga.nvim",
-  },
-
-  {
-    -- Pretty popups for incoming calls, outgoing calls, references
-    "folke/trouble.nvim",
-    opts = {}, -- for default options, refer to the configuration section for custom setup.
-    cmd = "Trouble",
-  },
-  {
-    "MeanderingProgrammer/render-markdown.nvim",
-    dependencies = {
-      "nvim-treesitter/nvim-treesitter",
-      "echasnovski/mini.nvim",
-    }, -- if you use the mini.nvim suite
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
-    ---@module 'render-markdown'
-    ---@type render.md.UserConfig
-    config = function()
-      require("render-markdown").setup { latex = { enabled = false } }
-    end,
-  },
   {
     "ray-x/lsp_signature.nvim",
     event = "BufRead",
     config = function() require("lsp_signature").setup() end,
-  },
-
-  -- == Examples of Overriding Plugins ==
-
-  -- customize alpha options
-  {
-    "goolord/alpha-nvim",
-    opts = function(_, opts)
-      -- customize the dashboard header
-      opts.section.header.val = {
-        " █████  ███████ ████████ ██████   ██████",
-        "██   ██ ██         ██    ██   ██ ██    ██",
-        "███████ ███████    ██    ██████  ██    ██",
-        "██   ██      ██    ██    ██   ██ ██    ██",
-        "██   ██ ███████    ██    ██   ██  ██████",
-        " ",
-        "    ███    ██ ██    ██ ██ ███    ███",
-        "    ████   ██ ██    ██ ██ ████  ████",
-        "    ██ ██  ██ ██    ██ ██ ██ ████ ██",
-        "    ██  ██ ██  ██  ██  ██ ██  ██  ██",
-        "    ██   ████   ████   ██ ██      ██",
-      }
-      return opts
-    end,
   },
 
   -- You can disable default plugins as follows:

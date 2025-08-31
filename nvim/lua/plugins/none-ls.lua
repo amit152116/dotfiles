@@ -13,48 +13,14 @@ return {
 
     -- Only insert new sources, do not replace the existing ones
     -- (If you wish to replace, use `opts.sources = {}` instead of the `list_insert_unique` function)
-
     opts.sources = require("astrocore").list_insert_unique(opts.sources, {
-      -- Set a formatter
       -- null_ls.builtins.formatting.stylua,
       -- null_ls.builtins.formatting.prettier,
 
-      null_ls.builtins.formatting.prettier.with {
-        extra_args = { "--prose-wrap", "always", "--print-width", "80" },
-        filetypes = { "markdown", "md", "urdf" },
-      },
       null_ls.builtins.formatting.clang_format.with {
         extra_args = { "--style=file" },
         filetypes = { "c", "cpp", "h", "hpp" },
       },
     })
-
-    -- -- Vale linter, only if .vale.ini exists
-    -- null_ls.builtins.diagnostics.vale.with {
-    --   condition = function(utils) return utils.root_has_file { ".vale.ini" } end,
-    -- }
-
-    -- Create autocommands for documentation-style files
-    local doc_filetypes = { "help", "markdown", "md" }
-
-    -- vim.api.nvim_create_autocmd("FileType", {
-    --     pattern = doc_filetypes,
-    --     callback = function()
-    --         -- Set text width and enable wrapping for documentation files
-    --         vim.opt_local.textwidth = 80
-    --         vim.opt_local.wrap = true
-    --     end,
-    -- })
-    --
-    -- -- Handle DevDocs and other read-only markdown files
-    -- vim.api.nvim_create_autocmd("BufReadPost", {
-    --     pattern = { "*.md", "*.markdown" },
-    --     callback = function(event)
-    --         if vim.bo[event.buf].readonly then
-    --             vim.opt_local.textwidth = 80
-    --             vim.opt_local.wrap = true
-    --         end
-    --     end,
-    -- })
   end,
 }
