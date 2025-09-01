@@ -32,9 +32,7 @@ return {
       },
     },
     lazygit = {},
-    scratch = {
-      ft = "markdown",
-    },
+    scratch = {},
   },
   specs = {
     {
@@ -69,6 +67,31 @@ return {
               desc = "Find jumps",
             },
 
+            ["<Leader>fp"] = {
+              function()
+                Snacks.picker.projects {
+                  dev = {
+                    "~/",
+                    "~/Documents/",
+                    "~/Downloads/",
+                    "~/myDisk/Personal Projects/",
+                    "~/.config/",
+                    "~/myDisk/GithubRepositories/",
+                    "~/go/src/github.com/Amit152116Kumar/",
+                    "~/.local/share/",
+                  },
+                  patterns = {
+                    ".git",
+                    "package.json",
+                    "go.mod",
+                    "README.md",
+                    "README",
+                    "Makefile",
+                  },
+                }
+              end,
+              desc = "Find projects",
+            },
             ["<Leader>fT"] = {
               function() Snacks.picker.colorschemes() end,
               desc = "Find themes",
@@ -89,10 +112,33 @@ return {
               desc = "Find zoxide",
             },
 
-            ["<Leader>gl"] = {
-              function() Snacks.picker.git_log() end,
-              desc = "Find themes",
+            ["<Leader>f."] = {
+              function()
+                Snacks.picker.pickers {
+                  -- layout = { preset = "vscode" },
+                  focus = "input",
+                  confirm = function(picker, item)
+                    if not item then return end
+                    picker:close()
+                    Snacks.picker.pick {
+                      source = item.text,
+                      focus = "input",
+                    }
+                  end,
+                }
+              end,
+              desc = "Find pickers",
             },
+
+            -- Attach some git mapping when buffer is attached via gitsigns on_attach
+            ["<Leader>gc"] = false,
+            ["<Leader>gC"] = false,
+            ["<Leader>go"] = false,
+            ["<Leader>gl"] = {
+              function() Snacks.lazygit.log() end,
+              desc = "Git Logs",
+            },
+
             -- Find all Neovim plugins files
             ["<Leader>pf"] = {
               function()
@@ -117,24 +163,6 @@ return {
                 }
               end,
               desc = "Plugins Live Grep",
-            },
-
-            ["<Leader>f."] = {
-              function()
-                Snacks.picker.pickers {
-                  -- layout = { preset = "vscode" },
-                  focus = "input",
-                  confirm = function(picker, item)
-                    if not item then return end
-                    picker:close()
-                    Snacks.picker.pick {
-                      source = item.text,
-                      focus = "input",
-                    }
-                  end,
-                }
-              end,
-              desc = "Find pickers",
             },
           },
           x = {

@@ -11,7 +11,7 @@ selection=$(
 		FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
 			--preview 'page=$(echo {} | awk "{print \$1}"); man -P cat "$page" 2>/dev/null | col -bx | head -n 40' \
 			--bind "enter:accept" \
-			--preview-window="right:70%" \
+			--preview-window="right:60%" \
 			--bind "ctrl-v:toggle-preview" \
 			--bind "ctrl-o:execute(echo {} | awk '{print \$1}' | xargs -r man -P cat | less -R)" \
 			--header $'↵:open  ctrl-v:toggle preview  ctrl-o:open raw\n'

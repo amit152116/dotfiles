@@ -1,0 +1,86 @@
+[font]
+normal = { family = "JetBrainsMonoNL Nerd Font", style = "Regular" }
+size = 15.0
+
+[window]
+opacity = 0.80
+dynamic_padding = true
+decorations = "none"               # "Full" | "None" | "Transparent" | "Buttonless"
+startup_mode = "Fullscreen"
+dynamic_title = true
+decorations_theme_variant = "Dark"
+
+[scrolling]
+multiplier = 3
+
+[selection]
+save_to_clipboard = true
+
+[mouse]
+hide_when_typing = true
+
+[cursor]
+style = { shape = "Block", blinking = "Off" }
+vi_mode_style = { shape = "Beam", blinking = "Off" }
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+
+[colors.primary]
+background = '#010100'
+foreground = "#D0CFCC"
+
+[colors.cursor]
+text = '#e0def4'
+cursor = '#524f67'
+
+[colors.vi_mode_cursor]
+text = '#010100'
+cursor = '#a347ba' # magenta accent for vi mode
+
+[colors.selection]
+text = '#d0cfcc'
+background = '#3a3f5a' # muted blue-gray, easier on eyes
+
+# Normal colors
+[colors.normal]
+black = '#000000'
+red = '#CD0000'
+green = '#00CD00'
+# yellow = '#CDCD00'
+yellow = '#d19a66' # earthy amber
+blue = '#7676F1'
+# magenta = '#a347ba'
+magenta = '#c678dd' # soft purple
+# cyan = '#2aa1b3'
+cyan = '#56b6c2'  # aqua cyan
+white = '#d0cfcc'
+
+# Bright colors
+[colors.bright]
+black = '#8F8F8F'
+red = '#FF0000'
+green = '#00FF00'
+yellow = '#ebcb8b'
+blue = '#5C5CFF'
+# magenta = '#c061cb'
+magenta = '#d68fff'
+# cyan = '#33c7de'
+cyan = '#7cdce5'
+white = '#ffffff'
+
+
+[colors.hints]
+start = { foreground = '#908caa', background = '#000000' }
+end = { foreground = '#6e6a86', background = '#000000' }
+
+# [[key.bindings]]
+# key = "V"
+# mods = "Control|Shift"
+# action = "Paste"
+#
+# [[key.bindings]]
+# key = "C"
+# mods = "Control|Shift"
+# action = "Copy"

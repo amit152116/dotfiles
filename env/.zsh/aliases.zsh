@@ -2,7 +2,7 @@
 alias cls="clear"
 alias python="python3"
 # alias pip="pip3"
-alias dotfiles='cd "$(dirname "$(realpath ~/.zshrc)")"'
+alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --show-toplevel)"'
 
 alias home='builtin cd ~'
 alias ls="eza -g --icons"

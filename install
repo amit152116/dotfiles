@@ -161,11 +161,12 @@ run_env() {
 
 	# Map of source files/dirs to target locations
 	declare -A FILES_TO_LINK=(
+		["$DOTFILES_DIR/alacritty"]="$HOME/.config/alacritty"
 		["$DOTFILES_DIR/btop"]="$HOME/.config/btop"
+		["$DOTFILES_DIR/nvim"]="$HOME/.config/nvim"
 		["$DOTFILES_DIR/env/.gitconfig"]="$HOME/.gitconfig"
 		["$DOTFILES_DIR/env/.gitignore"]="$HOME/.gitignore"
 		["$DOTFILES_DIR/env/.ideavimrc"]="$HOME/.ideavimrc"
-		["$DOTFILES_DIR/nvim"]="$HOME/.config/nvim"
 		["$DOTFILES_DIR/env/.tmux.conf"]="$HOME/.tmux.conf"
 		["$DOTFILES_DIR/env/.zshrc"]="$HOME/.zshrc"
 		["$DOTFILES_DIR/env/.zsh"]="$HOME/.zsh"

@@ -13,6 +13,14 @@ return {
     config = function() require("lsp_signature").setup() end,
   },
 
+  {
+    "yutkat/confirm-quit.nvim",
+    event = "CmdlineEnter",
+    opts = {
+      overwrite_q_command = true,
+      quit_message = "Do you want to quit?",
+    },
+  },
   -- You can disable default plugins as follows:
-  { "max397574/better-escape.nvim", enabled = false },
+  { "max397574/better-escape.nvim", enabled = true },
 }

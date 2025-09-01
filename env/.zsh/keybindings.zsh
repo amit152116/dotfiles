@@ -82,8 +82,7 @@ if [[ -n "$TMUX" ]]; then
 
   bindkey '\em' __tmux_sessionizer_s0
   bindkey '\eb' __tmux_sessionizer_s1
-  bindkey '\en' __tmux_sessionizer_s2
-  bindkey '\es' __tmux_sessionizer_s3
+  bindkey '\eg' __tmux_sessionizer_s2
 
   __tmux_kill_pane() {
     current_pane=$TMUX_PANE

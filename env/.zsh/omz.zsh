@@ -56,6 +56,7 @@ COMPLETION_WAITING_DOTS="true"
 
 # Auto-update behavior
 zstyle ':omz:update' mode auto
-
+zstyle ':completion:*:*:docker:*' option-stacking yes
+zstyle ':completion:*:*:docker-*:*' option-stacking yes
 # Source Oh My Zsh
 source $ZSH/oh-my-zsh.sh

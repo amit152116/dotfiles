@@ -27,17 +27,6 @@ reload() {
   fi
 }
 
-# Function to go to the root directory of the current Git repository
-git-home() {
-    local git_root
-    git_root=$(git rev-parse --show-toplevel 2>/dev/null)
-    
-    if [[ -n "$git_root" ]]; then
-        cd "$git_root" || echo "Failed to navigate to Git root"
-    else
-        echo "Not inside a Git repository."
-    fi
-}
 
 # Function to load tmux resurrect sessions
 tmux-resurrect() {

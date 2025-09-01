@@ -8,5 +8,8 @@ return {
   { import = "astrocommunity.pack.lua" },
   { import = "astrocommunity.pack.cpp" },
   { import = "astrocommunity.editing-support.todo-comments-nvim" },
+  -- { import = "astrocommunity.motion.mini-surround" },
+  -- { import = "astrocommunity.motion.mini-ai", enabled = false },
+  -- { import = "astrocommunity.motion.mini-jump" },
   -- import/override with your plugins folder
 }

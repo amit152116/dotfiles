@@ -100,17 +100,17 @@ return {
           desc = "Exit AstroNvim",
           silent = true,
         },
-        ["<M-b>"] = {
-          "<cmd>silent !tmux neww tmux-sessionizer -s 1<cr>",
-          desc = "Btop",
-          silent = true,
-        },
         ["<M-m>"] = {
           "<cmd>silent !tmux neww tmux-sessionizer -s 0<cr>",
           desc = "Man Pages Fzf",
           silent = true,
         },
-        ["<C-o>"] = {
+        ["<M-b>"] = {
+          "<cmd>silent !tmux neww tmux-sessionizer -s 1<cr>",
+          desc = "Btop",
+          silent = true,
+        },
+        ["<M-o>"] = {
           "<cmd>:silent !xdg-open .<cr>",
           desc = "Open File Explorer",
           silent = true,
@@ -125,31 +125,19 @@ return {
           desc = "Prev Tmux Window",
           silent = true,
         },
-        ["<Leader>bp"] = {
-
-          "<cmd>b#<cr>",
-          desc = "Previous Buffer",
-        },
-        ["<Leader>q"] = { desc = "Quit" },
         ["<Leader>qt"] = {
           "<cmd>tabclose<cr>",
           desc = "Quit Tab",
         },
-        ["<Leader>qw"] = {
-          function()
-            -- Check if more than one window is open
-            if vim.fn.winnr "$" > 1 then
-              vim.cmd "confirm q"
-            else
-              vim.notify(
-                "This is the last window, not quitting!",
-                vim.log.levels.WARN
-              )
-            end
-          end,
+        ["<Leader>q"] = {
+          function() require("confirm-quit").confirm_quit() end,
           desc = "Quit Window",
         },
-        ["<Leader>o"] = false,
+
+        ["<Leader>o"] = {
+          "<C-w>w",
+          desc = "Switch Window",
+        },
 
         ["<Leader>D"] = {
           desc = "Delete file",
@@ -209,13 +197,32 @@ return {
           desc = "Close buffer from tabline",
         },
 
+        ["<Leader>bj"] = {
+          function() require("utils.buffer_cycle").buffer_cycle "prev" end,
+          desc = "Cycle to Previous Buffer",
+        },
+        ["<Leader>bk"] = {
+          function() require("utils.buffer_cycle").buffer_cycle "next" end,
+          desc = "Cycle to Next Buffer",
+        },
+
+        ["<Leader>bp"] = {
+          "<cmd>b#<cr>",
+          desc = "Jump to Previous Buffer",
+        },
+
         ["<Leader>uD"] = {
           function() require("astrocore.toggles").diagnostics() end,
           desc = "Toggle diagnostics",
         },
-        ["<Leader>pr"] = {
+        ["<Leader>r"] = {
           "<cmd>AstroRoot<CR>",
           desc = "AstroRoot",
+          silent = true,
+        },
+        ["<Leader>pr"] = {
+          "<cmd>AstroReload<CR>",
+          desc = "Astro Reload",
           silent = true,
         },
       },

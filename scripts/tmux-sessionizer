@@ -294,7 +294,24 @@ if [[ ! -z $session_cmd ]]; then
 elif [[ ! -z $user_selected ]]; then
 	selected="$user_selected"
 else
-	selected=$(find_dirs | FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf)
+	selected=$(
+		find_dirs |
+			FZF_DEFAULT_OPTS="$FZF_COMMON_OPTS --preview '
+    if [[ {} == \[TMUX\]* ]]; then
+      # strip [TMUX] prefix
+      session=$(echo {} | sed "s/^\[TMUX\] //")
+      tmux list-windows -t \"$session\" 2>/dev/null || echo \"(no such tmux session)\"
+    elif [[ -d {} ]]; then
+      # ls -la --color=always {} | head -40
+			tree -C -L 1 {}
+    else
+      echo \"Not a directory or tmux session\"
+    fi
+  '\
+    --bind 'ctrl-v:toggle-preview'\
+		--header '↵:open  ctrl-v:toggle preview'
+  " fzf
+	)
 fi
 
 if [[ -z $selected ]]; then
