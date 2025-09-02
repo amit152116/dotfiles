@@ -5,9 +5,11 @@ alias python="python3"
 alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --show-toplevel)"'
 
 alias home='builtin cd ~'
-alias ls="eza -g --icons"
-alias la="eza -gla --icons"
-alias ll="eza -gl --icons"
+if command -v eza &>/dev/null; then
+  alias ls="eza -g --icons"
+  alias la="eza -gla --icons"
+  alias ll="eza -gl --icons"
+fi
 
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
