@@ -5,8 +5,10 @@
 
 local M = {}
 
+---@alias ros2.picker.PreviewArgsFunc fun(item: snacks.picker.finder.Item): table
+
 ---@class ros2.picker.PreviewOptions
----@field args string|table|function The command to generate a preview.
+---@field args string|string[]|ros2.picker.PreviewArgsFunc The command to generate a preview.
 ---   - string: e.g., "topic info". The selected item's text will be appended.
 ---   - table: e.g., {"topic", "info"}. The selected item's text will be appended.
 ---   - function: Takes the picker item and must return a command table (e.g., {"ros2", ...}).
@@ -16,7 +18,7 @@ local M = {}
 ---@field cmd string The base command to get the list of items (e.g., "topic list").
 ---@field args? string[]
 ---@field preview ros2.picker.PreviewOptions Options for generating the preview.
----@field formatter? fun(text: string): string A function to format the display text.
+---@field formatter? fun(item: snacks.picker.finder.Item): boolean A function to format the display text.
 
 ---@alias ros2.picker.Finder snacks.picker.finder
 
@@ -26,7 +28,7 @@ local M = {}
 --- metatables for lazy-loading preview content.
 ---@param opts ros2.picker.FinderOptions The configuration options for the finder.
 ---@return ros2.picker.Finder
-function M.create_finder(opts)
+local function create_finder(opts)
   opts = opts or {}
   opts.preview = opts.preview or {}
 
@@ -46,10 +48,9 @@ function M.create_finder(opts)
           end
 
           item.text = content
+          item.display = content -- This is the text displayed in the picker list
           if opts.formatter then
-            item.display = opts.formatter(content)
-          else
-            item.display = content -- This is the text displayed in the picker list
+            if opts.formatter(item) == false then return false end
           end
 
           setmetatable(item, {
@@ -68,7 +69,7 @@ function M.create_finder(opts)
                 if config_type == "string" then
                   -- e.g., cmd="topic info", content="/chatter" -> {"ros2", "topic", "info", "/chatter"}
                   preview_cmd_parts = vim.split(
-                    opts.cmd .. " " .. preview_cmd_config .. " " .. content,
+                    opts.cmd .. " " .. preview_cmd_config .. " " .. item.text,
                     "%s+"
                   )
                 elseif config_type == "function" then
@@ -77,7 +78,7 @@ function M.create_finder(opts)
                   -- e.g., cmd={"topic", "info"}, content="/chatter" -> {"ros2", "topic", "info", "/chatter"}
                   preview_cmd_parts = vim.deepcopy(preview_cmd_config)
                   table.insert(preview_cmd_parts, 1, opts.cmd)
-                  table.insert(preview_cmd_parts, content)
+                  table.insert(preview_cmd_parts, item.text)
                 end
                 if not preview_cmd_parts then
                   rawset(
@@ -121,11 +122,15 @@ end
 
 local snacks = require "snacks"
 
+---@class ros2.picker.Picker: ros2.picker.FinderOptions
+---@field title string  -- optional title for the picker
+---
+---@param opts ros2.picker.Picker The configuration options for the finder.
 function M.RosPicker(opts)
   opts = opts or {}
 
-  local title = string.format("  ROS2 %s", opts.title or opts.cmd)
-  local finder = M.create_finder {
+  local title = string.format("   %s", opts.title or opts.cmd)
+  local finder = create_finder {
     cmd = "ros2",
     args = opts.args,
     formatter = opts.formatter,
@@ -153,6 +158,11 @@ function M.RosPicker(opts)
         table.remove(lines, 1)
         ctx.preview:set_lines(lines)
         ctx.preview:highlight { ft = preview_obj.ft }
+        if item.preview_title then
+          ctx.preview:set_title(item.preview_title)
+        else
+          ctx.preview:set_title(item.display)
+        end
       else
         ctx.preview:set_lines {
           "Error: Could not generate preview.",
@@ -161,125 +171,141 @@ function M.RosPicker(opts)
       end
       return true
     end,
+    actions = {
+      notify = function(self, item)
+        self:close()
+        local text = item.preview_title or item.text
+        -- The preview data is available in item.data
+        snacks.notify.notify(item.data, { title = " ( " .. text .. " )" })
+      end,
+    },
+    win = {
+      input = {
+        keys = {
+          ["<CR>"] = { "notify", mode = { "n", "i" } },
+        },
+      },
+      list = {
+        keys = {
+          ["<CR>"] = { "notify", mode = { "n", "i" } },
+        },
+      },
+    },
   }
 end
+
 -- A function to open a picker for ROS2 topics
-function M.RosTopics()
-  local finder = M.create_finder {
-    cmd = "ros2",
+function M.Topics()
+  M.RosPicker {
+    title = "Active Topics",
     args = { "topic", "list" },
-    formatter = function(text)
-      -- local pkg, node = text:match "^/(.+)/(.+)"
-      -- inspect(pkg, node)
-      -- if pkg and node then return string.format("%s [%s]", node, pkg) end
-      return string.sub(text, 2)
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
+      local pattern = "^/([^/]+)/(.+)"
+      local pkg, name = item.text:match(pattern)
+
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
+      end
+      return false
     end,
     preview = {
       args = "topic info --verbose", -- Command to generate the preview
       ft = "yaml", -- Filetype for the preview window
     },
   }
+end
+function M.Actions()
+  M.RosPicker {
+    title = "Active Actions",
+    args = { "action", "list" },
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
+      local pattern = "^/([^/]+)/(.+)"
+      local pkg, name = item.text:match(pattern)
 
-  snacks.picker.pick {
-    finder = finder,
-    title = "  ROS2 Topics",
-    -- Re-creating your custom format from the original code
-    format = function(item, _)
-      if not item or not item.text then return { { "" } } end
-      return {
-        { "  ", "Comment" }, -- Using a standard highlight group like Comment
-        { " " .. item.text, "Normal" },
-      }
-    end,
-    -- Example of a custom action
-
-    preview = function(ctx)
-      local item = ctx.item
-      if not item then return true end
-
-      local preview_obj = item.preview
-
-      if preview_obj and preview_obj.text then
-        -- THE FIX IS HERE: Split the text string into a table of lines
-        local lines = vim.split(preview_obj.text, "\n")
-        ctx.preview:set_lines(lines)
-        ctx.preview:highlight { ft = preview_obj.ft }
-      else
-        ctx.preview:set_lines {
-          "Error: Could not generate preview.",
-          "The 'ros2' command may have failed or returned no output.",
-        }
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
       end
-
-      return true
+      return false
     end,
-    actions = {
-      ["<CR>"] = function(self, item)
-        self:close()
-        -- The preview data is available in item.data
-        snacks.notify.notify(
-          "Selected: " .. item.text,
-          { title = "ROS2 Topics" }
-        )
-      end,
+    preview = {
+      args = "action info",
+      ft = "yaml", -- Filetype for the preview window
     },
   }
 end
+function M.Services()
+  M.RosPicker {
+    title = "Active Services",
+    args = { "service", "list" },
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
+      local pattern = "^/([^/]+)/(.+)"
+      local pkg, name = item.text:match(pattern)
 
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
+      end
+      return false
+    end,
+    preview = {
+      args = function(item)
+        -- 1. Get the service type
+        local service_type =
+          vim.fn.system(string.format("ros2 service type %s", item.text))
+        service_type = service_type:gsub('"', "") -- remove quotes
+        service_type = service_type:gsub("%s+$", "") -- trim trailing newline
+        item.preview_title = service_type
+
+        return string.format("ros2 interface show %s", service_type)
+      end,
+      ft = "yaml", -- Filetype for the preview window
+    },
+  }
+end
 -- A function to open a picker for ROS2 nodes
-function M.RosNodes()
-  local finder = M.create_finder {
-    cmd = "ros2",
+function M.Nodes()
+  M.RosPicker {
+    title = "Active Nodes",
     args = { "node", "list" },
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
+      local pattern = "^/([^/]+)/(.+)"
+      local pkg, name = item.text:match(pattern)
+
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
+      end
+      return false
+    end,
     preview = {
       args = "node info",
       ft = "yaml",
     },
-    formatter = function(text) return string.sub(text, 2) end,
-  }
-
-  snacks.picker.pick {
-    title = "  ROS2 Nodes",
-    finder = finder,
-    format = function(item, _)
-      if not item or not item.display then return { { "" } } end
-
-      -- Return TWO text segments, each with a different highlight group
-      return {
-        { "  ", "Icon" },
-        { item.display, "Normal" }, -- Highlight the topic name
-      }
-    end,
-
-    preview = function(ctx)
-      local item = ctx.item
-      if not item then return true end
-
-      local preview_obj = item.preview
-
-      if preview_obj and preview_obj.text then
-        -- THE FIX IS HERE: Split the text string into a table of lines
-        local lines = vim.split(preview_obj.text, "\n")
-        table.remove(lines, 1)
-        ctx.preview:set_lines(lines)
-        ctx.preview:highlight { ft = preview_obj.ft }
-      else
-        ctx.preview:set_lines {
-          "Error: Could not generate preview.",
-          "The 'ros2' command may have failed or returned no output.",
-        }
-      end
-
-      return true
-    end,
-    -- You can add other picker options here as needed
   }
 end
-function M.RosParams()
+
+function M.Params()
   M.RosPicker {
     title = "Params",
     args = { "param", "list" },
-    formatter = function(text) return text end,
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
+      item.text = item.text:gsub(":$", "") -- Remove leading slash
+      local pattern = "^/([^/]+)/(.+)"
+      local pkg, name = item.text:match(pattern)
+
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
+      end
+      return false
+    end,
     preview = {
       ft = "yaml",
       args = "param dump",
@@ -287,16 +313,20 @@ function M.RosParams()
   }
 end
 
-function M.RosMsgs()
+function M.InterfaceMsgs()
   M.RosPicker {
     title = "Msgs",
     args = { "interface", "list", "--only-msgs" },
-    formatter = function(text)
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
       local pattern = "(.+)/msg/(.+)"
-      local pkg, name = text:match(pattern)
+      local pkg, name = item.text:match(pattern)
 
-      if pkg and name then return string.format("%s [%s]", name, pkg) end
-      return text
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
+      end
+      return false
     end,
     preview = {
       ft = "yaml",
@@ -305,16 +335,20 @@ function M.RosMsgs()
   }
 end
 
-function M.RosSrvs()
+function M.InterfaceSrvs()
   M.RosPicker {
     title = "Srvs",
     args = { "interface", "list", "--only-srvs" },
-    formatter = function(text)
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
       local pattern = "(.+)/srv/(.+)"
-      local pkg, name = text:match(pattern)
+      local pkg, name = item.text:match(pattern)
 
-      if pkg and name then return string.format("%s [%s]", name, pkg) end
-      return text
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
+      end
+      return false
     end,
     preview = {
       ft = "yaml",
@@ -323,16 +357,20 @@ function M.RosSrvs()
   }
 end
 
-function M.RosActions()
+function M.InterfaceActions()
   M.RosPicker {
     title = "Actions",
     args = { "interface", "list", "--only-actions" },
-    formatter = function(text)
+    ---@param item snacks.picker.finder.Item
+    formatter = function(item)
       local pattern = "(.+)/action/(.+)"
-      local pkg, name = text:match(pattern)
+      local pkg, name = item.text:match(pattern)
 
-      if pkg and name then return string.format("%s [%s]", name, pkg) end
-      return text
+      if pkg and name then
+        item.display = string.format("%s [%s]", name, pkg)
+        return true
+      end
+      return false
     end,
     preview = {
       ft = "yaml",
@@ -340,6 +378,4 @@ function M.RosActions()
     },
   }
 end
-M.RosActions()
-
 return M

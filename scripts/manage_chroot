@@ -1,0 +1,58 @@
+#!/bin/bash
+# manage_chroot.sh – Mount, chroot, and unmount a drive
+
+set -e
+
+usage() {
+    echo "Usage:"
+    echo "  $0 mount <device> <mount_point>"
+    echo "  $0 umount <mount_point>"
+    exit 1
+}
+
+if [ $# -lt 2 ]; then
+    usage
+fi
+
+ACTION=$1
+
+case "$ACTION" in
+mount)
+    if [ $# -ne 3 ]; then
+        usage
+    fi
+    DEVICE=$2
+    MOUNT_POINT=$3
+
+    echo "[*] Mounting $DEVICE at $MOUNT_POINT..."
+    mkdir -p "$MOUNT_POINT"
+    sudo mount "$DEVICE" "$MOUNT_POINT"
+
+    echo "[*] Binding system directories..."
+    sudo mount --bind /dev "$MOUNT_POINT/dev"
+    sudo mount --bind /proc "$MOUNT_POINT/proc"
+    sudo mount --bind /sys "$MOUNT_POINT/sys"
+    sudo mount --bind /run "$MOUNT_POINT/run"
+
+    echo "[*] Entering chroot..."
+    sudo chroot "$MOUNT_POINT" /bin/bash
+    ;;
+
+umount)
+    if [ $# -ne 2 ]; then
+        usage
+    fi
+    MOUNT_POINT=$2
+
+    echo "[*] Unmounting system directories..."
+    umount -l "$MOUNT_POINT/dev" 2>/dev/null || true
+    umount -l "$MOUNT_POINT/proc" 2>/dev/null || true
+    umount -l "$MOUNT_POINT/sys" 2>/dev/null || true
+
+    echo "[*] Unmounting root..."
+    umount -l "$MOUNT_POINT"
+    ;;
+*)
+    usage
+    ;;
+esac

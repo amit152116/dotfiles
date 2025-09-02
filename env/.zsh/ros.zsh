@@ -81,6 +81,7 @@ _load_ros() {
     # ROS2 aliases
     alias ros='ros2'
     alias rqt_graph='ros2 run rqt_graph rqt_graph'
+    alias rqt_image_view='ros2 run rqt_image_view rqt_image_view'
     alias rqt_plot='ros2 run rqt_plot rqt_plot'
     alias rqt_console='ros2 run rqt_console rqt_console'
     alias rqt_gui='ros2 run rqt_gui rqt_gui'
@@ -162,3 +163,6 @@ chpwd_ros() {
 # Add the function to chpwd hooks (runs when changing directories)
 autoload -U add-zsh-hook
 add-zsh-hook chpwd chpwd_ros
+
+# Run once on shell startup (in case we start directly in a ROS workspace)
+chpwd_ros
