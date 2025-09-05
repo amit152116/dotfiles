@@ -11,8 +11,13 @@ return {
       codelens = true, -- enable/disable codelens refresh on start
       inlay_hints = true, -- enable/disable inlay hints on start
       semantic_tokens = true, -- enable/disable semantic token highlighting
-      signature_help = true,
-      code_actions = true,
+      signature_help = false,
+    },
+    defaults = {
+      hover = {
+        border = "rounded", -- default border value for hover windows
+        silent = false, -- disable hover silence by default
+      },
     },
     -- customize lsp formatting options
     formatting = {
@@ -105,6 +110,10 @@ return {
         },
       },
     },
+    -- Extra configuration for the `mason-lspconfig.nvim` plugin
+    mason_lspconfig = {
+      servers = {},
+    },
     -- mappings to be set up on attaching of a language server
     mappings = {
       n = {
@@ -141,10 +150,6 @@ return {
           desc = "Goto Type Definition",
         },
         ["gw"] = {
-          function() Snacks.picker.lsp_workspace_symbols() end,
-          desc = "Workspace Symbols",
-        },
-        ["<Leader>lw"] = {
           function() Snacks.picker.lsp_workspace_symbols() end,
           desc = "Workspace Symbols",
         },

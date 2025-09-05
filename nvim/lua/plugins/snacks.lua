@@ -1,5 +1,6 @@
 local Snacks = require "snacks"
 local helper = require "utils.helper"
+local myPicker = require "myPickers"
 return {
   "folke/snacks.nvim",
   lazy = false,
@@ -107,6 +108,20 @@ return {
               desc = "Todo Comments",
             },
 
+            ["<Leader>fw"] = {
+              function() myPicker.multigrep {} end,
+              desc = "Find words",
+            },
+
+            ["<Leader>fW"] = {
+              function()
+                myPicker.multigrep {
+                  hidden = true,
+                  ignored = true,
+                }
+              end,
+              desc = "Find words in all files",
+            },
             ["<Leader>fz"] = {
               function() Snacks.picker.zoxide() end,
               desc = "Find zoxide",
@@ -139,6 +154,10 @@ return {
               desc = "Git Logs",
             },
 
+            ["<Leader>gg"] = {
+              "<cmd>silent !tmux neww tmux-sessionizer -s 2<cr>",
+              desc = "LazyGit ",
+            },
             -- Find all Neovim plugins files
             ["<Leader>pf"] = {
               function()
@@ -155,7 +174,7 @@ return {
             -- Find words in Neovim plugins files
             ["<Leader>pw"] = {
               function()
-                Snacks.picker.grep {
+                myPicker.multigrep {
                   cwd = vim.fs.joinpath(vim.fn.stdpath "data", "lazy"),
                   matcher = {
                     frecency = true,
@@ -170,12 +189,10 @@ return {
             ["<Leader>fw"] = {
               function()
                 local selected_text = helper.get_selected_text()
-                require("utils.multigrep").live_multigrep {
+                myPicker.multigrep {
                   search = selected_text,
                   regex = false,
-                  additional_args = { "--fixed-strings" },
                 }
-                -- Snacks.picker.grep_word {}
               end,
               desc = "Find words",
             },
@@ -183,14 +200,11 @@ return {
             ["<Leader>fW"] = {
               function()
                 local selected_text = helper.get_selected_text()
-                Snacks.picker.grep_word {
+                myPicker.multigrep {
                   search = selected_text,
                   hidden = true,
                   ignored = true,
                   regex = false,
-                  args = {
-                    "--fixed-strings",
-                  },
                 }
               end,
               desc = "Find words in all files",

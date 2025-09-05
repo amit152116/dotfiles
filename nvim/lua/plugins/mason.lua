@@ -41,7 +41,6 @@ return {
         "isort",
         "shfmt",
         "beautysh",
-        "dockerls",
       },
     },
   },

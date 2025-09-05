@@ -66,12 +66,12 @@ return {
           ripgrep = {
             module = "blink-ripgrep",
             name = "Ripgrep",
-            score_offset = -5,
+            score_offset = -10,
             async = true,
             ---@module "blink-ripgrep"
             ---@type blink-ripgrep.Options
             opts = {
-              prefix_min_len = 5,
+              prefix_min_len = 7,
               backend = {
                 use = "gitgrep-or-ripgrep",
               },

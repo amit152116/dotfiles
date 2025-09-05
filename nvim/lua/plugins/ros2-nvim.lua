@@ -1,9 +1,12 @@
+local picker = require "myPickers"
 ---@type LazySpec
 return {
   {
-    dir = vim.fn.stdpath "config" .. "/lua/ros2-nvim",
+    dir = vim.fn.stdpath "config" .. "/lua/myPickers",
     name = "ros2-nvim",
-    enabled = true,
+    dependencies = {
+      "AstroNvim/astrocore", -- if it really depends on astrocore
+    },
     specs = {
       "astroNvim/astrocore",
       opts = {
@@ -14,35 +17,35 @@ return {
               desc = "ROS Interfaces",
             },
             ["<Leader>ra"] = {
-              function() require("ros2-nvim").Actions() end,
+              function() picker.rosActions() end,
               desc = "ROS Active Actions",
             },
             ["<Leader>rs"] = {
               desc = "ROS Active Services",
-              function() require("ros2-nvim").Services() end,
+              function() picker.rosServics() end,
             },
             ["<Leader>rt"] = {
               desc = "ROS Active Topics",
-              function() require("ros2-nvim").Topics() end,
+              function() picker.rosTopics() end,
             },
             ["<Leader>rn"] = {
               desc = "ROS Active Nodes",
-              function() require("ros2-nvim").Nodes() end,
+              function() picker.rosNodes() end,
             },
             ["<Leader>rp"] = {
               desc = "ROS Params",
-              function() require("ros2-nvim").Params() end,
+              function() picker.rosParams() end,
             },
             ["<Leader>rim"] = {
-              function() require("ros2-nvim").InterfaceMsgs() end,
+              function() picker.rosInterfaceMsgs() end,
               desc = "ROS Msgs",
             },
             ["<Leader>ris"] = {
-              function() require("ros2-nvim").InterfaceSrvs() end,
+              function() picker.rosInterfaceSrvs() end,
               desc = "ROS Srvs",
             },
             ["<Leader>ria"] = {
-              function() require("ros2-nvim").InterfaceActions() end,
+              function() picker.rosInterfaceActions() end,
               desc = "ROS Actions",
             },
           },

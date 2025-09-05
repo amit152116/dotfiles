@@ -1,3 +1,7 @@
+---@class snacks.picker.multigrep.Config : snacks.picker.grep.Config
+---@field find_pattern any The text/pattern to find.
+---@field replace_pattern string|nil The text to replace with. If nil, no replacement is performed.
+
 local M = {}
 local helper = require "utils/helper"
 local Snacks = require "snacks"
@@ -8,7 +12,7 @@ local ns_id = vim.api.nvim_create_namespace "snacks_multigrep_highlight"
 -- @param find_text string The text/pattern to find.
 -- @param replace_text string The text to replace with.
 -- @param results table A list of snacks.picker.Item objects.
-local function execute_replace(items, opts)
+M.execute_replace = function(items, opts)
   local find_pattern = opts.find_pattern
   local replace_pattern = opts.replace_pattern
   local confirm_msg = string.format(
@@ -22,7 +26,7 @@ local function execute_replace(items, opts)
     vim.notify(
       "Replace cancelled.",
       vim.log.levels.INFO,
-      { title = "Multi Grep" }
+      { title = "Multi-Grep" }
     )
     return
   end
@@ -79,36 +83,37 @@ local function execute_replace(items, opts)
     vim.notify(
       string.format("✓ Replaced %d occurrences.", #qf),
       vim.log.levels.INFO,
-      { title = "Multi Grep" }
+      { title = "Multi-Grep" }
     )
   else
     -- Error message
     vim.notify(
       string.format("Replace failed: %s", err),
       vim.log.levels.ERROR,
-      { title = "Multi Grep" }
+      { title = "Multi-Grep" }
     )
     return
   end
+end
+
+M.parse_filters = function(filter_str)
+  if not filter_str or filter_str == "" then return {} end
+  return vim.split(filter_str, "[,%s]+", { trimempty = true })
 end
 
 -- RECOMMENDED: Space-separated with intuitive keywords
 -- Structure: FIND_TERM [r:REPLACE] [g:GLOB] [t:TYPES] [x:EXCLUDE]
 --
 -- Examples:
--- "function"                    -> find 'function'
+-- "function"                    -> find 'function' (regex)
+-- "f:my.func("                 -> find 'my.func(' (literal string)
 -- "function r:method"          -> find 'function' for replacement with 'method'
 -- "function t:lua,js"          -> find 'function' in lua/js files
 -- "function t:lua r:method"    -> find 'function' in lua files, replace with 'method'
 -- "function x:test,spec"       -> find 'function' excluding test/spec files
 -- "function g:src/*"          -> find 'function' in the src glob
-
-local function parse_filters(filter_str)
-  if not filter_str or filter_str == "" then return {} end
-  return vim.split(filter_str, "[,%s]+", { trimempty = true })
-end
-
-local function parse_search_prompt(prompt, opts)
+---@param opts snacks.picker.multigrep.Config
+M.parse_search_prompt = function(prompt, opts)
   if not prompt or prompt == "" then return nil end
   opts = opts or {}
   opts.find_pattern = nil
@@ -125,13 +130,41 @@ local function parse_search_prompt(prompt, opts)
     "--no-messages",
   }
 
-  if opts.regex == false then
+  -- exclude
+  for _, e in ipairs(opts.exclude or {}) do
+    vim.list_extend(args, { "-g", "!" .. e })
+  end
+
+  -- hidden
+  if opts.hidden then
+    table.insert(args, "--hidden")
+  else
+    table.insert(args, "--no-hidden")
+  end
+
+  -- ignored
+  if opts.ignored then args[#args + 1] = "--no-ignore" end
+
+  -- follow
+  if opts.follow then args[#args + 1] = "-L" end
+
+  -- extra args
+  vim.list_extend(args, opts.args or {})
+
+  local is_fixed_string = false
+  -- Check if the prompt starts with "f:"
+  if prompt:sub(1, 2) == "f:" then
+    is_fixed_string = true
+    -- Remove the "f:" prefix for further processing
+    prompt = vim.trim(prompt:sub(3))
+    opts.regex = false
+  end
+
+  if is_fixed_string or opts.regex == false then
     table.insert(args, "--fixed-strings") -- literal search
   else
     table.insert(args, "--auto-hybrid-regex") -- regex search
   end
-
-  if opts.args then vim.list_extend(args, opts.args) end
 
   -- Find all directive positions
   local positions = {}
@@ -164,7 +197,7 @@ local function parse_search_prompt(prompt, opts)
         or (current.type == "x" and "-T")
 
       if flag then
-        for _, ext in ipairs(parse_filters(value)) do
+        for _, ext in ipairs(M.parse_filters(value)) do
           vim.list_extend(args, { flag, ext })
         end
       end
@@ -174,9 +207,9 @@ local function parse_search_prompt(prompt, opts)
 end
 
 ---comment
----@param opts table
+---@param opts snacks.picker.multigrep.Config
 ---@param key string
-local function process_find_replace(opts, item, key)
+M.process_find_replace = function(opts, item, key)
   local text = item.line
   local find_pattern = opts.regex and opts.find_pattern or opts.find_pattern
   local s, e
@@ -230,23 +263,23 @@ local function process_find_replace(opts, item, key)
   if key then return rawget(item, key) end
 end
 
-local function createFinder(opts)
+M.createFinder = function(opts)
   opts = opts or {}
 
   ---@param picker_opts snacks.picker.proc.Config
   ---@type snacks.picker.finder
   return function(picker_opts, ctx)
     local input = ctx.filter.search
-    local args = parse_search_prompt(input, opts)
+    local args = M.parse_search_prompt(input, opts)
     return require("snacks.picker.source.proc").proc({
       picker_opts,
       {
         cmd = "rg",
         args = args,
+        notify = false,
         cwd = opts.cwd,
+        ---@param item snacks.picker.finder.Item
         transform = function(item)
-          if vim.tbl_isempty(item) then return true end
-
           item.cwd = opts.cwd
           local file, lnum, col, text =
             item.text:match "^(.+):(%d+):(%d+):(.*)$"
@@ -262,7 +295,7 @@ local function createFinder(opts)
           item.line, item.file, item.pos = text, file, { lnum, col }
 
           vim.schedule(
-            function() process_find_replace(opts, item, "replace_text") end
+            function() M.process_find_replace(opts, item, "replace_text") end
           )
           return true
         end,
@@ -273,11 +306,11 @@ end
 ---Preview for the Snacks Picker
 ---@param ctx snacks.picker.preview.ctx
 ---@return boolean
-local function createPreview(ctx)
+M.createPreview = function(ctx)
   local item = ctx.item
 
   local buf = ctx.buf
-  local lines = vim.fn.readfile(item.file)
+  local lines = vim.fn.readfile(item.cwd .. "/" .. item.file)
   local lnum = item.pos[1]
   local col = item.pos[2]
   -- --- Logic ---
@@ -336,55 +369,4 @@ local function createPreview(ctx)
   return true
 end
 
-function M.live_multigrep(opts)
-  opts = opts or {}
-  opts.regex = (opts.regex == nil) and true or opts.regex
-  opts.cwd = opts.cwd or vim.uv.cwd()
-  if opts.title then
-    opts.title = opts.title .. " (Multi-grep)"
-  else
-    opts.title = "Multi Grep (Smart Hybrid)"
-  end
-
-  Snacks.picker.pick("grep", {
-    search = opts.search,
-    cwd = opts.cwd,
-    title = opts.title,
-    notify = false,
-    finder = createFinder(opts),
-    matcher = {
-      frecency = true,
-      smartcase = true,
-    },
-    preview = createPreview,
-    actions = {
-      replace_selected = function(picker, _)
-        if opts.replace_pattern then
-          local sel = picker:selected()
-          local results = #sel > 0 and sel or picker:items()
-          if not results or #results == 0 then
-            vim.notify(
-              "No results to replace.",
-              vim.log.levels.WARN,
-              { title = "Multi Grep" }
-            )
-            return
-          end
-          execute_replace(results, opts)
-        end
-      end,
-    },
-    win = {
-      input = {
-        keys = {
-          ["<c-y>"] = {
-            "replace_selected",
-            mode = { "n", "i" },
-            desc = "Replace All",
-          },
-        },
-      },
-    },
-  })
-end
 return M
