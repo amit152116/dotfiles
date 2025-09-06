@@ -32,15 +32,15 @@ background = '#010100'
 foreground = "#D0CFCC"
 
 [colors.cursor]
-text = '#e0def4'
-cursor = '#524f67'
+text = '#000000'
+cursor = '#D0CFCC'
 
 [colors.vi_mode_cursor]
 text = '#010100'
 cursor = '#a347ba' # magenta accent for vi mode
 
 [colors.selection]
-text = '#d0cfcc'
+text = '#D0CFCC'
 background = '#3a3f5a' # muted blue-gray, easier on eyes
 
 # Normal colors

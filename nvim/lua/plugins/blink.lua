@@ -1,4 +1,4 @@
-local active_ai = "copilot"
+local active_ai = "supermaven"
 return {
   {
     "saghen/blink.cmp",

@@ -1,4 +1,5 @@
 local picker = require "myPickers"
+local Snacks = require "snacks"
 ---@type LazySpec
 return {
   {
@@ -15,6 +16,32 @@ return {
             ["<Leader>r"] = { desc = "ROS" },
             ["<Leader>ri"] = {
               desc = "ROS Interfaces",
+            },
+
+            -- Find all ROS Distro files
+            ["<Leader>rf"] = {
+              function()
+                Snacks.picker.files {
+                  cwd = "/opt/ros/humble",
+                  matcher = {
+                    frecency = true,
+                  },
+                }
+              end,
+              desc = "ROS files",
+            },
+
+            -- Find words in ROS distro files
+            ["<Leader>rw"] = {
+              function()
+                picker.multigrep {
+                  cwd = "/opt/ros/humble",
+                  matcher = {
+                    frecency = true,
+                  },
+                }
+              end,
+              desc = "ROS Live Grep",
             },
             ["<Leader>ra"] = {
               function() picker.rosActions() end,
