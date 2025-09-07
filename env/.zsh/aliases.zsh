@@ -11,6 +11,9 @@ if command -v eza &>/dev/null; then
   alias ll="eza -gl --icons"
 fi
 
+if command -v docker &>/dev/null; then
+  alias docker-clean="docker container prune && docker image prune"
+fi
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
   # Debian/Ubuntu aliases
