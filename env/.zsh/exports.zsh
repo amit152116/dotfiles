@@ -37,6 +37,7 @@ fi
 # Docker
 if command -v docker &>/dev/null; then
   export DOCKER_HOST=unix:///var/run/docker.sock
+  export DOCKER_BUILDKIT=1
 fi
 
 # Check if Android SDK exists before loading Android configurations
