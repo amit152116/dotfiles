@@ -4,6 +4,7 @@ This repository contains my personal dotfiles and system configurations for **Po
 
 ## 📂 Repository Structure
 
+``` plaintext
 .
 ├── alacritty/                   # Alacritty terminal configuration
 ├── auto_commit.sh               # Script to automate git commits
@@ -25,6 +26,7 @@ This repository contains my personal dotfiles and system configurations for **Po
 ├── nvim/                        # Neovim configuration, plugins, and custom Lua scripts
 ├── scripts/                     # Utility scripts (network sharing, tmux management, system setup, etc.)
 ├── symlink.sh                   # Script to create symlinks for configuration files
+```
 
 ## 🛠️ Installation & Setup
 
