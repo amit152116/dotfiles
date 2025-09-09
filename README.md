@@ -4,55 +4,42 @@ This repository contains my personal dotfiles and system configurations for **Po
 
 ## 📂 Repository Structure
 
-``` plaintext
 .
-├── .gitconfig                  # Git configuration
-├── .ideavimrc                  # IdeaVim configuration for JetBrains IDEs
-├── .tmux.conf                  # Tmux configuration with plugins
-├── .zshrc                      # Zsh shell configuration
-├── auto_commit.sh              # Script for automatic git commits
-├── install.sh                  # Installation script for dependencies
-├── btop/                       # Btop configuration
-│   ├── btop.conf                  # Btop configuration file
-├── nvim/                       # Neovim configuration (LazyVim-based)
-│   ├── init.lua                # Main Neovim configuration
-│   ├── lua/                    # Custom Lua configurations and plugins
-│   ├── README.md               # Documentation for Neovim setup
-│   ├── Session.vim             # Neovim session management
-│   ├── .gitignore              # Ignore compiled files and backups
-│   ├── .stylua.toml            # Lua formatting rules
-│   ├── selene.toml             # Lua linting rules
-│   ├── neovim.yml              # Additional Neovim configuration
-├── share_internet_ethernet.sh  # Script to share internet over Ethernet
-├── stop_share_internet_ethernet.sh # Script to stop sharing internet
-├── windows_powershell/         # Windows PowerShell configuration
-│   ├── oh-my-posh/myTheme.omp.json  # Custom Oh My Posh theme
-│   ├── profile.ps1             # PowerShell profile script
-└── README.md                   # This documentation
-```
-
-## 🚀 Features
-
-- **Neovim Config**: Uses LazyVim with custom plugins and settings.
-- **Tmux Config**: Enhanced Tmux setup with Dracula theme and useful keybindings.
-- **Zsh & Oh-My-Zsh**: Configured with aliases, plugins, and a modern terminal experience.
-- **Automatic Git Commit**: A cron job automatically commits and pushes changes every day.
-- **System Setup Scripts**: Scripts for internet sharing, installation, and automation.
+├── alacritty/                   # Alacritty terminal configuration
+├── auto_commit.sh               # Script to automate git commits
+├── git_autocommit.sh            # Git auto-commit helper
+├── git_common.sh                # Common git utility functions
+├── btop/                        # Btop system monitor configs and themes
+├── env/                         # Environment configuration
+│   ├── .gitconfig               # Git configuration
+│   ├── .gitignore               # Git ignore for environment
+│   ├── .ideavimrc               # IdeaVim configuration
+│   ├── .p10k.zsh                # Powerlevel10k prompt config
+│   ├── .tmux.conf               # Tmux configuration
+│   ├── .zsh/                    # Zsh shell scripts and plugins
+│   └── .zshrc                   # Zsh main configuration
+├── fonts.txt                    # List of installed/recommended fonts
+├── git-aliases.md               # Documentation of custom git aliases
+├── install                      # Installation scripts
+├── installs/                    # Scripts to install various tools (Docker, Neovim, ROS2, tmux, etc.)
+├── nvim/                        # Neovim configuration, plugins, and custom Lua scripts
+├── scripts/                     # Utility scripts (network sharing, tmux management, system setup, etc.)
+├── symlink.sh                   # Script to create symlinks for configuration files
 
 ## 🛠️ Installation & Setup
 
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone --recursive https://github.com/amit152116kumar/dotfiles.git ~/.dotfiles
+git clone --recursive https://github.com/amit152116/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ```
 
 ### 2️⃣ Run the Install Script
 
 ```bash
-chmod +x install.sh
-./install.sh
+chmod +x install
+./install
 ```
 
 This script will:
@@ -67,5 +54,5 @@ Suggestions, improvements, or issues? Feel free to open an issue or submit a pul
 
 ---
 **Author**: Amit Kumar
-📧 Contact: <amit170103004@alumini.iitg.ac.in>  
-🔗 GitHub: [amit152116kumar](https://github.com/amit152116kumar)
+📧 Contact: <amit152116@gmail.com>  
+🔗 GitHub: [Amit152116](https://github.com/amit152116)

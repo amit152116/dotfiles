@@ -1,6 +1,6 @@
 [user]
 	email = amit170103004@iitg.ac.in
-	name = Amit152116Kumar
+	name = amit152116
 [credential "https://github.com"]
 	helper = !/usr/bin/gh auth git-credential
 [core]

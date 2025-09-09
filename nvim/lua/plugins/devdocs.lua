@@ -1,5 +1,139 @@
+local Snacks = require "snacks"
+local glowCmd = function(arg)
+  return {
+    "tmux",
+    "neww",
+    "-t",
+    "68",
+    "glow",
+    arg,
+  }
+end
 ---@type LazySpec
 return {
+  {
+    "maskudo/devdocs.nvim",
+    lazy = false,
+    dependencies = {
+      "folke/snacks.nvim",
+    },
+    cmd = { "DevDocs" },
+    keys = {
+      {
+        "<leader>pd",
+        mode = "n",
+        "<cmd>DevDocs install<cr>",
+        desc = "Install Devdocs",
+      },
+      {
+        "<leader>fd",
+        mode = "n",
+        function()
+          local ft = vim.bo.filetype
+          if ft == "" then
+            print "No filetype detected for the current buffer"
+            return
+          end
+
+          local devdocs = require "devdocs"
+          local installedDocs = devdocs.GetInstalledDocs()
+
+          -- find installed doc matching current filetype
+          local docEntry
+          for _, doc in ipairs(installedDocs) do
+            if vim.startswith(doc, ft) then
+              docEntry = doc
+              break
+            end
+          end
+
+          if not docEntry then
+            print("DevDocs not installed for filetype: " .. ft)
+            return
+          end
+
+          -- get the doc directory
+          local docDir = devdocs.GetDocDir(docEntry)
+
+          -- open Snacks picker for that doc dir
+          require("snacks").picker.files {
+            cwd = docDir,
+            actions = {
+              openGlow = function(picker, _)
+                local entry = picker:current { fallback = true }
+                if not entry or not entry._path then return end
+                -- run tmux command to open glow in a new tmux window
+                vim.fn.jobstart(glowCmd(entry._path))
+                picker:close()
+              end,
+            },
+            win = {
+              input = {
+                keys = {
+                  ["<CR>"] = {
+                    "openGlow",
+                    mode = { "n", "i" },
+                    desc = "Open with Glow",
+                  },
+                },
+              },
+            },
+          }
+        end,
+        desc = "Get Devdocs",
+      },
+      {
+        "<leader>fD",
+        mode = "n",
+        function()
+          local devdocs = require "devdocs"
+          local installedDocs = devdocs.GetInstalledDocs()
+          Snacks.picker.select(installedDocs, {}, function(selected)
+            if not selected then return end
+            local docDir = devdocs.GetDocDir(selected)
+            -- prettify the filename as you wish
+            Snacks.picker.files {
+              cwd = docDir,
+              actions = {
+                openGlow = function(picker, _)
+                  local entry = picker:current { fallback = true }
+                  if not entry or not entry._path then return end
+                  -- run tmux command to open glow in a new tmux window
+                  vim.fn.jobstart(glowCmd(entry._path))
+
+                  picker:close()
+                end,
+              },
+              win = {
+                input = {
+                  keys = {
+                    ["<CR>"] = {
+                      "openGlow",
+                      mode = { "n", "i" },
+                      desc = "Open with Glow",
+                    },
+                  },
+                },
+              },
+            }
+          end)
+        end,
+        desc = "Get All Devdocs",
+      },
+    },
+    opts = {
+      ensure_installed = {
+        "c",
+        "cpp",
+        "go",
+        "http",
+        "python~3.10",
+        "lua~5.1",
+        "bash",
+        "zsh",
+      },
+    },
+  },
   {
     "luckasRanarison/nvim-devdocs",
     enabled = false,

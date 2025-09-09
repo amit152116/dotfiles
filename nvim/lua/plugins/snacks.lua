@@ -78,7 +78,7 @@ return {
                     "~/myDisk/Personal Projects/",
                     "~/.config/",
                     "~/myDisk/GithubRepositories/",
-                    "~/go/src/github.com/Amit152116Kumar/",
+                    "~/go/src/github.com/amit152116/",
                     "~/.local/share/",
                   },
                   patterns = {
