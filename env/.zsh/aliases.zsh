@@ -12,7 +12,7 @@ if command -v eza &>/dev/null; then
 fi
 
 if command -v docker &>/dev/null; then
-  alias docker-clean="docker container prune && docker image prune"
+  alias docker-clean="docker container prune -f && docker image prune -f "
 fi
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then

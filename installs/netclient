@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+KEYRING="/usr/share/keyrings/netmaker-keyring.gpg"
+REPO_FILE="/etc/apt/sources.list.d/netclient.list"
+REPO_ENTRY="deb [signed-by=${KEYRING}] https://apt.netmaker.org stable main"
+
+# Install GPG key if not already installed
+if [[ ! -f "$KEYRING" ]]; then
+  curl -sL 'https://apt.netmaker.org/gpg.key' | sudo gpg --dearmor -o "$KEYRING"
+fi
+
+# Add repo if not already present
+if [[ ! -f "$REPO_FILE" ]] || ! grep -qF "$REPO_ENTRY" "$REPO_FILE"; then
+  echo "$REPO_ENTRY" | sudo tee "$REPO_FILE" > /dev/null
+fi
+
+# Update only if needed (optional optimization)
+sudo apt update
+
+# Install netclient if not installed
+if ! dpkg -s netclient &>/dev/null; then
+  sudo apt install -y netclient
+fi

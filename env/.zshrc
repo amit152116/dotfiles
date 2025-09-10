@@ -17,6 +17,7 @@ source ~/.zsh/fzf.zsh
 
 # 3️⃣ Load completion
 source ~/.zsh/completions.zsh
+source ~/.zsh/netclient.zsh
 
 if  command -v zoxide >/dev/null 2>&1; then
   eval "$(zoxide init zsh)"
