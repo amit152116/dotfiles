@@ -40,19 +40,14 @@ if [ -z "$CMD" ]; then
 	exit 1
 fi
 
-tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index} #{pane_current_command}" |
-	while read -r pane_process; do
-		IFS=' ' read -ra pane_process <<<"$pane_process"
-		pane="${pane_process[0]}"
-		cmd="${pane_process[1]}"
+tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index} #{pane_pid} #{pane_current_command}" | grep -E " (zsh|bash|sh|fish)$" | while read pane pid cmd; do
 
-		case "$cmd" in
-		bash | zsh | fish | sh) # only send to shells
-			if [[ $SILENT -eq 1 ]]; then
-				tmux send-keys -t "$pane" "$CMD" C-b C-m
-			else
-				tmux send-keys -t "$pane" "$CMD" C-m
-			fi
-			;;
-		esac
-	done
+	# Skip if shell has child processes
+	pgrep -P "$pid" >/dev/null 2>&1 && continue
+
+	# Send command depending on SILENT mode
+	keys=("$CMD" C-m)
+	[[ $SILENT -eq 1 ]] && keys=("$CMD" C-b C-m)
+	tmux send-keys -t "$pane" "${keys[@]}"
+
+done

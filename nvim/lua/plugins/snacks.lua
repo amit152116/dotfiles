@@ -155,7 +155,7 @@ return {
             },
 
             ["<Leader>gg"] = {
-              "<cmd>silent !tmux neww tmux-sessionizer -s 2<cr>",
+              "<cmd>silent !tmux-sessionizer -s 2<cr>",
               desc = "LazyGit ",
             },
             -- Find all Neovim plugins files

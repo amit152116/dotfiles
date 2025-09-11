@@ -153,9 +153,9 @@ function M.RosPicker(opts)
       local preview_obj = item.preview
 
       if preview_obj and preview_obj.text then
-        -- THE FIX IS HERE: Split the text string into a table of lines
+        -- Split the text string into a table of lines
         local lines = vim.split(preview_obj.text, "\n")
-        table.remove(lines, 1)
+        -- table.remove(lines, 1)
         ctx.preview:set_lines(lines)
         ctx.preview:highlight { ft = preview_obj.ft }
         if item.preview_title then

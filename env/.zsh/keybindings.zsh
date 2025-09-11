@@ -62,27 +62,6 @@ bindkey '^B' __silent_run
 
 # TMUX BINDINGS
 if [[ -n "$TMUX" ]]; then
-  # tmux-sessionizer (new window)
-  __tmux_sessionizer_new() {
-    tmux neww tmux-sessionizer
-  }
-  zle -N __tmux_sessionizer_new
-  bindkey '^f' __tmux_sessionizer_new
-
-  # tmux-sessionizer -s 0..3
-  __tmux_sessionizer_s0() { tmux-sessionizer -s 0 }
-  __tmux_sessionizer_s1() { tmux-sessionizer -s 1 }
-  __tmux_sessionizer_s2() { tmux-sessionizer -s 2 }
-  __tmux_sessionizer_s3() { tmux-sessionizer -s 3 }
-
-  zle -N __tmux_sessionizer_s0
-  zle -N __tmux_sessionizer_s1
-  zle -N __tmux_sessionizer_s2
-  zle -N __tmux_sessionizer_s3
-
-  bindkey '\em' __tmux_sessionizer_s0
-  bindkey '\eb' __tmux_sessionizer_s1
-  bindkey '\eg' __tmux_sessionizer_s2
 
   __tmux_kill_pane() {
     current_pane=$TMUX_PANE
@@ -102,18 +81,6 @@ if [[ -n "$TMUX" ]]; then
   zle -N __tmux_kill_pane
 
   bindkey '\eq' __tmux_kill_pane
-
-  __tmux_switch_session(){
-    tmux switch-client -l
-  }
-  zle -N __tmux_switch_session
-  bindkey '\el' __tmux_switch_session
-
-  __tmux_switch_window(){
-    tmux last-window
-  }
-  zle -N __tmux_switch_window
-  bindkey '\ew' __tmux_switch_window
 
 fi
 

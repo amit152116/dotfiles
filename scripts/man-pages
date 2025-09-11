@@ -14,7 +14,11 @@ selection=$(
 			--preview-window="right:60%" \
 			--bind "ctrl-v:toggle-preview" \
 			--bind "ctrl-o:execute(echo {} | awk '{print \$1}' | xargs -r man -P cat | less -R)" \
-			--header $'↵:open  ctrl-v:toggle preview  ctrl-o:open raw\n'
+			--header $'↵:open  ctrl-v:toggle preview  ctrl-o:open raw\n' \
+			--prompt="❯ " \
+			--pointer="➤ " \
+			--marker="✓ " \
+			--color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
 )
 
 # --preview-window=down,60%,wrap \

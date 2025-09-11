@@ -91,7 +91,7 @@ return {
         ["N"] = { "Nzzzv", silent = true },
 
         ["<C-f>"] = {
-          "<cmd>silent !tmux neww tmux-sessionizer<CR>",
+          "<cmd>silent !tmux-sessionizer<CR>",
           desc = "Open tmux-sessionizer",
           silent = true,
         },
@@ -101,12 +101,12 @@ return {
           silent = true,
         },
         ["<M-m>"] = {
-          "<cmd>silent !tmux neww tmux-sessionizer -s 0<cr>",
+          "<cmd>silent !tmux-sessionizer -s 0<cr>",
           desc = "Man Pages Fzf",
           silent = true,
         },
         ["<M-b>"] = {
-          "<cmd>silent !tmux neww tmux-sessionizer -s 1<cr>",
+          "<cmd>silent !tmux-sessionizer -s 1<cr>",
           desc = "Btop",
           silent = true,
         },

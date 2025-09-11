@@ -12,7 +12,7 @@ fi
 
 # Add repo if not already present
 if [[ ! -f "$REPO_FILE" ]] || ! grep -qF "$REPO_ENTRY" "$REPO_FILE"; then
-  echo "$REPO_ENTRY" | sudo tee "$REPO_FILE" > /dev/null
+  echo "$REPO_ENTRY" | sudo tee "$REPO_FILE" >/dev/null
 fi
 
 # Update only if needed (optional optimization)

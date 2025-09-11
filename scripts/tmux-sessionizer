@@ -195,15 +195,9 @@ find_dirs() {
 	# list TMUX sessions
 	if [[ -n "${TMUX}" ]]; then
 		current_session=$(tmux display-message -p '#S')
-		last_session=$(tmux list-sessions -F '#{session_name} #{session_last_attached}' | sort -k2 -nr | head -1 | cut -d' ' -f1)
-		# Add last session first, if not current
-		if [[ -n "$last_session" && "$last_session" != "$current_session" ]]; then
-			echo "[TMUX] $last_session (last)"
-		fi
-		# List all other sessions
-		tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null | grep -vFx "[TMUX] $current_session" | grep -vFx "[TMUX] $last_session"
-	else
-		tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null
+
+		# List all other sessions except current
+		tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null | grep -vFx "[TMUX] $current_session"
 	fi
 
 	# note: TS_SEARCH_PATHS is an array of paths to search for directories
@@ -295,22 +289,24 @@ elif [[ ! -z $user_selected ]]; then
 	selected="$user_selected"
 else
 	selected=$(
-		find_dirs |
-			FZF_DEFAULT_OPTS="$FZF_COMMON_OPTS --preview '
-    if [[ {} == \[TMUX\]* ]]; then
-      # strip [TMUX] prefix
-      session=$(echo {} | sed "s/^\[TMUX\] //")
-      tmux list-windows -t \"$session\" 2>/dev/null || echo \"(no such tmux session)\"
-    elif [[ -d {} ]]; then
-      # ls -la --color=always {} | head -40
-			tree -C -L 1 {}
-    else
-      echo \"Not a directory or tmux session\"
-    fi
-  '\
-    --bind 'ctrl-v:toggle-preview'\
-		--header '↵:open  ctrl-v:toggle preview'
-  " fzf
+		find_dirs | FZF_DEFAULT_OPTS="\
+		--preview '
+				if [[ {} == \[TMUX\]* ]]; then
+    				session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\")
+    				tmux list-windows -t \"\$session\" 2>/dev/null || echo \"(no such tmux session)\"
+				elif [[ -d {} ]]; then
+    				tree -C -L 1 {} 2>/dev/null || ls -la --color=always {} | head -40
+				else
+    				echo \"Not a directory or tmux session\"
+				fi
+				' \
+		--prompt='❯ ' \
+		--pointer='➤ ' \
+		--marker='✓ ' \
+		--color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
+		--bind 'ctrl-v:toggle-preview' \
+		--header '↵:open  ctrl-v:toggle preview' \
+" fzf
 	)
 fi
 

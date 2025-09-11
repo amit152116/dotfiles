@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
+
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+sudo apt-get update
+sudo apt-get install -y libedgetpu1-std build-essential \
+	libpython3-dev \
+	libusb-1.0-0-dev
+
+git clone --recurse-submodules https://github.com/google-coral/libcoral "$HOME/libCoral"
+
+cd "$HOME/libCoral"
+
+# make CPU=k8 tests # Builds for x86_64 (default CPU value)
+# make CPU=aarch64 tests # Builds for ARMv8, e.g. Coral Dev Board
+make DOCKER_IMAGE=ubuntu:20.04 DOCKER_CPUS="k8 aarch64" DOCKER_TARGETS=tests docker-build
