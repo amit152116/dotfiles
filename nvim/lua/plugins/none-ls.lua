@@ -21,6 +21,9 @@ return {
         extra_args = { "--style=file" },
         filetypes = { "c", "cpp", "h", "hpp" },
       },
+      null_ls.builtins.formatting.shfmt.with {
+        filetypes = { "sh", "bash", "zsh" }, -- make shfmt format zsh too
+      },
     })
   end,
 }

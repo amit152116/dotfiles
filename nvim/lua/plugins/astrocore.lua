@@ -31,7 +31,8 @@ return {
       -- see `:h vim.filetype.add` for usage
       extension = {
         foo = "fooscript",
-        urdf = "urdf",
+        urdf = "xml",
+        zsh = "bash",
       },
       filename = {
         [".foorc"] = "fooscript",
