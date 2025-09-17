@@ -51,7 +51,7 @@ return {
         sidescrolloff = 8,
         colorcolumn = "80",
         cursorline = true,
-        -- tabstop = 4, -- Number of spaces per tab
+        tabstop = 4, -- Number of spaces per tab
         smartindent = true, -- Highlight current line
         showmatch = true, -- Show matching brackets
       },

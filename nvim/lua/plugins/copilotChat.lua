@@ -17,30 +17,43 @@ return {
         model = "claude-3.5-sonnet",
         -- model = "gpt-4o",
         prompts = {
-          Resuable = {
-            prompt = "Extract reusable functions or methods from this code to improve modularity and testability.",
-            system_prompt = "COPILOT_REVIEW", -- System prompt to use (can be specified manually in prompt via /).
-            description = "Reusable prompt description",
-          },
-          Refactor = {
-            prompt = "Refactor this code to improve readability and maintainability.",
-            system_prompt = "COPILOT_REVIEW", -- System prompt to use (can be specified manually in prompt via /).
-            description = "Refactor prompt description",
-          },
-          DailySummary = {
-            prompt = "Summarize the key changes and contributions made today across all code files. Highlight major features, bug fixes, refactoring, and configuration updates. Keep the summary concise and suitable for inclusion in a daily work log or team stand-up note.",
-            system_prompt = "COPILOT_INSTRUCTIONS", -- System prompt to use (can be specified manually in prompt via /).
-            description = "Daily summary prompt description",
-          },
-          ROSRefactor = {
-            prompt = "Refactor the selected code with ROS 2 best practices in mind. Preserve functionality but improve readability, modularity, and performance.",
-            system_prompt = "COPILOT_REVIEW", -- System prompt to use (can be specified manually in prompt via /).
-          },
+          AlgoDoc = {
+            prompt = [[
+            You are documenting this algorithm/data structure implementation for coding interview preparation.
+            Generate a detailed structured comment block in the following format:
 
-          ROSReview = {
-            prompt = "Review this ROS 2 C++ code for memory management, topic/service usage, and adherence to ROS 2 conventions.",
+            1. Definition:
+              - One-liner about what the algorithm/data structure does.
+
+            2. Allowed Operations / Rules:
+              - Describe what operations or rules are permitted (if applicable).
+
+            3. Recurrence Relation / Formula:
+              - Include DP recurrence, formula, or core idea (if applicable).
+              - For data structures, describe the logic of core operations.
+
+            4. Edge Cases / Pitfalls:
+              - Common Tricky Cases (if applicable).
+
+            5. Complexity:
+              - Time and space complexity (worst/average/best if relevant).
+
+            6. Example:
+              - A small, concrete input/output transformation example.
+
+            7. Use Cases:
+              - Real-world applications and why this algorithm matters.
+
+            8. Comparison:
+              - How it relates to or differs from similar algorithms or data structures.
+
+            9. Implementation Notes:
+              - Specific implementation details (if applicable).
+
+            Make it concise, structured, and uniform so it’s easy to revise for interviews.
+            ]],
             system_prompt = "COPILOT_REVIEW",
-            description = "ROS 2 code review prompt description",
+            description = "Generate structured DSA algorithm comments (algo_doc style)",
           },
         },
       }
@@ -79,11 +92,9 @@ return {
                 "<cmd>CopilotChatExplain<CR>",
                 desc = "Explain code",
               },
-              ["<Leader>ar"] = {
-                "<cmd>CopilotChatReview<CR>",
-                desc = "Review code",
-              },
+
               ["<Leader>af"] = { "<cmd>CopilotChatFix<CR>", desc = "Fix code" },
+
               ["<Leader>ao"] = {
                 "<cmd>CopilotChatOptimize<CR>",
                 desc = "Optimize code",
@@ -119,11 +130,9 @@ return {
                 "<cmd>CopilotChatExplain<CR>",
                 desc = "Explain code",
               },
-              ["<Leader>ar"] = {
-                "<cmd>CopilotChatReview<CR>",
-                desc = "Review code",
-              },
+
               ["<Leader>af"] = { "<cmd>CopilotChatFix<CR>", desc = "Fix code" },
+
               ["<Leader>ao"] = {
                 "<cmd>CopilotChatOptimize<CR>",
                 desc = "Optimize code",
