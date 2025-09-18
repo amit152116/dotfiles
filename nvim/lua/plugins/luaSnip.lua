@@ -7,70 +7,76 @@ return {
       -- add more custom luasnip configuration such as filetype extend or custom snippets
       local luasnip = require "luasnip"
 
-      local s = luasnip.snippet
-      local t = luasnip.text_node
-      local i = luasnip.insert_node
+      local snippet = luasnip.snippet
+      local text = luasnip.text_node
+      local insert = luasnip.insert_node
 
       -- Extend filetypes if needed
       luasnip.filetype_extend("javascript", { "javascriptreact" })
 
       -- 🔥 Add your custom snippets
       luasnip.add_snippets("cpp", {
-        s("algo_doc", {
-          t {
+        snippet("stdc", {
+          text { "#include <bits/stdc++.h>", "", "" },
+          text { "int main(int argc, char* argv[]) {", "    " },
+          insert(0),
+          text { "", "    return 0;", "}" },
+        }),
+        snippet("algo_doc", {
+          text {
             "/*",
             " * Definition:",
             " *   ",
           },
-          i(1, "One-liner about what it does"),
-          t {
+          insert(1, "One-liner about what it does"),
+          text {
             "",
             " *",
             " * Allowed Operations / Rules:",
             " *   ",
           },
-          i(2, "Operations"),
-          t {
+          insert(2, "Operations"),
+          text {
             "",
             " *",
             " * Recurrence Relation / Formula:",
             " *   ",
           },
-          i(3, "Formula/Recurrence"),
-          t {
+          insert(3, "Formula/Recurrence"),
+          text {
             "",
             " *",
             " * Complexity:",
             " *   Time: ",
           },
-          i(4, "O(n)"),
-          t {
+          insert(4, "O(n)"),
+          text {
             "",
             " *   Space: ",
           },
-          i(5, "O(1)"),
-          t {
+          insert(5, "O(1)"),
+          text {
             "",
             " *",
             " * Example:",
             " *   ",
           },
-          i(6, "Example input/output"),
-          t {
+          insert(6, "Example input/output"),
+          text {
             "",
             " *",
             " * Use Cases:",
             " *   ",
           },
-          i(7, "Real-world applications"),
-          t {
+          insert(7, "Real-world applications"),
+          text {
             "",
             " *",
             " * Comparison:",
             " *   ",
           },
-          i(8, "Similar algos/data structures"),
-          t {
+          insert(8, "Similar algos/data structures"),
+          text {
             "",
             " */",
           },
