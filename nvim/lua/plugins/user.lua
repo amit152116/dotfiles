@@ -24,4 +24,24 @@ return {
   },
   -- You can disable default plugins as follows:
   { "max397574/better-escape.nvim", enabled = true },
+
+  {
+    "which-key.nvim",
+    opts = {
+      preset = "helix",
+    },
+  },
+
+  { "nvim-treesitter/playground" },
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = {
+      ensure_installed = {
+        "lua",
+        "vim",
+        "latex",
+        -- add more arguments for adding more treesitter parsers
+      },
+    },
+  },
 }

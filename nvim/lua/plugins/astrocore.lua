@@ -232,8 +232,18 @@ return {
         ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
       },
       t = {
-
-        ["<Esc>"] = { "<C-\\><C-n>", desc = "Normal Mode Terminal" },
+        ["jj"] = {
+          "<C-\\><C-n>",
+          noremap = true,
+          silent = true,
+          desc = "Normal Mode Terminal",
+        },
+        ["jk"] = {
+          "<C-\\><C-n>",
+          noremap = true,
+          silent = true,
+          desc = "Normal Mode Terminal",
+        },
       },
       v = {
         -- Move selected lines up or down
