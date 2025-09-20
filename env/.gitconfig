@@ -6,6 +6,7 @@
 [core]
 	autocrlf = input
 	excludesfile = ~/.gitignore
+	pager = git-pager
 [init]
 	defaultBranch = master
 [http]
@@ -39,5 +40,18 @@
     if [ \"$#\" -lt 1 ]; then echo 'Usage: git tag-add <tag>'; exit 1; fi; \
     git tag \"$1\" && git push origin \"$1\"; \
   }; f"
+
 [diff]
 	tool = nvimdiff
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+	side-by-side = true
+   	line-numbers = true
+    navigate = true  # use n and N to move between diff sections
+    dark = true      # or light = true, or omit for auto-detection
+
+[merge]
+    conflictStyle = diff3

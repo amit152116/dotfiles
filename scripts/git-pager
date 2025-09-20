@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# git-pager: use delta if installed, otherwise batcat
+
+if command -v delta >/dev/null 2>&1; then
+    delta "$@"
+else
+    batcat -l diff -p --paging=always "$@"
+fi

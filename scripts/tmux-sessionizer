@@ -290,23 +290,30 @@ elif [[ ! -z $user_selected ]]; then
 else
 	selected=$(
 		find_dirs | FZF_DEFAULT_OPTS="\
-		--preview '
-				if [[ {} == \[TMUX\]* ]]; then
-    				session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\")
-    				tmux list-windows -t \"\$session\" 2>/dev/null || echo \"(no such tmux session)\"
-				elif [[ -d {} ]]; then
-    				tree -C -L 1 {} 2>/dev/null || ls -la --color=always {} | head -40
-				else
-    				echo \"Not a directory or tmux session\"
-				fi
-				' \
-		--prompt='❯ ' \
-		--pointer='➤ ' \
-		--marker='✓ ' \
-		--color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
-		--bind 'ctrl-v:toggle-preview' \
-		--header '↵:open  ctrl-v:toggle preview' \
-" fzf
+  			--preview '
+    			if [[ {} == \[TMUX\]* ]]; then
+        			session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\")
+        			{
+            			echo \"🖥️  Session: \$session\"
+            			echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
+            			echo \"Windows:\"
+            			tmux list-windows -t \"\$session\" -F \"#I: #W #{?window_active,★, }\"
+            			echo
+            			echo \"Panes:\"
+            			tmux list-panes -t \"\$session\" -F \"#I.#P: #{pane_current_command} (#{pane_width}x#{pane_height})\"
+        			} 2>/dev/null | batcat -l yaml --color=always -p
+    			elif [[ -d {} ]]; then
+        			eza -1 --icons --color=always --group-directories-first {}
+    			else
+        			echo \"Not a directory or tmux session\"
+    			fi
+  			' \
+  			--prompt='❯ ' \
+  			--pointer='➤ ' \
+  			--marker='✓ ' \
+  			--color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
+  			--bind 'ctrl-v:toggle-preview' \
+  			--header '↵:open  ctrl-v:toggle preview' " fzf
 	)
 fi
 

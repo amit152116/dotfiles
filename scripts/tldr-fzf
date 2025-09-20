@@ -2,14 +2,14 @@
 # man-fzf: Browse man pages with fzf + extras
 
 # Get list of all man pages
-list_man_pages() {
-	man -k . 2>/dev/null | sort -u | awk -F' - ' '{print $1}'
+list_tldr() {
+	tldr --list 2>/dev/null
 }
 # Choose a man page via fzf
 selection=$(
-	list_man_pages |
+	list_tldr |
 		FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
-			--preview 'page=$(echo {} | awk "{print \$1}"); man "$page" 2>/dev/null | col -bx | batcat -l man -p --color=always | head -n 40 ' \
+			--preview 'page=$(echo {} | awk "{print \$1}"); tldr "$page" 2>/dev/null' \
 			--bind "enter:accept" \
 			--preview-window="right:60%" \
 			--bind "ctrl-v:toggle-preview" \
@@ -25,10 +25,4 @@ selection=$(
 # Exit if nothing was selected
 [[ -z "$selection" ]] && exit 0
 
-# Extract the man page name (first column before space)
-page=$(echo "$selection" | awk '{print $1}')
-
-# Extract section (in parentheses, e.g., printf (3))
-section=$(echo "$selection" | awk '{print $2}' | tr -d '()')
-
-man "$section" "$page" | col -bx | batcat -l man -p
+tldr "$selection" | col -bx | batcat -l md --paging=always
