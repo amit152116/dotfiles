@@ -3,7 +3,7 @@ normal = { family = "JetBrainsMonoNL Nerd Font", style = "Regular" }
 size = 15.0
 
 [window]
-opacity = 0.80
+opacity = 0.90
 dynamic_padding = true
 decorations = "none"               # "Full" | "None" | "Transparent" | "Buttonless"
 startup_mode = "Fullscreen"
