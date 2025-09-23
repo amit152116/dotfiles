@@ -27,7 +27,7 @@ bindkey '^o' __open_file_explorer
 # Man FZF
 if [[ ! -n "$TMUX" ]]; then
   __man_fzf(){
-    man-pages
+    help-fzf
   }
 
   zle -N __man_fzf

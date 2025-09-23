@@ -124,7 +124,6 @@ return {
 
     dependencies = {
       "nvim-lua/plenary.nvim",
-      "nvim-telescope/telescope.nvim",
       "nvim-treesitter/nvim-treesitter",
     },
     opts = {
@@ -150,20 +149,20 @@ return {
       cmd_ignore = {}, -- ignore cmd rendering for the listed docs
     },
 
-    -- keys = {
-    --   {
-    --     "<Leader>fd",
-    --     "<cmd>DevdocsOpenCurrent<CR>",
-    --     mode = "n",
-    --     desc = "Current DevDocs",
-    --   },
-    --   {
-    --     "<Leader>fD",
-    --     function() require("nvim-devdocs")._open_docs_with_telescope() end,
-    --     mode = "n",
-    --     desc = "FindDevDocs",
-    --   },
-    -- },
+    keys = {
+      {
+        "<Leader>fd",
+        "<cmd>DevdocsOpenCurrent<CR>",
+        mode = "n",
+        desc = "Current DevDocs",
+      },
+      {
+        "<Leader>fD",
+        function() require("nvim-devdocs")._open_docs_with_telescope() end,
+        mode = "n",
+        desc = "FindDevDocs",
+      },
+    },
 
     config = function(_, opts)
       local devdocs = require "nvim-devdocs"

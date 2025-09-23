@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# help-fzf: Browse man pages or tldr with fzf
+
+# Get man list
+list_man_pages() {
+	man -k . 2>/dev/null | sort -u | awk -F' - ' '{printf "%-50s [man]\n", $1}'
+}
+
+# Get tldr list
+list_tldr() {
+	tldr --list 2>/dev/null | awk '{printf "%-50s [tldr]\n", $1}'
+}
+
+# Combined list
+selection=$(
+	{
+		list_man_pages
+		list_tldr
+	} |
+		FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
+			--preview "
+    			# Remove leading spaces and trailing tag/spaces
+    			page=\$(echo {} | sed 's/^[[:space:]]*//; s/[[:space:]]*\\[.*\\]$//')
+
+    			if [[ {} == *'[man]'* ]]; then
+        			# Extract name and optional section
+        			name=\$(echo \"\$page\" | awk '{print \$1}')
+        			section=\$(echo \"\$page\" | awk '{print \$2}' | tr -d '()')
+        			man \"\$section\" \"\$name\" 2>/dev/null | col -bx | batcat -l man -p --color=always | head -n 40
+    			else
+        			# tldr preview
+        			tldr \"\$page\" 2>/dev/null | col -bx | batcat -l md -p --color=always
+    			fi
+			" \
+			--bind "enter:accept" \
+			--preview-window="right:60%" \
+			--bind "ctrl-v:toggle-preview" \
+			--header $'↵:open  ctrl-v:toggle preview' \
+			--prompt="❯ " \
+			--pointer="➤ " \
+			--marker="✓ " \
+			--color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
+)
+
+# Exit if nothing was selected
+[[ -z "$selection" ]] && exit 0
+
+# Extract page name and type
+page=$(echo "$selection" | sed 's/\[.*\]$//' | xargs)
+type=$(echo "$selection" | grep -o '\[.*\]')
+
+if [[ $type == "[man]" ]]; then
+	# man pages: extract name and optional section
+	name=$(echo "$page" | awk '{print $1}')
+	section=$(echo "$page" | awk '{print $2}' | tr -d '()')
+	man "$section" "$name" | col -bx | batcat -p -l man --paging=always
+else
+	# tldr page
+	tldr "$page" | col -bx | batcat -l md --paging=always
+fi

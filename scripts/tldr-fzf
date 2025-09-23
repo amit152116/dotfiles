@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# man-fzf: Browse man pages with fzf + extras
+# tldr-fzf: Browse tldr pages with fzf + extras
 
-# Get list of all man pages
+# Get list of all tldr pages
 list_tldr() {
 	tldr --list 2>/dev/null
 }
-# Choose a man page via fzf
+# Choose a tldr page via fzf
 selection=$(
 	list_tldr |
 		FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \

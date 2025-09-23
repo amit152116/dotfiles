@@ -5,6 +5,7 @@
 list_man_pages() {
 	man -k . 2>/dev/null | sort -u | awk -F' - ' '{print $1}'
 }
+
 # Choose a man page via fzf
 selection=$(
 	list_man_pages |
