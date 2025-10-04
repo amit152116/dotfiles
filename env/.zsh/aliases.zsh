@@ -3,6 +3,10 @@ alias python="python3"
 # alias pip="pip3"
 alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --show-toplevel)"'
 
+# Makefile aliases
+alias mknew='cp ~/.dotfiles/scripts/project.mk.template ./Makefile'
+alias mkedit='$EDITOR ~/.dotfiles/scripts/cmake.mk'
+
 alias home='builtin cd ~'
 if command -v eza &>/dev/null; then
 	alias ls="eza -g --icons"
