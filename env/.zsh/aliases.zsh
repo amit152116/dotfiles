@@ -3,10 +3,6 @@ alias python="python3"
 # alias pip="pip3"
 alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --show-toplevel)"'
 
-# Makefile aliases
-alias mknew='cp ~/.dotfiles/scripts/project.mk.template ./Makefile'
-alias mkedit='$EDITOR ~/.dotfiles/scripts/cmake.mk'
-
 alias home='builtin cd ~'
 if command -v eza &>/dev/null; then
 	alias ls="eza -g --icons"
@@ -36,3 +32,19 @@ elif command -v python3 &>/dev/null; then
 elif command -v pp_json &>/dev/null; then
 	alias pjson='pp_json'
 fi
+
+# ============================================================================
+# CMake Build System Helpers
+# ============================================================================
+
+TEMPLATES_DIR="$HOME/.dotfiles/templates"
+
+# Copy CMakeLists templates
+alias cmk-exe='cp $TEMPLATES_DIR/CMakeLists-executable.txt ./CMakeLists.txt'
+alias cmk-lib='cp $TEMPLATES_DIR/CMakeLists-library.txt ./CMakeLists.txt'
+alias cmk-header='cp $TEMPLATES_DIR/CMakeLists-header-only.txt ./CMakeLists.txt'
+alias cmk-test='cp $TEMPLATES_DIR/CMakeLists-tests.txt ./tests/CMakeLists.txt'
+alias cmk-clangd='cp $TEMPLATES_DIR/clangd ./.clangd && cp $TEMPLATES_DIR/clang-format ./.clang-format'
+
+# Makefile aliases
+alias mknew='cp $TEMPLATES_DIR/makefile ./Makefile'

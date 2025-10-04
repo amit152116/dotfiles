@@ -1,0 +1,42 @@
+CompileFlags:
+  Add:
+    - -Wextra
+    - -Wall
+    - -isystem /usr/include
+    - -isystem /usr/local/include
+  CompilationDatabase: build
+Diagnostics:
+  ClangTidy:
+    Add:
+      - bugprone-*
+      - cert-*
+      - concurrency-*
+      - cppcoreguidelines-*
+      - google-*
+      - hicpp-*
+      - misc-*
+      - modernize-*
+      - openmp-*
+      - performance-*
+      - portability-*
+      - readability-*
+      - clang-analyzer-*
+    Remove:
+      - cppcoreguidelines-avoid-magic-numbers
+      - performance-unnecessary-value-param
+      - readability-magic-numbers
+    CheckOptions:
+      readability-identifier-length.MinimumVariableNameLength: 2
+      readability-identifier-length.MinimumParameterNameLength: 1
+      readability-function-cognitive-complexity.Threshold: 25
+      modernize-use-auto.MinTypeNameLength: 6
+    FastCheckFilter: Loose
+  UnusedIncludes: Strict
+  Includes:
+    MissingIncludes : Strict
+Completion:
+  ArgumentLists: Delimiters # Options : None, OpenDelimiter, Delimiters, FullPlaceholders
+Index:
+  Background: Build
+Hover:
+  ShowAKA: true

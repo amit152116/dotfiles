@@ -686,6 +686,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--test)
 		RUN_TESTS=true
+		CMAKE_ARGS+=(-DBUILD_TESTS=ON)
 		shift
 		;;
 	--lint)
@@ -763,6 +764,10 @@ configure_build_type
 
 # Add install prefix if specified
 [[ -n "$INSTALL_PREFIX" ]] && CMAKE_ARGS+=(-DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX")
+
+if [[ $RUN_TESTS == true ]]; then
+	TARGET=""
+fi
 
 # Finalize CMake arguments
 if [[ ${#CMAKE_CXX_FLAGS[@]} -gt 0 ]]; then

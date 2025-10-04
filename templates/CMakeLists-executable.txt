@@ -1,0 +1,58 @@
+cmake_minimum_required(VERSION 3.16)
+project(MyProject VERSION 1.0.0 LANGUAGES CXX)
+
+# C++ Standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Options
+option(BUILD_TESTS "Build tests" ON)
+option(BUILD_EXAMPLES "Build examples" OFF)
+option(ENABLE_WARNINGS "Enable compiler warnings" ON)
+
+# Compiler warnings
+if(ENABLE_WARNINGS)
+    if(MSVC)
+        add_compile_options(/W4 /WX)
+    else()
+        add_compile_options(-Wall -Wextra -Wpedantic)
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            add_compile_options(-Werror)
+        endif()
+    endif()
+endif()
+
+# Dependencies
+find_package(fmt REQUIRED)
+
+# Source files (library)
+file(GLOB_RECURSE LIB_SOURCES
+    ${PROJECT_SOURCE_DIR}/src/*.cpp
+)
+
+# Library target (all your core logic)
+add_library(${PROJECT_NAME}_lib ${LIB_SOURCES})
+target_include_directories(${PROJECT_NAME}_lib PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(${PROJECT_NAME}_lib PUBLIC fmt::fmt)
+
+# Executable (only main.cpp or app entry points)
+add_executable(${PROJECT_NAME} src/main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_lib)
+
+# Install
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION bin
+)
+
+# Tests
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# Examples
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()

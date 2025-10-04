@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+# Create new CMake project structure
+
+PROJECT_NAME="${1:-MyProject}"
+PROJECT_TYPE="${2:-executable}" # executable, library, header
+
+echo "Creating project: $PROJECT_NAME (type: $PROJECT_TYPE)"
+
+# Create directory structure
+mkdir -p "$PROJECT_NAME"/{src,include/$PROJECT_NAME,tests,examples}
+
+# Copy appropriate CMakeLists.txt
+TEMPLATES_DIR="$HOME/.dotfiles/templates"
+
+case "$PROJECT_TYPE" in
+executable)
+	cp "$TEMPLATES_DIR/CMakeLists-executable.txt" "$PROJECT_NAME/CMakeLists.txt"
+	;;
+library)
+	cp "$TEMPLATES_DIR/CMakeLists-library.txt" "$PROJECT_NAME/CMakeLists.txt"
+	;;
+header)
+	cp "$TEMPLATES_DIR/CMakeLists-header.txt" "$PROJECT_NAME/CMakeLists.txt"
+	;;
+*)
+	echo "Unknown project type: $PROJECT_TYPE"
+	exit 1
+	;;
+esac
+
+# Update project name in CMakeLists.txt
+sed -i "s/MyProject/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt" 2>/dev/null ||
+	sed -i '' "s/MyProject/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt"
+
+sed -i "s/MyLibrary/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt" 2>/dev/null ||
+	sed -i '' "s/MyLibrary/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt"
+
+sed -i "s/MyHeaderLib/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt" 2>/dev/null ||
+	sed -i '' "s/MyHeaderLib/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt"
+
+# Copy tests CMakeLists.txt
+cp "$TEMPLATES_DIR/CMakeLists-tests.txt" "$PROJECT_NAME/tests/CMakeLists.txt"
+
+# Create main.cpp for executable projects
+if [ "$PROJECT_TYPE" = "executable" ]; then
+	cat >"$PROJECT_NAME/src/main.cpp" <<'MAIN_CPP'
+#include <iostream>
+
+int main(int argc, char* argv[]) {
+    std::cout << "Hello from PROJECT_NAME!" << std::endl;
+    return 0;
+}
+MAIN_CPP
+	sed -i "s/PROJECT_NAME/$PROJECT_NAME/g" "$PROJECT_NAME/src/main.cpp" 2>/dev/null ||
+		sed -i '' "s/PROJECT_NAME/$PROJECT_NAME/g" "$PROJECT_NAME/src/main.cpp"
+fi
+
+# Create sample header
+cat >"$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp" <<'HEADER'
+#pragma once
+
+#include <string>
+
+namespace project_name {
+
+class ProjectClass {
+public:
+    ProjectClass() = default;
+    ~ProjectClass() = default;
+
+    std::string greet() const {
+        return "Hello from ProjectClass!";
+    }
+};
+
+}  // namespace project_name
+HEADER
+
+# Replace placeholders
+sed -i "s/project_name/${PROJECT_NAME,,}/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp" 2>/dev/null ||
+	sed -i '' "s/project_name/${PROJECT_NAME,,}/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp"
+
+sed -i "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp" 2>/dev/null ||
+	sed -i '' "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp"
+
+# Create sample test
+cat >"$PROJECT_NAME/tests/test_basic.cpp" <<'TEST_CPP'
+#include <gtest/gtest.h>
+#include "project_name/project_name.hpp"
+
+TEST(ProjectNameTest, BasicTest) {
+    EXPECT_TRUE(true);
+}
+
+TEST(ProjectNameTest, GreetTest) {
+    project_name::ProjectClass obj;
+    EXPECT_EQ(obj.greet(), "Hello from ProjectClass!");
+}
+TEST_CPP
+
+sed -i "s/project_name/${PROJECT_NAME,,}/g" "$PROJECT_NAME/tests/test_basic.cpp" 2>/dev/null ||
+	sed -i '' "s/project_name/${PROJECT_NAME,,}/g" "$PROJECT_NAME/tests/test_basic.cpp"
+
+sed -i "s/ProjectName/${PROJECT_NAME^}/g" "$PROJECT_NAME/tests/test_basic.cpp" 2>/dev/null ||
+	sed -i '' "s/ProjectName/${PROJECT_NAME^}/g" "$PROJECT_NAME/tests/test_basic.cpp"
+
+sed -i "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/tests/test_basic.cpp" 2>/dev/null ||
+	sed -i '' "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/tests/test_basic.cpp"
+
+# Create .gitignore
+cat >"$PROJECT_NAME/.gitignore" <<'GITIGNORE'
+# Build directories
+build/
+install/
+.cache/
+.ccache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled files
+*.o
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Generated files
+*.log
+.build.config
+*.cmake
+!CMakeLists.txt
+
+# Coverage
+coverage.info
+coverage_report/
+
+# Documentation
+docs/html/
+docs/latex/
+GITIGNORE
+
+# Create README
+cat >"$PROJECT_NAME/README.md" <<README
+# $PROJECT_NAME
+
+## Description
+TODO: Add project description
+
+## Building
+
+\`\`\`bash
+# Debug build
+make debug
+
+# Release build
+make release
+
+# Run tests
+make test
+
+# Install
+make install
+\`\`\`
+
+## Requirements
+- CMake 3.16+
+- C++17 compiler
+- (Add other dependencies)
+
+## License
+TODO: Add license
+README
+
+# Create Makefile
+cp "$TEMPLATES_DIR/makefile" "$PROJECT_NAME/Makefile" 2>/dev/null ||
+	echo "Warning: makefile not found"
+
+cp "$TEMPLATES_DIR/clangd" "$PROJECT_NAME/.clangd" 2>/dev/null
+cp "TEMPLATES_DIR/clang-format" "$PROJECT_NAME/.clang-format" 2>/dev/null
+
+echo "✓ Project created: $PROJECT_NAME"
+echo ""
+echo "Next steps:"
+echo "  cd $PROJECT_NAME"
+echo "  make debug"
+echo "  make test"

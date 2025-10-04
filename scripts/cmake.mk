@@ -8,7 +8,6 @@ jobs ?= $(shell nproc 2>/dev/null || echo 4)
 
 # Build script path (adjust if using system-wide installation)
 BUILD_SCRIPT := cbuild
-# If installed system-wide, use: BUILD_SCRIPT := cmk
 
 # Common build flags
 BUILD_FLAGS = $(if $(target),-t $(target)) \
@@ -59,8 +58,8 @@ relwithdebinfo rwdi: format
 	@$(BUILD_SCRIPT) -b RelWithDebInfo $(BUILD_FLAGS)
 
 # MinSizeRel build
-.PHONY: minsizerel msr
-minsizerel msr: format
+.PHONY: minsizerel msr minsize
+minsizerel msr minsize: format
 	@$(BUILD_SCRIPT) -b MinSizeRel $(BUILD_FLAGS)
 
 # Benchmark optimized build
@@ -222,16 +221,6 @@ format fmt:
 	fi
 	@echo "✅ Formatting complete"
 
-.PHONY: format-check fc
-format-check fc:
-	@echo "🔍 Checking code formatting..."
-	@if command -v clang-format >/dev/null 2>&1; then \
-		find . -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" \) \
-			! -path "./build/*" ! -path "./install/*" \
-			-exec clang-format -style=file --dry-run --Werror {} + 2>&1 | \
-		grep -v "warning:" || echo "  ✓ C++ formatting OK"; \
-	fi
-
 # ============================================================================
 # Documentation
 # ============================================================================
@@ -267,115 +256,9 @@ configure conf:
 .PHONY: reconfigure reconf
 reconfigure reconf: clean configure
 
-.PHONY: ccache-stats cs
-ccache-stats cs:
-	@if command -v ccache >/dev/null 2>&1; then \
-		echo "📊 ccache statistics:"; \
-		ccache -s; \
-	else \
-		echo "❌ ccache not installed"; \
-	fi
-
-.PHONY: ccache-clear cc
-ccache-clear cc:
-	@if command -v ccache >/dev/null 2>&1; then \
-		ccache -C; \
-		echo "✅ ccache cleared"; \
-	else \
-		echo "❌ ccache not installed"; \
-	fi
-
-# ============================================================================
-# IDE Support
-# ============================================================================
-
-.PHONY: compile-commands compile-db
-compile-commands compile-db:
-	@$(BUILD_SCRIPT) -b Debug
-	@if [ -f build/compile_commands.json ]; then \
-		ln -sf build/compile_commands.json . && \
-		echo "✅ compile_commands.json symlink created"; \
-	else \
-		echo "❌ compile_commands.json not found"; \
-	fi
-
-.PHONY: clangd
-clangd:
-	@echo "⚙️  Setting up clangd..."
-	@echo "CompileFlags:" > .clangd
-	@echo "  Add: [-Wall, -Wextra, -std=c++17]" >> .clangd
-	@echo "  Remove: [-march=*, -mtune=*]" >> .clangd
-	@echo "---" >> .clangd
-	@echo "Diagnostics:" >> .clangd
-	@echo "  UnusedIncludes: Strict" >> .clangd
-	@echo "  MissingIncludes: Strict" >> .clangd
-	@make compile-commands
-	@echo "✅ clangd configured"
-
-# ============================================================================
-# Docker Targets
-# ============================================================================
-
-.PHONY: docker-build db
-docker-build db:
-	@if [ -f Dockerfile ]; then \
-		echo "🐳 Building Docker image..."; \
-		docker build -t $(shell basename $(CURDIR)):latest .; \
-	else \
-		echo "❌ Dockerfile not found"; \
-		exit 1; \
-	fi
-
-.PHONY: docker-run drun
-docker-run drun:
-	@docker run -it --rm \
-		-v $(PWD):/workspace \
-		-w /workspace \
-		$(shell basename $(CURDIR)):latest
-
-.PHONY: docker-shell dsh
-docker-shell dsh:
-	@docker run -it --rm \
-		-v $(PWD):/workspace \
-		-w /workspace \
-		$(shell basename $(CURDIR)):latest /bin/bash
-
-# ============================================================================
-# Continuous Integration
-# ============================================================================
-
-.PHONY: ci
-ci: format-check lint test
-
-.PHONY: ci-full
-ci-full: clean format-check lint coverage
-
-# ============================================================================
-# Package Management
-# ============================================================================
-
-.PHONY: deps dep
-deps dep:
-	@echo "📦 Installing dependencies..."
-	@if [ -f conan.txt ] || [ -f conanfile.txt ]; then \
-		conan install . --build=missing && \
-		echo "✅ Conan dependencies installed"; \
-	elif [ -f vcpkg.json ]; then \
-		vcpkg install && \
-		echo "✅ vcpkg dependencies installed"; \
-	elif [ -f requirements.txt ]; then \
-		pip install -r requirements.txt && \
-		echo "✅ Python dependencies installed"; \
-	else \
-		echo "⚠️  No dependency file found (conan.txt, vcpkg.json, requirements.txt)"; \
-	fi
-
 # ============================================================================
 # Benchmarking
 # ============================================================================
-
-.PHONY: bench-build bb
-bench-build bb: benchmark
 
 .PHONY: bench-run br
 bench-run br: benchmark
@@ -430,7 +313,7 @@ help h:
 	@echo "  make [r|release]         Release build with formatting"
 	@echo "  make [bench|benchmark]   Release with LTO optimizations"
 	@echo "  make rwdi                RelWithDebInfo build"
-	@echo "  make msr                 MinSizeRel build"
+	@echo "  make [msr|minsizerel]    MinSizeRel build"
 	@echo "  make [rb|rebuild]        Clean and rebuild"
 	@echo "  make [i|install]         Build and install (Release)"
 	@echo "  make id                  Build and install (Debug)"
@@ -440,17 +323,12 @@ help h:
 	@echo "  make tr                  Run tests (Release)"
 	@echo "  make tv                  Run tests (verbose)"
 	@echo "  make [cov|coverage]      Generate coverage report"
-	@echo "  make vc                  View coverage report"
 	@echo ""
 	@echo "🔧 Sanitizer Builds:"
 	@echo "  make [asan|address]      AddressSanitizer build"
-	@echo "  make at                  ASan build + tests"
 	@echo "  make [msan|memory]       MemorySanitizer build"
-	@echo "  make mt                  MSan build + tests"
 	@echo "  make [tsan|thread]       ThreadSanitizer build"
-	@echo "  make tt                  TSan build + tests"
 	@echo "  make [ubsan|ub]          UndefinedBehaviorSanitizer"
-	@echo "  make ut                  UBSan build + tests"
 	@echo ""
 	@echo "🌍 Cross-Compilation:"
 	@echo "  make cross-arm32         Build for ARM 32-bit"
@@ -461,46 +339,25 @@ help h:
 	@echo ""
 	@echo "🔍 Code Quality:"
 	@echo "  make [l|lint]            Run linters (clang-tidy, cppcheck)"
-	@echo "  make lf                  Format + lint"
-	@echo "  make check               Format + lint + test"
-	@echo "  make check-all           Format + lint + coverage"
 	@echo "  make analyze             Run static analysis"
 	@echo "  make valgrind target=X   Run Valgrind on target"
 	@echo ""
 	@echo "🧹 Maintenance:"
 	@echo "  make [c|clean]           Clean build artifacts"
 	@echo "  make clean-all           Clean everything"
-	@echo "  make [dep|deps]          Install dependencies"
 	@echo "  make [info|stats]        Show build statistics"
 	@echo "  make [lt|list-targets]   List build targets"
 	@echo "  make [dr|dry-run]        Show build commands"
 	@echo ""
 	@echo "🎨 Code Formatting:"
 	@echo "  make [fmt|format]        Format all code"
-	@echo "  make fc                  Check formatting"
 	@echo ""
 	@echo "📚 Documentation:"
 	@echo "  make [doc|docs]          Generate documentation"
 	@echo "  make [vd|view-docs]      View documentation"
 	@echo ""
-	@echo "💻 IDE Support:"
-	@echo "  make compile-db          Generate compile_commands.json"
-	@echo "  make clangd              Setup clangd configuration"
-	@echo "  make [cs|ccache-stats]   Show ccache statistics"
-	@echo "  make [cc|ccache-clear]   Clear ccache"
-	@echo ""
-	@echo "🐳 Docker:"
-	@echo "  make [db|docker-build]   Build Docker image"
-	@echo "  make drun                Run in Docker container"
-	@echo "  make dsh                 Open Docker shell"
-	@echo ""
 	@echo "⚡ Benchmarking:"
-	@echo "  make bb                  Build benchmarks"
 	@echo "  make br [target=X]       Run benchmarks"
-	@echo ""
-	@echo "🔄 CI/CD:"
-	@echo "  make ci                  Quick CI (format-check + lint + test)"
-	@echo "  make ci-full             Full CI (+ coverage)"
 	@echo ""
 	@echo "💡 Variables (override from command line):"
 	@echo "  target=TARGET            Build specific target(s)"

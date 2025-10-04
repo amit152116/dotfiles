@@ -1,0 +1,51 @@
+# Base style
+BasedOnStyle: Google
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+# Braces
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+# Line length
+ColumnLimit: 80
+# Alignment
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignAfterOpenBracket: Align
+AlignOperands: true
+# Constructor initializers
+ConstructorInitializerIndentWidth: 4
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<.*\.h>'
+    Priority: 1
+    SortPriority: 0
+  - Regex: '^<.*\.hpp>'
+    Priority: 2
+    SortPriority: 0
+  - Regex: '^".*"$'
+    Priority: 3
+    SortPriority: 0
+  - Regex: '.*'
+    Priority: 4
+    SortPriority: 0
+# Namespace formatting
+NamespaceIndentation: All
+# Function calls
+SpaceBeforeParens: ControlStatements
+# comments
+SpacesBeforeTrailingComments: 2
+ReflowComments: true
+# Extras
+AccessModifierOffset: -2
+SpacesInAngles: false
+SeparateDefinitionBlocks: Always # Adds empty lines between function definitions
+PointerAlignment: Left
+AlwaysBreakTemplateDeclarations: Yes
+EmptyLineAfterAccessModifier: Always
+KeepEmptyLinesAtTheStartOfBlocks: false
+# C++20 / Modernization
+DerivePointerAlignment: false
