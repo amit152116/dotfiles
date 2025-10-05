@@ -50,6 +50,21 @@ _load_ros() {
 	export ROS_DOMAIN_ID=0
 	export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 	export ROS_LOCALHOST_ONLY=0
+
+	# Add Micro-XRCE-DDS-Gen if installed
+	# if [[ -d "$HOME/ardupilot/Micro-XRCE-DDS-Gen" ]]; then
+	#   export PATH=$PATH:$HOME/ardupilot/Micro-XRCE-DDS-Gen/scripts
+	# fi
+
+	# GZ/ROS
+	if [[ -d "$HOME/ardupilot_gazebo" ]]; then
+		export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}
+		export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
+		# export GZ_FUEL_CACHE_ONLY=1
+		# export GZ_FUEL_DOWNLOAD_MODE=none
+
+	fi
+
 	# export CYCLONEDDS_URI=file:///home/amit_152116/Documents/aim_ros2/cyclonedds.xml
 
 	# Check for ROS2 installations in common locations

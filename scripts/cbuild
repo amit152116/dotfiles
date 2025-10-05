@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # Default values
 BUILD_TYPE="Debug"
@@ -24,18 +23,25 @@ GENERATOR="Ninja"
 # Cross-compilation
 CROSS_COMPILE=""
 
+# Pre-allocate arrays for better performance
+CMAKE_ARGS=()
+CMAKE_CXX_FLAGS=()
+
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
-CYAN='\033[0;36m'
 NC='\033[0m' # No Color
+GRAY='\e[90m'
 
-# Pre-allocate arrays for better performance
-CMAKE_ARGS=()
-CMAKE_CXX_FLAGS=()
+# Logging functions
+log_info() { echo -e "${BLUE}ℹ${GRAY} $*" >&2; }
+log_success() { echo -e "${GREEN}✓${NC} $*" >&2; }
+log_warning() { echo -e "${YELLOW}⚠${YELLOW} $*" >&2; }
+log_error() { echo -e "${RED}✗${RED} $*" >&2; }
+log_cross() { echo -e "${MAGENTA}🔧${GRAY} $*" >&2; }
 
 # Cross-compilation toolchain configurations
 declare -A CROSS_TOOLCHAINS=(
@@ -80,13 +86,6 @@ declare -A SANITIZER_CONFIGS=(
 	["ubsan_cxx"]="-fsanitize=undefined -fno-omit-frame-pointer"
 	["ubsan_env"]="print_stacktrace=1:halt_on_error=1"
 )
-
-# Logging functions
-log_info() { echo -e "${BLUE}ℹ${NC} $*" >&2; }
-log_success() { echo -e "${GREEN}✓${NC} $*" >&2; }
-log_warning() { echo -e "${YELLOW}⚠${NC} $*" >&2; }
-log_error() { echo -e "${RED}✗${NC} $*" >&2; }
-log_cross() { echo -e "${MAGENTA}🔧${NC} $*" >&2; }
 
 # Function to display help
 show_help() {
@@ -510,6 +509,35 @@ run_linters() {
 	fi
 }
 
+# Generic function to run a command with logging and stream output
+run_command() {
+	local description="$1" # Description of the task
+	shift                  # Remove description from args
+	local cmd=("$@")       # Remaining args = the command
+
+	log_info "$description..."
+
+	# Create a temporary file to capture output
+	local tmpfile
+	tmpfile=$(mktemp)
+
+	# Run the command: stream to terminal and capture in tmpfile
+	"${cmd[@]}" 2>&1 | tee "$tmpfile"
+	local exit_code=${PIPESTATUS[0]} # capture the exit code of the command
+
+	# Read full output into a variable if needed
+	output=$(<"$tmpfile")
+	rm -f "$tmpfile"
+
+	if [[ $exit_code -ne 0 ]]; then
+		log_error "$description failed"
+		log_error "$output" # print full output after failure
+		exit 1
+	fi
+
+	log_success "$description completed"
+}
+
 # Function to list build targets
 list_targets() {
 	if [[ ! -d "$BUILD_DIR" ]]; then
@@ -814,40 +842,18 @@ mkdir -p "$BUILD_DIR"
 # Execute CMake configuration
 START_TIME=$(date +%s)
 
-log_info "Configuring project with CMake..."
-if [[ "$VERBOSE" == true ]]; then
-	cmake -B "$BUILD_DIR" -G "$GENERATOR" "${CMAKE_ARGS[@]}" --debug-output
-else
-	cmake -B "$BUILD_DIR" -G "$GENERATOR" "${CMAKE_ARGS[@]}"
-fi
+# Prepare cmake command
+config_cmd=(cmake -B "$BUILD_DIR" -G "$GENERATOR" "${CMAKE_ARGS[@]}")
+[[ "$VERBOSE" == true ]] && config_cmd+=(--debug-output)
+run_command "Configuring project with CMake" "${config_cmd[@]}"
+log_success "CMake configuration completed"
 
-if [[ $? -ne 0 ]]; then
-	log_error "CMake configuration failed"
-	exit 1
-fi
-
-log_success "Configuration completed"
-
-# Execute build
-log_info "Building project..."
-if [[ -n "$TARGET" ]]; then
-	if [[ "$VERBOSE" == true ]]; then
-		cmake --build "$BUILD_DIR" --parallel "$PARALLEL_JOBS" --target "$TARGET" --verbose
-	else
-		cmake --build "$BUILD_DIR" --parallel "$PARALLEL_JOBS" --target "$TARGET"
-	fi
-else
-	if [[ "$VERBOSE" == true ]]; then
-		cmake --build "$BUILD_DIR" --parallel "$PARALLEL_JOBS" --verbose
-	else
-		cmake --build "$BUILD_DIR" --parallel "$PARALLEL_JOBS"
-	fi
-fi
-
-if [[ $? -ne 0 ]]; then
-	log_error "Build failed"
-	exit 1
-fi
+# Prepare cmake command
+build_cmd=(cmake --build "$BUILD_DIR" --parallel "$PARALLEL_JOBS")
+[[ -n "$TARGET" ]] && build_cmd+=(--target "$TARGET")
+[[ "$VERBOSE" == true ]] && build_cmd+=(--verbose)
+run_command "Building project" "${build_cmd[@]}"
+log_success "Build completed"
 
 END_TIME=$(date +%s)
 BUILD_TIME=$((END_TIME - START_TIME))

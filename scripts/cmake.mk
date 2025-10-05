@@ -44,12 +44,12 @@ rebuild rb: clean debug
 
 # Debug build
 .PHONY: debug d
-debug d: format
+debug d:
 	@$(BUILD_SCRIPT) -b Debug --ccache $(BUILD_FLAGS)
 
 # Release build
 .PHONY: release r
-release r: format
+release r: 
 	@$(BUILD_SCRIPT) -b Release $(BUILD_FLAGS)
 
 # RelWithDebInfo build

@@ -26,7 +26,16 @@ local picker = function(docDir)
     win = {
       input = {
         keys = {
-          ["<CR>"] = {
+          ["<C-y>"] = {
+            "openGlow",
+            mode = { "n", "i" },
+            desc = "Open with Glow",
+          },
+        },
+      },
+      list = {
+        keys = {
+          ["<C-y>"] = {
             "openGlow",
             mode = { "n", "i" },
             desc = "Open with Glow",
