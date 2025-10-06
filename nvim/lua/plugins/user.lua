@@ -11,10 +11,6 @@ return {
   { "max397574/better-escape.nvim" },
 
   {
-    "krady21/compiler-explorer.nvim",
-  },
-
-  {
     "ray-x/lsp_signature.nvim",
     event = "BufRead",
     enabled = false,
@@ -64,5 +60,21 @@ return {
         completions = { blink = { enabled = true } },
       }
     end,
+  },
+  {
+    "krady21/compiler-explorer.nvim",
+    opts = {
+      line_match = {
+        highlight = true, -- highlight the matching line(s) in the other buffer.
+        jump = true, -- move the cursor in the other buffer to the first matching line.
+      },
+      compiler_flags = "", -- Default flags passed to the compiler.
+      languages = { -- Language specific default compiler/flags
+        cpp = {
+          compiler = "cg114",
+          compiler_flags = "-O2 -Wall",
+        },
+      },
+    },
   },
 }

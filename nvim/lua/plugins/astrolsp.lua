@@ -167,26 +167,61 @@ return {
     -- A custom `on_attach` function to be run after the default `on_attach` function
     -- takes two parameters `client` and `bufnr`  (`:h lspconfig-setup`)
     on_attach = function(client, bufnr)
-      -- this would disable semanticTokensProvider for all clients
+      -- Disable semantic tokens if needed
       -- client.server_capabilities.semanticTokensProvider = nil
+
       if client.name == "clangd" then
+        local opts =
+          { buffer = bufnr, noremap = true, silent = true, desc = "" }
+
+        -- 🧩 Run the current C++ file using CMake plugin
         vim.keymap.set(
           "n",
           "<Leader>le",
           ":CMakeRunCurrentFile<CR>",
-          { desc = "Run Current File" }
+          vim.tbl_extend("force", opts, { desc = "Run Current File" })
         )
         vim.keymap.set(
           "n",
           "<Leader>lE",
           ":CMakeQuickRun<CR>",
-          { desc = "Run Executable" }
+          vim.tbl_extend("force", opts, { desc = "Run Executable" })
         )
         vim.keymap.set(
           "n",
           "<Leader>lt",
           ":CMakeRunTest<CR>",
-          { desc = "Run Tests" }
+          vim.tbl_extend("force", opts, { desc = "Run Tests" })
+        )
+
+        -- 🧩 Compile current buffer to assembly (Compiler Explorer)
+        vim.keymap.set(
+          "n",
+          "<Leader>lc",
+          ":CECompile! compiler=g114<CR>",
+          vim.tbl_extend("force", opts, {
+            desc = "Compile & Show Assembly",
+          })
+        )
+
+        -- 🧩 Compile with live update (auto on save)
+        vim.keymap.set(
+          "n",
+          "<Leader>lC",
+          ":CECompileLive! compiler=g114<CR>",
+          vim.tbl_extend("force", opts, {
+            desc = "Live Assembly View",
+          })
+        )
+
+        -- 🧩 Open same code in browser on godbolt.org
+        vim.keymap.set(
+          "n",
+          "<Leader>lO",
+          ":CEOpenWebsite<CR>",
+          vim.tbl_extend("force", opts, {
+            desc = "Open in Compiler Explorer Website",
+          })
         )
       end
     end,

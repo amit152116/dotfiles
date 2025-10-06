@@ -176,7 +176,7 @@ return {
         },
         ["<Leader>m"] = {
           silent = true,
-          ":!tmux neww -dt 72 'glow -p %:p'; tmux select-window -t 72<CR>",
+          ":!tmux neww -dt 67 'glow -p %:p'; tmux select-window -t 67<CR>",
           desc = "Open file in Glow",
         },
 
