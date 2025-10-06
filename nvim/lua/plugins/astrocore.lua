@@ -174,6 +174,11 @@ return {
           end,
           desc = "Save File",
         },
+        ["<Leader>m"] = {
+          silent = true,
+          ":!tmux neww -dt 72 'glow -p %:p'; tmux select-window -t 72<CR>",
+          desc = "Open file in Glow",
+        },
 
         -- View/Edit last command
         ["<Leader>;"] = {

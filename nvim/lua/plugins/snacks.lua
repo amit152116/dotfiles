@@ -68,31 +68,31 @@ return {
               desc = "Find jumps",
             },
 
-            ["<Leader>fp"] = {
-              function()
-                Snacks.picker.projects {
-                  dev = {
-                    "~/",
-                    "~/Documents/",
-                    "~/Downloads/",
-                    "~/myDisk/Personal Projects/",
-                    "~/.config/",
-                    "~/myDisk/GithubRepositories/",
-                    "~/go/src/github.com/amit152116/",
-                    "~/.local/share/",
-                  },
-                  patterns = {
-                    ".git",
-                    "package.json",
-                    "go.mod",
-                    "README.md",
-                    "README",
-                    "Makefile",
-                  },
-                }
-              end,
-              desc = "Find projects",
-            },
+            -- ["<Leader>fp"] = {
+            --   function()
+            --     Snacks.picker.projects {
+            --       dev = {
+            --         "~/",
+            --         "~/Documents/",
+            --         "~/Downloads/",
+            --         "~/myDisk/Personal Projects/",
+            --         "~/.config/",
+            --         "~/myDisk/GithubRepositories/",
+            --         "~/go/src/github.com/amit152116/",
+            --         "~/.local/share/",
+            --       },
+            --       patterns = {
+            --         ".git",
+            --         "package.json",
+            --         "go.mod",
+            --         "README.md",
+            --         "README",
+            --         "Makefile",
+            --       },
+            --     }
+            --   end,
+            --   desc = "Find projects",
+            -- },
             ["<Leader>fT"] = {
               function() Snacks.picker.colorschemes() end,
               desc = "Find themes",
@@ -128,9 +128,13 @@ return {
             },
 
             ["<Leader>f."] = {
+              function() Snacks.picker.resume() end,
+              desc = "Resume previous search",
+            },
+
+            ["<Leader>f<CR>"] = {
               function()
                 Snacks.picker.pickers {
-                  -- layout = { preset = "vscode" },
                   focus = "input",
                   confirm = function(picker, item)
                     if not item then return end

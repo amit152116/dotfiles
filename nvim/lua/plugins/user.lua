@@ -7,6 +7,13 @@ return {
 
   -- == Examples of Adding Plugins ==
   { "andweeb/presence.nvim" },
+
+  { "max397574/better-escape.nvim" },
+
+  {
+    "krady21/compiler-explorer.nvim",
+  },
+
   {
     "ray-x/lsp_signature.nvim",
     event = "BufRead",
@@ -22,8 +29,6 @@ return {
       quit_message = "Do you want to quit?",
     },
   },
-  -- You can disable default plugins as follows:
-  { "max397574/better-escape.nvim", enabled = true },
 
   {
     "which-key.nvim",
@@ -43,5 +48,21 @@ return {
         -- add more arguments for adding more treesitter parsers
       },
     },
+  },
+
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "echasnovski/mini.icons",
+    }, -- if you use the mini.nvim suite
+    ---@module 'render-markdown'
+    ---@type render.md.UserConfig
+    config = function()
+      require("render-markdown").setup {
+        latex = { enabled = false },
+        completions = { blink = { enabled = true } },
+      }
+    end,
   },
 }

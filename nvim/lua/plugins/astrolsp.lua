@@ -169,6 +169,26 @@ return {
     on_attach = function(client, bufnr)
       -- this would disable semanticTokensProvider for all clients
       -- client.server_capabilities.semanticTokensProvider = nil
+      if client.name == "clangd" then
+        vim.keymap.set(
+          "n",
+          "<Leader>le",
+          ":CMakeRunCurrentFile<CR>",
+          { desc = "Run Current File" }
+        )
+        vim.keymap.set(
+          "n",
+          "<Leader>lE",
+          ":CMakeQuickRun<CR>",
+          { desc = "Run Executable" }
+        )
+        vim.keymap.set(
+          "n",
+          "<Leader>lt",
+          ":CMakeRunTest<CR>",
+          { desc = "Run Tests" }
+        )
+      end
     end,
   },
 }
