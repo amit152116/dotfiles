@@ -1,4 +1,4 @@
-local multigrep = require "myPickers.multigrep"
+local grep = require "myPickers.grep"
 local Snacks = require "snacks"
 local rosPicker = require("myPickers.ros").RosPicker
 
@@ -21,14 +21,14 @@ function M.multigrep(opts)
     hidden = opts.hidden,
     ignored = opts.ignored,
     notify = false,
-    finder = multigrep.createFinder(opts),
+    finder = grep.createFinder(opts),
     matcher = {
       frecency = true,
       smartcase = true,
     },
-    preview = multigrep.createPreview,
+    preview = grep.createPreview,
     actions = {
-      replace_selected = function(picker, _)
+      replace = function(picker, _)
         if opts.replace_pattern then
           local sel = picker:selected()
           local results = #sel > 0 and sel or picker:items()
@@ -40,7 +40,7 @@ function M.multigrep(opts)
             )
             return
           end
-          multigrep.execute_replace(results, opts)
+          grep.execute_replace(results, opts)
         end
       end,
     },
@@ -48,7 +48,7 @@ function M.multigrep(opts)
       input = {
         keys = {
           ["<c-y>"] = {
-            "replace_selected",
+            "replace",
             mode = { "n", "i" },
             desc = "Replace All",
           },

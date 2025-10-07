@@ -5,6 +5,16 @@ cxx ?=
 cross ?=
 compiler ?=
 jobs ?= $(shell nproc 2>/dev/null || echo 4)
+bin ?=
+
+# Extract only the executable name (strip path)
+ifeq ($(strip $(bin)),)
+  $(warning ⚠️  No binary specified. Use: make <target> bin=path/to/executable)
+  BIN_NAME :=
+else
+  # Use basename to strip directories (works on Linux/macOS)
+  BIN_NAME := $(notdir $(bin))
+endif
 
 # Build script path (adjust if using system-wide installation)
 BUILD_SCRIPT := cbuild
@@ -174,6 +184,7 @@ clean-all ca:
 	@rm -f *.cmake clang-tidy.log cppcheck.log
 	@rm -rf coverage.info coverage_report/
 	@rm -rf docs/html/ docs/latex/
+	@rm -f callgrind.out.* massif.out.* perf.data*
 	@echo "✅ Workspace cleaned"
 
 .PHONY: stats info
@@ -263,8 +274,8 @@ reconfigure reconf: clean configure
 .PHONY: bench-run br
 bench-run br: benchmark
 	@echo "🏃 Running benchmarks..."
-	@if [ -n "$(target)" ]; then \
-		./build/$(target); \
+	@if [ -n "$(bin)" ]; then \
+		./$(bin); \
 	else \
 		find build -type f -executable -name "*bench*" -exec {} \;; \
 	fi
@@ -289,12 +300,58 @@ analyze:
 .PHONY: valgrind memcheck
 valgrind memcheck:
 	@echo "🔍 Running Valgrind memory check..."
-	@if [ -n "$(target)" ]; then \
+	@if [ -n "$(bin)" ]; then \
 		valgrind --leak-check=full --show-leak-kinds=all \
 			--track-origins=yes --verbose \
-			./build/$(target); \
+			--log-file=valgrind.out.$(BIN_NAME) \
+			./$(bin); \
 	else \
-		echo "❌ Specify target: make valgrind target=myapp"; \
+		echo "❌ Specify target: make valgrind bin=myapp"; \
+		exit 1; \
+	fi
+
+# ⚙️ CPU Profiling (Callgrind)
+.PHONY: callgrind
+callgrind:
+	@echo "🔥 Running Valgrind Callgrind CPU profiler..."
+	@if [ -n "$(bin)" ]; then \
+		valgrind --tool=callgrind --callgrind-out-file=callgrind.out.$(BIN_NAME) ./$(bin); \
+		echo "📊 Profiling complete! Open with: kcachegrind callgrind.out.$(BIN_NAME)"; \
+	else \
+		echo "❌ Specify binary path: make callgrind bin=build/bin/myapp"; \
+		exit 1; \
+	fi
+
+
+# 💾 Heap Usage Profiling (Massif)
+.PHONY: massif
+massif:
+	@echo "💾 Running Valgrind Massif heap profiler..."
+	@if [ -n "$(bin)" ]; then \
+		valgrind --tool=massif --massif-out-file=massif.out.$(BIN_NAME) ./$(bin); \
+		echo "📈 Heap profile saved: massif.out.$(BIN_NAME)"; \
+		echo "🧠 View with: ms_print massif.out.$(BIN_NAME)"; \
+		if command -v massif-visualizer >/dev/null 2>&1; then \
+			echo "📊 Launching Massif Visualizer..."; \
+			massif-visualizer massif.out.$(BIN_NAME); \
+		else \
+			echo "⚠️ massif-visualizer not installed. Use 'ms_print massif.out.$(BIN_NAME)' to view."; \
+		fi \
+	else \
+		echo "❌ Specify binary path: make massif bin=build/bin/myapp"; \
+		exit 1; \
+	fi
+
+
+# 🧨 System-level CPU Sampling (perf)
+.PHONY: perf
+perf:
+	@echo "⚙️ Running perf sampling profiler..."
+	@if [ -n "$(bin)" ]; then \
+		perf record -g ./$(bin); \
+		perf report; \
+	else \
+		echo "❌ Specify binary path: make perf bin=build/bin/myapp"; \
 		exit 1; \
 	fi
 
@@ -340,7 +397,10 @@ help h:
 	@echo "🔍 Code Quality:"
 	@echo "  make [l|lint]            Run linters (clang-tidy, cppcheck)"
 	@echo "  make analyze             Run static analysis"
-	@echo "  make valgrind target=X   Run Valgrind on target"
+	@echo "  make valgrind bin=X   Run Valgrind on target"
+	@echo "  make callgrind bin=X   Run Callgrind on target"
+	@echo "  make massif bin=X       Run Massif on target"
+	@echo "  make perf bin=X         Run perf on target"
 	@echo ""
 	@echo "🧹 Maintenance:"
 	@echo "  make [c|clean]           Clean build artifacts"
