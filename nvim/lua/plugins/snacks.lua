@@ -1,6 +1,6 @@
 local Snacks = require "snacks"
 local helper = require "utils.helper"
-local myPicker = require "myPickers"
+local myPicker = require "myPlugins"
 return {
   "folke/snacks.nvim",
   lazy = false,
@@ -109,13 +109,13 @@ return {
             },
 
             ["<Leader>fw"] = {
-              function() myPicker.multigrep {} end,
+              function() myPicker.grep {} end,
               desc = "Find words",
             },
 
             ["<Leader>fW"] = {
               function()
-                myPicker.multigrep {
+                myPicker.grep {
                   hidden = true,
                   ignored = true,
                 }
@@ -178,7 +178,7 @@ return {
             -- Find words in Neovim plugins files
             ["<Leader>pw"] = {
               function()
-                myPicker.multigrep {
+                myPicker.grep {
                   cwd = vim.fs.joinpath(vim.fn.stdpath "data", "lazy"),
                   matcher = {
                     frecency = true,
@@ -193,7 +193,7 @@ return {
             ["<Leader>fw"] = {
               function()
                 local selected_text = helper.get_selected_text()
-                myPicker.multigrep {
+                myPicker.grep {
                   search = selected_text,
                   regex = false,
                 }
@@ -204,7 +204,7 @@ return {
             ["<Leader>fW"] = {
               function()
                 local selected_text = helper.get_selected_text()
-                myPicker.multigrep {
+                myPicker.grep {
                   search = selected_text,
                   hidden = true,
                   ignored = true,

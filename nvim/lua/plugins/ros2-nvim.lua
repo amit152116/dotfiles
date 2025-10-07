@@ -1,9 +1,9 @@
-local picker = require "myPickers"
+local picker = require "myPlugins"
 local Snacks = require "snacks"
 ---@type LazySpec
 return {
   {
-    dir = vim.fn.stdpath "config" .. "/lua/myPickers",
+    dir = vim.fn.stdpath "config" .. "/lua/myPlugins",
     name = "ros2-nvim",
     dependencies = {
       "AstroNvim/astrocore", -- if it really depends on astrocore
@@ -34,7 +34,7 @@ return {
             -- Find words in ROS distro files
             ["<Leader>rw"] = {
               function()
-                picker.multigrep {
+                picker.grep {
                   cwd = "/opt/ros/humble",
                   matcher = {
                     frecency = true,
@@ -44,35 +44,35 @@ return {
               desc = "ROS Live Grep",
             },
             ["<Leader>ra"] = {
-              function() picker.rosActions() end,
+              function() picker.ros.Actions() end,
               desc = "ROS Active Actions",
             },
             ["<Leader>rs"] = {
               desc = "ROS Active Services",
-              function() picker.rosServics() end,
+              function() picker.ros.Servics() end,
             },
             ["<Leader>rt"] = {
               desc = "ROS Active Topics",
-              function() picker.rosTopics() end,
+              function() picker.ros.Topics() end,
             },
             ["<Leader>rn"] = {
               desc = "ROS Active Nodes",
-              function() picker.rosNodes() end,
+              function() picker.ros.Nodes() end,
             },
             ["<Leader>rp"] = {
               desc = "ROS Params",
-              function() picker.rosParams() end,
+              function() picker.ros.Params() end,
             },
             ["<Leader>rim"] = {
-              function() picker.rosInterfaceMsgs() end,
+              function() picker.ros.InterfaceMsgs() end,
               desc = "ROS Msgs",
             },
             ["<Leader>ris"] = {
-              function() picker.rosInterfaceSrvs() end,
+              function() picker.ros.InterfaceSrvs() end,
               desc = "ROS Srvs",
             },
             ["<Leader>ria"] = {
-              function() picker.rosInterfaceActions() end,
+              function() picker.ros.InterfaceActions() end,
               desc = "ROS Actions",
             },
           },

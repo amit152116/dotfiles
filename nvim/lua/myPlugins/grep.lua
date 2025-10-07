@@ -118,7 +118,7 @@ end
 ---@param prompt string
 ---@param opts snacks.picker.multigrep.Config
 ---@return table|nil
-function M.parse_search_prompt(prompt, opts)
+local function parse_search_prompt(prompt, opts)
   if not prompt or prompt == "" then return nil end
 
   opts = opts or {}
@@ -393,7 +393,7 @@ end
 ---Execute bulk replacement
 ---@param items table
 ---@param opts snacks.picker.multigrep.Config
-function M.execute_replace(items, opts)
+local function execute_replace(items, opts)
   if not items or #items == 0 then
     vim.notify(
       "No items to replace",
@@ -468,12 +468,12 @@ end
 ---Create finder for picker
 ---@param opts snacks.picker.multigrep.Config
 ---@return function
-function M.createFinder(opts)
+local function createFinder(opts)
   opts = opts or {}
 
   return function(picker_opts, ctx)
     local input = ctx.filter.search
-    local args = M.parse_search_prompt(input, opts)
+    local args = parse_search_prompt(input, opts)
     invalid_regex_notified = false
 
     return require("snacks.picker.source.proc").proc({
@@ -543,7 +543,7 @@ end
 ---Create preview for picker
 ---@param ctx snacks.picker.preview.ctx
 ---@return boolean
-function M.createPreview(ctx)
+local function createPreview(ctx)
   local item = ctx.item
   if not item or not item.file or not item.pos then return false end
 
@@ -586,4 +586,58 @@ function M.createPreview(ctx)
   return true
 end
 
+---@param opts snacks.picker.multigrep.Config
+function M.multigrep(opts)
+  opts = opts or {}
+  opts.regex = (opts.regex == nil) and true or opts.regex
+  opts.cwd = opts.cwd or vim.uv.cwd()
+  if opts.title then
+    opts.title = opts.title .. " (Multi-Grep)"
+  else
+    opts.title = "Multi-Grep (Smart)"
+  end
+
+  Snacks.picker.pick("grep", {
+    search = opts.search,
+    cwd = opts.cwd,
+    title = opts.title,
+    hidden = opts.hidden,
+    ignored = opts.ignored,
+    notify = false,
+    finder = createFinder(opts),
+    matcher = {
+      frecency = true,
+      smartcase = true,
+    },
+    preview = createPreview,
+    actions = {
+      replace = function(picker, _)
+        if opts.replace_pattern then
+          local sel = picker:selected()
+          local results = #sel > 0 and sel or picker:items()
+          if not results or #results == 0 then
+            vim.notify(
+              "No results to replace.",
+              vim.log.levels.WARN,
+              { title = "Multi Grep" }
+            )
+            return
+          end
+          execute_replace(results, opts)
+        end
+      end,
+    },
+    win = {
+      input = {
+        keys = {
+          ["<c-y>"] = {
+            "replace",
+            mode = { "n", "i" },
+            desc = "Replace All",
+          },
+        },
+      },
+    },
+  })
+end
 return M

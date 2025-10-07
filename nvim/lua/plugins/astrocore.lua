@@ -166,7 +166,7 @@ return {
           function()
             if vim.fn.expand "%" == "" then
               -- Unsaved file, invoke custom save logic
-              require("utils.save_new_file").save_file()
+              require("myPlugins.save_new_file").save_file()
             else
               -- Saved file, fallback to default behavior
               vim.cmd "write"
@@ -175,9 +175,9 @@ return {
           desc = "Save File",
         },
         ["<Leader>m"] = {
-          silent = true,
           ":!tmux neww -dt 67 'glow -p %:p'; tmux select-window -t 67<CR>",
           desc = "Open file in Glow",
+          noremap = true,
         },
 
         -- View/Edit last command
@@ -204,11 +204,11 @@ return {
         },
 
         ["<Leader>bj"] = {
-          function() require("utils.buffer_cycle").buffer_cycle "prev" end,
+          function() require("myPlugins").buffer_cycle "prev" end,
           desc = "Cycle to Previous Buffer",
         },
         ["<Leader>bk"] = {
-          function() require("utils.buffer_cycle").buffer_cycle "next" end,
+          function() require("myPlugins").buffer_cycle "next" end,
           desc = "Cycle to Next Buffer",
         },
 
