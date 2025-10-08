@@ -53,7 +53,7 @@ return {
         cursorline = true,
         tabstop = 4, -- Number of spaces per tab
         smartindent = true, -- Highlight current line
-        showmatch = true, -- Show matching brackets
+        showmatch = false, -- Show matching brackets
       },
       g = { -- vim.g.<key>
         -- configure global vim variables (vim.g)
