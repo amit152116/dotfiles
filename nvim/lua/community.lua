@@ -8,8 +8,14 @@ return {
   { import = "astrocommunity.pack.lua" },
   { import = "astrocommunity.pack.cpp" },
   { import = "astrocommunity.editing-support.todo-comments-nvim" },
-  -- { import = "astrocommunity.motion.mini-surround" },
-  -- { import = "astrocommunity.motion.mini-ai", enabled = false },
-  -- { import = "astrocommunity.motion.mini-jump" },
+  { import = "astrocommunity.editing-support.bigfile-nvim" },
+  -- { import = "astrocommunity.editing-support.wildfire-nvim" },
+  { import = "astrocommunity.editing-support.stickybuf-nvim" },
+  { import = "astrocommunity.editing-support.nvim-treesitter-endwise" },
+  { import = "astrocommunity.editing-support.rainbow-delimiters-nvim" },
+  { import = "astrocommunity.bars-and-lines.dropbar-nvim" },
+  { import = "astrocommunity.motion.tabout-nvim" },
+  -- { import = "astrocommunity.motion.vim-matchup" },
+  -- { import = "astrocommunity.workflow.hardtime-nvim" },
   -- import/override with your plugins folder
 }

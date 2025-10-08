@@ -10,12 +10,7 @@ return {
 
   { "max397574/better-escape.nvim" },
 
-  {
-    "ray-x/lsp_signature.nvim",
-    event = "BufRead",
-    enabled = false,
-    config = function() require("lsp_signature").setup() end,
-  },
+  { "wakatime/vim-wakatime", event = "User AstroFile" },
 
   {
     "yutkat/confirm-quit.nvim",
@@ -30,6 +25,7 @@ return {
     "which-key.nvim",
     opts = {
       preset = "helix",
+      sort = { "group", "alphanum", "mod", "order", "local" },
     },
   },
 
@@ -41,7 +37,19 @@ return {
         "lua",
         "vim",
         "latex",
+        "bash",
+        "cpp",
         -- add more arguments for adding more treesitter parsers
+      },
+
+      incremental_selection = {
+        enable = true,
+        keymaps = {
+          init_selection = false, -- set to `false` to disable one of the mappings
+          node_incremental = false,
+          scope_incremental = false,
+          node_decremental = false,
+        },
       },
     },
   },
@@ -63,18 +71,68 @@ return {
   },
   {
     "krady21/compiler-explorer.nvim",
-    opts = {
-      line_match = {
-        highlight = true, -- highlight the matching line(s) in the other buffer.
-        jump = true, -- move the cursor in the other buffer to the first matching line.
-      },
-      compiler_flags = "", -- Default flags passed to the compiler.
-      languages = { -- Language specific default compiler/flags
-        cpp = {
-          compiler = "cg114",
-          compiler_flags = "-O2 -Wall",
+    enabled = false,
+    config = function()
+      require("compiler-explorer").setup {
+        line_match = {
+          highlight = true, -- highlight the matching line(s) in the other buffer.
+          jump = true, -- move the cursor in the other buffer to the first matching line.
+        },
+        compiler_flags = "", -- Default flags passed to the compiler.
+        languages = { -- Language specific default compiler/flags
+          cpp = {
+            compiler = "cg114",
+            compiler_flags = "-O2 -Wall",
+          },
+        },
+      }
+    end,
+  },
+  {
+    "nvim-treesitter/nvim-treesitter-context",
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+    },
+    config = function()
+      require("treesitter-context").setup {
+        enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+        multiwindow = true, -- Enable multiwindow support.
+        max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.
+        min_window_height = 0, -- Minimum editor window height to enable context. Values <= 0 mean no limit.
+        line_numbers = true,
+        multiline_threshold = 20, -- Maximum number of lines to show for a single context
+        trim_scope = "outer", -- Which context lines to discard if `max_lines` is exceeded. Choices: 'inner', 'outer'
+        mode = "cursor", -- Line used to calculate context. Choices: 'cursor', 'topline'
+        -- Separator between context and content. Should be a single character string, like '-'.
+        -- When separator is set, the context will only show up when there are at least 2 lines above cursorline.
+        separator = "─",
+        zindex = 1, -- The Z-index of the context window
+        on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
+      }
+    end,
+  },
+  {
+    "bloznelis/before.nvim",
+    event = { "InsertEnter", "TextChanged" },
+    dependencies = {
+      {
+        "AstroNvim/astrocore",
+        opts = {
+          mappings = {
+            n = {
+              ["]E"] = {
+                function() require("before").jump_to_next_edit() end,
+                desc = "Next edit",
+              },
+              ["[E"] = {
+                function() require("before").jump_to_last_edit() end,
+                desc = "Previous edit",
+              },
+            },
+          },
         },
       },
     },
+    opts = {},
   },
 }

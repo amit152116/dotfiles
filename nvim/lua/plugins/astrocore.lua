@@ -216,6 +216,7 @@ return {
           "<cmd>b#<cr>",
           desc = "Jump to Previous Buffer",
         },
+        ["[c"] = { "%" },
 
         ["<Leader>uD"] = {
           function() require("astrocore.toggles").diagnostics() end,

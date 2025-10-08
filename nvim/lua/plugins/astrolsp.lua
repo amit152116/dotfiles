@@ -76,6 +76,9 @@ return {
           documentFormatting = true,
         },
       },
+      bashls = {
+        filetypes = { "sh", "bash", "zsh" },
+      },
     },
     -- customize how language servers are attached
     handlers = {
@@ -122,11 +125,11 @@ return {
         ["gK"] = false,
         ["<Leader>lG"] = false, -- original Workspace Symbols
         ["<Leader>lR"] = false, -- original references
-        -- ["<Leader>lD"] = false,
-        -- ["<Leader>ld"] = {
-        --   function() Snacks.picker.diagnostics() end,
-        --   desc = "Search Diagnostics",
-        -- },
+        ["<Leader>lD"] = false,
+        ["<Leader>ld"] = {
+          function() Snacks.picker.diagnostics() end,
+          desc = "Search Diagnostics",
+        },
         ["gd"] = {
           function()
             Snacks.picker.lsp_definitions {
@@ -194,35 +197,35 @@ return {
           vim.tbl_extend("force", opts, { desc = "Run Tests" })
         )
 
-        -- 🧩 Compile current buffer to assembly (Compiler Explorer)
-        vim.keymap.set(
-          "n",
-          "<Leader>lc",
-          ":CECompile! compiler=g114<CR>",
-          vim.tbl_extend("force", opts, {
-            desc = "Compile & Show Assembly",
-          })
-        )
-
-        -- 🧩 Compile with live update (auto on save)
-        vim.keymap.set(
-          "n",
-          "<Leader>lC",
-          ":CECompileLive! compiler=g114<CR>",
-          vim.tbl_extend("force", opts, {
-            desc = "Live Assembly View",
-          })
-        )
-
-        -- 🧩 Open same code in browser on godbolt.org
-        vim.keymap.set(
-          "n",
-          "<Leader>lO",
-          ":CEOpenWebsite<CR>",
-          vim.tbl_extend("force", opts, {
-            desc = "Open in Compiler Explorer Website",
-          })
-        )
+        -- -- 🧩 Compile current buffer to assembly (Compiler Explorer)
+        -- vim.keymap.set(
+        --   "n",
+        --   "<Leader>lc",
+        --   ":CECompile! compiler=g114<CR>",
+        --   vim.tbl_extend("force", opts, {
+        --     desc = "Compile & Show Assembly",
+        --   })
+        -- )
+        --
+        -- -- 🧩 Compile with live update (auto on save)
+        -- vim.keymap.set(
+        --   "n",
+        --   "<Leader>lC",
+        --   ":CECompileLive! compiler=g114<CR>",
+        --   vim.tbl_extend("force", opts, {
+        --     desc = "Live Assembly View",
+        --   })
+        -- )
+        --
+        -- -- 🧩 Open same code in browser on godbolt.org
+        -- vim.keymap.set(
+        --   "n",
+        --   "<Leader>lO",
+        --   ":CEOpenWebsite<CR>",
+        --   vim.tbl_extend("force", opts, {
+        --     desc = "Open in Compiler Explorer Website",
+        --   })
+        -- )
       end
     end,
   },
