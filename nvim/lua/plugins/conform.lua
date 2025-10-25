@@ -1,43 +1,46 @@
 -- Customize None-ls sources
+-- Make sure null-ls is installed
+local null_ls = require "null-ls"
 
+null_ls.setup {
+  sources = {
+
+    -- Dockerfile linter
+    null_ls.builtins.diagnostics.hadolint.with {
+      filetypes = { "dockerfile" },
+    },
+
+    -- Kotlin linter
+    null_ls.builtins.diagnostics.ktlint.with {
+      filetypes = { "kotlin" },
+    },
+
+    -- Markdown linter
+    null_ls.builtins.diagnostics.markdownlint.with {
+      filetypes = { "markdown" },
+    },
+
+    -- Lua linter
+    null_ls.builtins.diagnostics.selene.with {
+      filetypes = { "lua" },
+    },
+
+    -- ========================
+    -- Code Actions
+    -- ========================
+    null_ls.builtins.code_actions.refactoring, -- generic code refactoring
+
+    -- Go-specific actions (since you work with Go)
+    null_ls.builtins.code_actions.gomodifytags,
+    null_ls.builtins.code_actions.impl,
+  },
+}
 ---@type LazySpec
 return {
   {
-
-    "nvimtools/none-ls.nvim",
-    opts = function(_, opts)
-      -- opts variable is the default configuration table for the setup function call
-      local null_ls = require "null-ls"
-
-      -- Check supported formatters and linters
-      -- https://github.com/nvimtools/none-ls.nvim/tree/main/lua/null-ls/builtins/formatting
-      -- https://github.com/nvimtools/none-ls.nvim/tree/main/lua/null-ls/builtins/diagnostics
-
-      -- Only insert new sources, do not replace the existing ones
-      -- (If you wish to replace, use `opts.sources = {}` instead of the `list_insert_unique` function)
-      opts.sources = require("astrocore").list_insert_unique(opts.sources, {
-        -- null_ls.builtins.formatting.stylua,
-        -- null_ls.builtins.formatting.prettier,
-
-        null_ls.builtins.formatting.clang_format.with {
-          extra_args = { "--style=file" },
-          filetypes = { "c", "cpp", "h", "hpp" },
-        },
-        null_ls.builtins.formatting.shfmt.with {
-          filetypes = { "sh", "bash", "zsh" }, -- make shfmt format zsh too
-        },
-
-        -- Linters
-        -- null_ls.builtins.diagnostics.shellcheck.with {
-        --   filetypes = { "sh", "bash", "zsh" }, -- lint bash and zsh
-        -- },
-      })
-    end,
-  },
-  {
     "stevearc/conform.nvim",
     event = "User AstroFile",
-    enabled = false,
+    -- enabled = false,
     cmd = "ConformInfo",
     specs = {
       {
@@ -87,7 +90,7 @@ return {
                 function() vim.cmd.Format() end,
                 desc = "Format buffer",
               },
-              ["<Leader>lc"] = {
+              ["<Leader>lz"] = {
                 function() vim.cmd.ConformInfo() end,
                 desc = "Conform information",
               },
@@ -123,12 +126,45 @@ return {
       },
     },
     opts = {
+      -- Use LSP as fallback
       default_format_opts = { lsp_format = "fallback" },
+
+      -- Format on save
       format_on_save = function(bufnr)
         if vim.F.if_nil(vim.b[bufnr].autoformat, vim.g.autoformat, true) then
-          return { lsp_format = "fallback" }
+          return { timeout_ms = 500, lsp_format = "fallback" }
         end
       end,
+
+      -- 🎯 Configure formatters
+      formatters_by_ft = {
+        lua = { "stylua" },
+        sh = { "shfmt", "beautysh" },
+        bash = { "shfmt", "beautysh" },
+        zsh = { "shfmt", "beautysh" },
+        c = { "clang_format" },
+        proto = { "buf_ls" },
+        cpp = { "clang_format" },
+        go = { "goimports", "gofumpt", "golines", "gomodifytags", "impl" },
+        python = { "ruff" },
+        json = { "prettier" }, -- if you install prettier later
+        yaml = { "prettier" },
+        markdown = { "markdownlint" },
+        toml = { "taplo" },
+        java = { "google-java-format" },
+        kotlin = { "ktlint" },
+      },
+
+      -- 🎯 Custom formatter setup
+      formatters = {
+        clang_format = {
+          command = "clang-format",
+          args = { "--style=file" },
+        },
+        shfmt = {
+          command = "shfmt",
+        },
+      },
     },
   },
 }

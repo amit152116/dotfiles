@@ -8,39 +8,43 @@ return {
     -- overrides `require("mason-tool-installer").setup(...)`
     opts = {
       -- Make sure to use the names found in `:Mason`
+
       ensure_installed = {
-        -- install language servers
+        -- Language Servers (LSPs)
         "lua-language-server",
+        "clangd", -- C/C++
+        "gopls", -- Go
+        "bash-language-server", -- Bash
+        "kotlin-language-server", -- Kotlin
+        "taplo", -- TOML
+        "basedpyright", -- Python
 
-        -- install formatters
-        "stylua",
+        -- Formatters
+        "stylua", -- Lua
+        "clang-format", -- C/C++
+        "goimports", -- Go
+        "gofumpt", -- Go
+        "golines", -- Go
+        "shfmt", -- Shell
+        "beautysh", -- Shell
+        "prettier", -- JS/TS/JSON/etc.
+        "ktlint", -- Kotlin
+        "google-java-format", -- Java
 
-        -- install debuggers
-        "debugpy",
+        -- Linters
+        "ruff", -- Python
+        "selene", -- Lua
+        "markdownlint", -- Markdown
+        "shellcheck", -- Shell
+        "hadolint", -- Dockerfile
 
-        -- install any other package
-        "tree-sitter-cli",
+        -- Debuggers
+        "debugpy", -- Python
+        "delve", -- Go
 
-        -- C++ Language Server
-        "clangd",
-
-        "cpptools",
-        "cpplint", -- C++ linter
-        "gopls",
-        "ruff",
-        "bash-language-server",
-        "delve",
-        "selene",
-        "markdownlint",
-        "flake8",
-        "shellcheck",
-        "hadolint",
-        "clang-format",
-        "cmakelang",
-        "goimports",
-        "isort",
-        "shfmt",
-        "beautysh",
+        -- Other Tools
+        "tree-sitter-cli", -- Syntax parsing / highlighting
+        "cmakelang", -- CMake syntax
       },
     },
   },

@@ -48,6 +48,7 @@ return {
     ---@diagnostic disable: missing-fields
     config = {
       clangd = {
+        filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
         cmd = {
           "clangd",
           "--background-index",
