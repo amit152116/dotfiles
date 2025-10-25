@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -e
+
+# Default GitHub username
+DEFAULT_GITHUB_USER="amit152116"
+GITHUB_USER="$DEFAULT_GITHUB_USER"
+LOG_DIR="$HOME/trufflehog-reports"
+mkdir -p "$LOG_DIR"
+
+show_help() {
+    cat <<EOF
+🔐 TruffleHog GitHub Scanner
+
+Usage:
+  $(basename "$0") [OPTIONS]
+
+Options:
+  --all               Scan all public GitHub repositories for the user
+  --user <username>   Specify a GitHub username (default: $DEFAULT_GITHUB_USER)
+  --help              Show this help message
+  (no args)           Scan the current local Git repository
+
+Examples:
+  $(basename "$0") --all
+  $(basename "$0") --user johndoe --all
+  $(basename "$0")
+EOF
+}
+
+# --- Argument parsing ---
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help)
+            show_help
+            exit 0
+            ;;
+        --all)
+            SCAN_ALL=true
+            shift
+            ;;
+        --user)
+            if [[ -n "$2" ]]; then
+                GITHUB_USER="$2"
+                shift 2
+            else
+                echo "❌ Error: --user requires a username"
+                exit 1
+            fi
+            ;;
+        *)
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# --- Main logic ---
+if [[ "$SCAN_ALL" == true ]]; then
+    echo "🔎 Scanning all GitHub repos for user: $GITHUB_USER ..."
+
+    # Fetch all repos using GitHub API
+    repos=$(curl -s "https://api.github.com/users/$GITHUB_USER/repos?per_page=100" | jq -r '.[].clone_url')
+
+    if [[ -z "$repos" ]]; then
+        echo "⚠️ No repositories found for user: $GITHUB_USER"
+        exit 0
+    fi
+
+    for repo_url in $repos; do
+        repo_name=$(basename "$repo_url" .git)
+        echo "🔍 Scanning $repo_name ..."
+        trufflehog git "$repo_url" --no-update --json >"$LOG_DIR/$repo_name.json"
+    done
+
+    echo "✅ All GitHub repos for $GITHUB_USER scanned."
+    echo "📁 Reports saved in: $LOG_DIR"
+else
+    current_dir=$(basename "$PWD")
+    echo "🔍 Scanning current local repo: $current_dir ..."
+    trufflehog git "$PWD" --no-update --json >"$PWD/$current_dir.json"
+    echo "✅ Current repo scanned. Report: $PWD/$current_dir.json"
+fi

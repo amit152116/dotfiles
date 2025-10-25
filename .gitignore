@@ -104,3 +104,4 @@ zsdoc/data
 # End of https://www.toptal.com/developers/gitignore/api/lua,vim,zsh
 cron_logs
 logs/
+*.json
