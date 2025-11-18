@@ -124,21 +124,21 @@ coverage cov: format
 # ============================================================================
 
 .PHONY: asan address
-asan address: format
+asan address: 
 	@$(BUILD_SCRIPT) -b Debug -s asan $(BUILD_FLAGS)
 
 
 .PHONY: msan memory
-msan memory: format
+msan memory: 
 	@$(BUILD_SCRIPT) -b Debug -s msan $(BUILD_FLAGS)
 
 
 .PHONY: tsan thread
-tsan thread: format
+tsan thread: 
 	@$(BUILD_SCRIPT) -b Debug -s tsan $(BUILD_FLAGS)
 
 .PHONY: ubsan ub
-ubsan ub: format
+ubsan ub: 
 	@$(BUILD_SCRIPT) -b Debug -s ubsan $(BUILD_FLAGS)
 
 

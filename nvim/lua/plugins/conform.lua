@@ -146,13 +146,14 @@ return {
         proto = { "buf_ls" },
         cpp = { "clang_format" },
         go = { "goimports", "gofumpt", "golines", "gomodifytags", "impl" },
-        python = { "ruff" },
+        python = { "ruff", "isort", "black" },
         json = { "prettier" }, -- if you install prettier later
         yaml = { "prettier" },
         markdown = { "markdownlint" },
         toml = { "taplo" },
         java = { "google-java-format" },
         kotlin = { "ktlint" },
+        sql = { "pgformatter", "postgres-language-server" },
       },
 
       -- 🎯 Custom formatter setup

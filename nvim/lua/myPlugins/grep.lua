@@ -71,9 +71,9 @@ end
 ---@return table
 local function find_directives(prompt)
   local positions = {}
-  for pos, directive in prompt:gmatch "()([rtxg]):" do
+  for pos, directive in prompt:gmatch "()[%s]([rtxg]):" do
     if DIRECTIVES[directive] then
-      table.insert(positions, { pos = pos, type = directive })
+      table.insert(positions, { pos = pos + 1, type = directive })
     end
   end
   table.sort(positions, function(a, b) return a.pos < b.pos end)

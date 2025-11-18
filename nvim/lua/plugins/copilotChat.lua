@@ -14,7 +14,7 @@ return {
     -- See Commands section for default commands if you want to lazy load on them
     config = function()
       require("CopilotChat").setup {
-        model = "claude-3.5-sonnet",
+        model = "claude-haiku-4.5",
         -- model = "gpt-4o",
         prompts = {
           AlgoDoc = {
