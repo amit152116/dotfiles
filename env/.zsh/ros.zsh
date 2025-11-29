@@ -50,6 +50,8 @@ _load_ros() {
 	export ROS_DOMAIN_ID=0
 	export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 	export ROS_LOCALHOST_ONLY=0
+	export RCUTILS_COLORIZED_OUTPUT=1
+	export RCL_LOG_COLORIZE=1
 
 	# Add Micro-XRCE-DDS-Gen if installed
 	# if [[ -d "$HOME/ardupilot/Micro-XRCE-DDS-Gen" ]]; then

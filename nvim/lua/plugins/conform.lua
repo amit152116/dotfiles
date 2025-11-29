@@ -154,6 +154,7 @@ return {
         java = { "google-java-format" },
         kotlin = { "ktlint" },
         sql = { "pgformatter", "postgres-language-server" },
+        qss = { "prettier" },
       },
 
       -- 🎯 Custom formatter setup
