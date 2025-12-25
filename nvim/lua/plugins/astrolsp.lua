@@ -52,17 +52,16 @@ return {
         cmd = {
           "clangd",
           "--background-index",
+          "--background-index-priority=normal",
           "--clang-tidy",
           "--header-insertion=iwyu",
-          "--completion-style=detailed",
+          "--completion-style=bundled",
           "--function-arg-placeholders=true",
           "--pch-storage=memory", -- Store PCH in memory for faster access
           "--enable-config", -- Enable .clangd configuration files
           "--malloc-trim", -- Reduce memory usage
           "--log=error", -- Only log errors
         },
-        init_options = {},
-        capabilities = { offsetEncoding = "utf-16" },
       },
 
       gopls = {

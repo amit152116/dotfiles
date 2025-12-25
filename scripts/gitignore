@@ -4,10 +4,10 @@ set -euo pipefail
 
 # Ensure dependencies
 for cmd in fzf curl; do
-	if ! command -v "$cmd" >/dev/null 2>&1; then
-		echo "Error: $cmd is required but not installed." >&2
-		exit 1
-	fi
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Error: $cmd is required but not installed." >&2
+        exit 1
+    fi
 done
 
 # Get list of all supported gitignore.io templates
@@ -17,8 +17,8 @@ templates=$(curl -s https://www.toptal.com/developers/gitignore/api/list | tr ',
 selected=$(echo "$templates" | fzf --multi --prompt="Select templates > " --preview="echo {}" --height=80% --reverse)
 
 if [[ -z "$selected" ]]; then
-	echo "No templates selected. Aborting." >&2
-	exit 1
+    echo "No templates selected. Aborting." >&2
+    exit 1
 fi
 
 # Convert to comma-separated list

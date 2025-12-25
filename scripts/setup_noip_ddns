@@ -22,7 +22,7 @@ Wants=network-online.target
 ExecStart=/usr/bin/noip-duc \
   -g all.ddnskey.com \
   --username <DDNS key Username> \
-  --password <DDNS key Password> 
+  --password <DDNS key Password>
 Restart=on-failure
 User=root
 

@@ -2,7 +2,7 @@
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+    source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
 
@@ -20,7 +20,7 @@ source ~/.zsh/completions.zsh
 source ~/.zsh/netclient.zsh
 
 if  command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh)"
+    eval "$(zoxide init zsh)"
 fi
 
 # 4️⃣ Load functions

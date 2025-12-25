@@ -3,26 +3,26 @@
 
 # Get list of all tldr pages
 list_tldr() {
-	tldr --list 2>/dev/null
+    tldr --list 2>/dev/null
 }
 # Choose a tldr page via fzf
 selection=$(
-	list_tldr |
-		FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
-			--preview 'page=$(echo {} | awk "{print \$1}"); tldr "$page" 2>/dev/null' \
-			--bind "enter:accept" \
-			--preview-window="right:60%" \
-			--bind "ctrl-v:toggle-preview" \
-			--header $'↵:open  ctrl-v:toggle preview' \
-			--prompt="❯ " \
-			--pointer="➤ " \
-			--marker="✓ " \
-			--color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
+    list_tldr |
+    FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
+        --preview 'page=$(echo {} | awk "{print \$1}"); tldr "$page" 2>/dev/null' \
+        --bind "enter:accept" \
+        --preview-window="right:60%" \
+        --bind "ctrl-v:toggle-preview" \
+        --header $'↵:open  ctrl-v:toggle preview' \
+        --prompt="❯ " \
+        --pointer="➤ " \
+        --marker="✓ " \
+        --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
 )
 
 # --preview-window=down,60%,wrap \
 
-# Exit if nothing was selected
+    # Exit if nothing was selected
 [[ -z "$selection" ]] && exit 0
 
 tldr "$selection" | col -bx | batcat -l md --paging=always

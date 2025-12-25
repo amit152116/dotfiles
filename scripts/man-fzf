@@ -3,27 +3,27 @@
 
 # Get list of all man pages
 list_man_pages() {
-	man -k . 2>/dev/null | sort -u | awk -F' - ' '{print $1}'
+    man -k . 2>/dev/null | sort -u | awk -F' - ' '{print $1}'
 }
 
 # Choose a man page via fzf
 selection=$(
-	list_man_pages |
-		FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
-			--preview 'page=$(echo {} | awk "{print \$1}"); man "$page" 2>/dev/null | col -bx | batcat -l man -p --color=always | head -n 40 ' \
-			--bind "enter:accept" \
-			--preview-window="right:60%" \
-			--bind "ctrl-v:toggle-preview" \
-			--header $'↵:open  ctrl-v:toggle preview' \
-			--prompt="❯ " \
-			--pointer="➤ " \
-			--marker="✓ " \
-			--color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
+    list_man_pages |
+    FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
+        --preview 'page=$(echo {} | awk "{print \$1}"); man "$page" 2>/dev/null | col -bx | batcat -l man -p --color=always | head -n 40 ' \
+        --bind "enter:accept" \
+        --preview-window="right:60%" \
+        --bind "ctrl-v:toggle-preview" \
+        --header $'↵:open  ctrl-v:toggle preview' \
+        --prompt="❯ " \
+        --pointer="➤ " \
+        --marker="✓ " \
+        --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
 )
 
 # --preview-window=down,60%,wrap \
 
-# Exit if nothing was selected
+    # Exit if nothing was selected
 [[ -z "$selection" ]] && exit 0
 
 # Extract the man page name (first column before space)

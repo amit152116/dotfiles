@@ -51,16 +51,16 @@ download() {
 
 # Execute transfer
 case $DIRECTION in
-upload | u)
-    upload
-    ;;
-download | d)
-    download
-    ;;
-*)
-    echo "Invalid direction! Use 'upload' or 'download'"
-    show_help
-    ;;
+    upload | u)
+        upload
+        ;;
+    download | d)
+        download
+        ;;
+    *)
+        echo "Invalid direction! Use 'upload' or 'download'"
+        show_help
+        ;;
 esac
 
 echo "Transfer completed successfully!"
