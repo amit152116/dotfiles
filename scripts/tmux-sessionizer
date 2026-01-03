@@ -333,8 +333,8 @@ if ! is_tmux_running; then
     hydrate "$selected_name" "$selected"
 fi
 
-selected_name=$(basename "$selected" | tr . _ | sed 's/^\(.\)/\L\1/')
 if ! has_session "$selected_name"; then
+    selected_name=$(basename "$selected" | tr . _ | sed 's/^\(.\)/\L\1/')
     tmux new-session -ds "$selected_name" -c "$selected"
     hydrate "$selected_name" "$selected"
 fi
