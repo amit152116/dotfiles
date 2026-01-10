@@ -3,9 +3,9 @@ set -euo pipefail
 
 # Ensure wget is installed
 if ! command -v wget >/dev/null 2>&1; then
-	echo "[INFO] Installing wget..."
-	sudo apt update
-	sudo apt install -y wget
+    echo "[INFO] Installing wget..."
+    sudo apt update
+    sudo apt install -y wget
 fi
 
 # Paths
@@ -27,7 +27,7 @@ sudo mkdir -p -m 755 /etc/apt/sources.list.d
 
 # Add repo (overwrite if exists, idempotent)
 echo "deb [arch=$(dpkg --print-architecture) signed-by=$GH_KEYRING] $GH_REPO stable main" |
-	sudo tee "$GH_LIST" >/dev/null
+sudo tee "$GH_LIST" >/dev/null
 
 # Update and install GitHub CLI
 sudo apt update

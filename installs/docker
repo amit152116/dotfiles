@@ -7,16 +7,16 @@ curl -fsSL https://get.docker.com | sudo sh
 
 # Ensure docker group exists
 if ! getent group docker >/dev/null 2>&1; then
-	echo "[INFO] Creating docker group..."
-	sudo groupadd docker
+    echo "[INFO] Creating docker group..."
+    sudo groupadd docker
 fi
 
 # Add current user to docker group
 if id -nG "$USER" | grep -qw docker; then
-	echo "[INFO] $USER is already in docker group."
+    echo "[INFO] $USER is already in docker group."
 else
-	echo "[INFO] Adding $USER to docker group..."
-	sudo usermod -aG docker "$USER"
+    echo "[INFO] Adding $USER to docker group..."
+    sudo usermod -aG docker "$USER"
 fi
 
 echo "[INFO] Docker installation complete."

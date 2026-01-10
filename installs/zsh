@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail  
+set -euo pipefail
 
 # --- Variables ---
 DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../" >/dev/null 2>&1 && pwd)}"
 ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
-
 
 # --- Install Zsh ---
 if ! command -v zsh >/dev/null 2>&1; then

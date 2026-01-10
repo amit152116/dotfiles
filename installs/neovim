@@ -7,24 +7,24 @@ NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
 # --- Logging function ---
 log() {
-	echo "[INFO] $1"
+    echo "[INFO] $1"
 }
 
 # --- Ensure snapd is installed ---
 if ! command -v snap >/dev/null 2>&1; then
-	log "snapd not found. Installing snapd..."
-	sudo apt update -y
-	sudo apt install -y snapd
+    log "snapd not found. Installing snapd..."
+    sudo apt update -y
+    sudo apt install -y snapd
 else
-	log "snapd is already installed."
+    log "snapd is already installed."
 fi
 
 # --- Install Neovim ---
 if ! command -v nvim >/dev/null 2>&1; then
-	log "Installing Neovim via snap..."
-	sudo snap install nvim --classic
+    log "Installing Neovim via snap..."
+    sudo snap install nvim --classic
 else
-	log "Neovim is already installed."
+    log "Neovim is already installed."
 fi
 
 # --- Load createSymlink function ---

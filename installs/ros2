@@ -3,20 +3,20 @@ set -euo pipefail
 
 # Ensure necessary commands exist
 for cmd in curl sudo apt locale-gen; do
-	if ! command -v $cmd &>/dev/null; then
-		echo "❌ $cmd not found. Please install it first."
-		exit 1
-	fi
+    if ! command -v $cmd &>/dev/null; then
+        echo "❌ $cmd not found. Please install it first."
+        exit 1
+    fi
 done
 
 # --- Set UTF-8 locale ---
 echo "🔧 Setting locale..."
 locale | grep -q "UTF-8" || {
-	sudo apt update
-	sudo apt install -y locales
-	sudo locale-gen en_US en_US.UTF-8
-	sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
-	export LANG=en_US.UTF-8
+    sudo apt update
+    sudo apt install -y locales
+    sudo locale-gen en_US en_US.UTF-8
+    sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+    export LANG=en_US.UTF-8
 }
 
 echo "✅ Locale set to:"
@@ -30,12 +30,12 @@ sudo apt update
 
 # --- Get latest ROS APT source ---
 ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest |
-	grep -F "tag_name" |
-	awk -F\" '{print $4}')
+    grep -F "tag_name" |
+awk -F\" '{print $4}')
 
 if [[ -z "$ROS_APT_SOURCE_VERSION" ]]; then
-	echo "❌ Failed to fetch latest ROS APT source version"
-	exit 1
+    echo "❌ Failed to fetch latest ROS APT source version"
+    exit 1
 fi
 
 UBUNTU_CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
@@ -45,27 +45,27 @@ echo "Downloading ROS 2 APT source: $ROS_DEB_URL"
 curl -L -o /tmp/ros2-apt-source.deb "$ROS_DEB_URL"
 
 sudo dpkg -i /tmp/ros2-apt-source.deb || {
-	echo "❌ Failed to install ROS 2 APT source"
-	exit 1
+    echo "❌ Failed to install ROS 2 APT source"
+    exit 1
 }
 
 sudo apt update
 
 # --- Install Python dev and ROS dev tools ---
 PY_PKGS=(
-	python3-flake8-docstrings
-	python3-pip
-	python3-pytest-cov
-	ros-dev-tools
-	python3-flake8-blind-except
-	python3-flake8-builtins
-	python3-flake8-class-newline
-	python3-flake8-comprehensions
-	python3-flake8-deprecated
-	python3-flake8-import-order
-	python3-flake8-quotes
-	python3-pytest-repeat
-	python3-pytest-rerunfailures
+    python3-flake8-docstrings
+    python3-pip
+    python3-pytest-cov
+    ros-dev-tools
+    python3-flake8-blind-except
+    python3-flake8-builtins
+    python3-flake8-class-newline
+    python3-flake8-comprehensions
+    python3-flake8-deprecated
+    python3-flake8-import-order
+    python3-flake8-quotes
+    python3-pytest-repeat
+    python3-pytest-rerunfailures
 )
 
 echo "Installing Python and ROS development packages..."

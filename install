@@ -15,7 +15,7 @@ INIT=0
 
 # --- Help ---
 show_help() {
-	cat <<EOF
+    cat <<EOF
 Usage: $(basename "$0") [OPTIONS] [GREP_FILTER]
 
 Options:
@@ -27,177 +27,177 @@ Options:
 GREP_FILTER:
   Optional filter to run only scripts in installs/ matching pattern
 EOF
-	exit 0
+    exit 0
 }
 
 # --- Parse command line arguments ---
 if [[ $# -eq 0 ]]; then
-	show_help
+    show_help
 fi
 
 while [[ $# -gt 0 ]]; do
-	case "$1" in
-	--dry) DRY_RUN=1 ;;
-	--init) INIT=1 ;;
-	--env) ONLY_ENV=1 ;;
-	--help | -h) show_help ;;
-	*) GREP_FILTER="$1" ;;
-	esac
-	shift
+    case "$1" in
+        --dry) DRY_RUN=1 ;;
+        --init) INIT=1 ;;
+        --env) ONLY_ENV=1 ;;
+        --help | -h) show_help ;;
+        *) GREP_FILTER="$1" ;;
+    esac
+    shift
 done
 
 warn() { echo "[WARN] $1"; }
 
 log() {
-	echo "[INFO] $1"
+    echo "[INFO] $1"
 }
 
 # --- Dry-run executor ---
 run_cmd() {
-	local cmd="$*"
-	if [[ $DRY_RUN -eq 1 ]]; then
-		log "[DRY_RUN] Would run: $cmd"
-	else
-		eval "$cmd"
-	fi
+    local cmd="$*"
+    if [[ $DRY_RUN -eq 1 ]]; then
+        log "[DRY_RUN] Would run: $cmd"
+    else
+        eval "$cmd"
+    fi
 }
 
 [[ $DRY_RUN -eq 1 ]] && log "Dry run enabled: no scripts will actually execute"
 
 # --- Find executable scripts in installs/ ---
 if [ ! -d "$SCRIPT_DIR/installs" ]; then
-	log "No installs/ directory found. Exiting."
-	exit 0
+    log "No installs/ directory found. Exiting."
+    exit 0
 fi
 
 run_installs() {
-	log "Processing scripts in: $SCRIPT_DIR/installs"
+    log "Processing scripts in: $SCRIPT_DIR/installs"
 
-	mapfile -d '' SCRIPTS < <(find "$SCRIPT_DIR/installs" -maxdepth 1 -mindepth 1 -type f -executable -print0)
+    mapfile -d '' SCRIPTS < <(find "$SCRIPT_DIR/installs" -maxdepth 1 -mindepth 1 -type f -executable -print0)
 
-	for SCRIPT_PATH in "${SCRIPTS[@]}"; do
-		BASENAME="$(basename "$SCRIPT_PATH")"
+    for SCRIPT_PATH in "${SCRIPTS[@]}"; do
+        BASENAME="$(basename "$SCRIPT_PATH")"
 
-		if [[ $INIT -eq 1 ]]; then
-			# Interactive mode
-			read -r -p "Do you want to run '$BASENAME'? (y/n/q): " choice
-			if [[ "$choice" =~ ^[yY]$ ]]; then
-				log "Running $BASENAME..."
-				run_cmd "$SCRIPT_PATH"
-			elif [[ "$choice" =~ ^[qQ]$ ]]; then
-				log "Exiting interactive run."
-				break
-			else
-				log "Skipping $BASENAME."
-			fi
-			# Grep filter mode (exclude pattern)
-		elif [[ -n "$GREP_FILTER" ]] && echo "$BASENAME" | grep -q "$GREP_FILTER"; then
-			log "Running $SCRIPT_PATH"
-			run_cmd "$SCRIPT_PATH"
-		fi
-	done
+        if [[ $INIT -eq 1 ]]; then
+            # Interactive mode
+            read -r -p "Do you want to run '$BASENAME'? (y/n/q): " choice
+            if [[ "$choice" =~ ^[yY]$ ]]; then
+                log "Running $BASENAME..."
+                run_cmd "$SCRIPT_PATH"
+            elif [[ "$choice" =~ ^[qQ]$ ]]; then
+                log "Exiting interactive run."
+                break
+            else
+                log "Skipping $BASENAME."
+            fi
+            # Grep filter mode (exclude pattern)
+        elif [[ -n "$GREP_FILTER" ]] && echo "$BASENAME" | grep -q "$GREP_FILTER"; then
+            log "Running $SCRIPT_PATH"
+            run_cmd "$SCRIPT_PATH"
+        fi
+    done
 }
 
 install_packages() {
 
-	# --- Required packages ---
-	PACKAGES=(
-		xclip ripgrep fd-find curl git wget unzip python3-pip btop python3-pygments bat
-	)
+    # --- Required packages ---
+    PACKAGES=(
+        xclip ripgrep fd-find curl git wget unzip python3-pip btop python3-pygments bat
+    )
 
-	# --- Update system ---
-	log "Updating package lists..."
-	run_cmd sudo apt update -y
+    # --- Update system ---
+    log "Updating package lists..."
+    run_cmd sudo apt update -y
 
-	log "Upgrading existing packages..."
-	run_cmd sudo apt upgrade -y
+    log "Upgrading existing packages..."
+    run_cmd sudo apt upgrade -y
 
-	# --- Install only missing packages ---
-	log "Checking for missing packages..."
-	MISSING_PACKAGES=()
-	for pkg in "${PACKAGES[@]}"; do
-		if ! dpkg -s "$pkg" >/dev/null 2>&1; then
-			MISSING_PACKAGES+=("$pkg")
-		fi
-	done
+    # --- Install only missing packages ---
+    log "Checking for missing packages..."
+    MISSING_PACKAGES=()
+    for pkg in "${PACKAGES[@]}"; do
+        if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+            MISSING_PACKAGES+=("$pkg")
+        fi
+    done
 
-	if [[ ${#MISSING_PACKAGES[@]} -gt 0 ]]; then
-		log "Installing missing packages: ${MISSING_PACKAGES[*]}"
-		run_cmd sudo apt install -y "${MISSING_PACKAGES[@]}"
-	else
-		log "All packages are already installed. Skipping installation."
-	fi
+    if [[ ${#MISSING_PACKAGES[@]} -gt 0 ]]; then
+        log "Installing missing packages: ${MISSING_PACKAGES[*]}"
+        run_cmd sudo apt install -y "${MISSING_PACKAGES[@]}"
+    else
+        log "All packages are already installed. Skipping installation."
+    fi
 
-	log "Package installation complete!"
+    log "Package installation complete!"
 }
 
 # Function: Setup auto-commit cron
 setup_auto_commit() {
-	local script_path="$DOTFILES_DIR/auto-commit.sh"
+    local script_path="$DOTFILES_DIR/auto-commit.sh"
 
-	if [[ ! -f "$script_path" ]]; then
-		log "Auto-commit script not found at $script_path. Skipping..."
-		return
-	fi
+    if [[ ! -f "$script_path" ]]; then
+        log "Auto-commit script not found at $script_path. Skipping..."
+        return
+    fi
 
-	# Check if already in crontab
-	if crontab -l 2>/dev/null | grep -qF "$script_path"; then
-		log "Auto-commit script already scheduled. Skipping..."
-	else
-		# Ask user before adding to crontab
-		read -r -p "Do you want to setup the auto commit script for '.dotfiles' in cron? (y/n): " choice
-		if [[ "$choice" =~ ^[yY]$ ]]; then
-			run_cmd chmod +x "$script_path"
-			run_cmd "(crontab -l 2>/dev/null; echo '0 22 * * * $script_path') | crontab -"
-			log "Auto-commit script scheduled at 10:00 PM daily."
-		fi
-	fi
+    # Check if already in crontab
+    if crontab -l 2>/dev/null | grep -qF "$script_path"; then
+        log "Auto-commit script already scheduled. Skipping..."
+    else
+        # Ask user before adding to crontab
+        read -r -p "Do you want to setup the auto commit script for '.dotfiles' in cron? (y/n): " choice
+        if [[ "$choice" =~ ^[yY]$ ]]; then
+            run_cmd chmod +x "$script_path"
+            run_cmd "(crontab -l 2>/dev/null; echo '0 22 * * * $script_path') | crontab -"
+            log "Auto-commit script scheduled at 10:00 PM daily."
+        fi
+    fi
 }
 
 # --- Optional environment sync ---
 run_env() {
-	# Load the createSymlink function
-	source "$DOTFILES_DIR/symlink.sh"
+    # Load the createSymlink function
+    source "$DOTFILES_DIR/symlink.sh"
 
-	# Map of source files/dirs to target locations
-	declare -A FILES_TO_LINK=(
-		["$DOTFILES_DIR/alacritty"]="$HOME/.config/alacritty"
-		["$DOTFILES_DIR/btop"]="$HOME/.config/btop"
-		["$DOTFILES_DIR/nvim"]="$HOME/.config/nvim"
-		["$DOTFILES_DIR/env/.gitconfig"]="$HOME/.gitconfig"
-		["$DOTFILES_DIR/env/.gitignore"]="$HOME/.gitignore"
-		["$DOTFILES_DIR/env/.ideavimrc"]="$HOME/.ideavimrc"
-		["$DOTFILES_DIR/env/.tmux.conf"]="$HOME/.tmux.conf"
-		["$DOTFILES_DIR/env/.zshrc"]="$HOME/.zshrc"
-		["$DOTFILES_DIR/env/.zsh"]="$HOME/.zsh"
-		["$DOTFILES_DIR/env/.p10k.zsh"]="$HOME/.p10k.zsh"
-	)
+    # Map of source files/dirs to target locations
+    declare -A FILES_TO_LINK=(
+        ["$DOTFILES_DIR/alacritty"]="$HOME/.config/alacritty"
+        ["$DOTFILES_DIR/btop"]="$HOME/.config/btop"
+        ["$DOTFILES_DIR/nvim"]="$HOME/.config/nvim"
+        ["$DOTFILES_DIR/env/.gitconfig"]="$HOME/.gitconfig"
+        ["$DOTFILES_DIR/env/.gitignore"]="$HOME/.gitignore"
+        ["$DOTFILES_DIR/env/.ideavimrc"]="$HOME/.ideavimrc"
+        ["$DOTFILES_DIR/env/.tmux.conf"]="$HOME/.tmux.conf"
+        ["$DOTFILES_DIR/env/.zshrc"]="$HOME/.zshrc"
+        ["$DOTFILES_DIR/env/.zsh"]="$HOME/.zsh"
+        ["$DOTFILES_DIR/env/.p10k.zsh"]="$HOME/.p10k.zsh"
+    )
 
-	for src in "${!FILES_TO_LINK[@]}"; do
-		dest="${FILES_TO_LINK[$src]}"
+    for src in "${!FILES_TO_LINK[@]}"; do
+        dest="${FILES_TO_LINK[$src]}"
 
-		if [[ -e "$src" ]]; then
-			if [[ $DRY_RUN -eq 1 ]]; then
-				log "Would create symlink: $dest → $src"
-			else
-				mkdir -p "$(dirname "$dest")"
-				createSymlink "$src" "$dest"
-			fi
-		else
-			warn "Source not found: $src"
-		fi
-	done
+        if [[ -e "$src" ]]; then
+            if [[ $DRY_RUN -eq 1 ]]; then
+                log "Would create symlink: $dest → $src"
+            else
+                mkdir -p "$(dirname "$dest")"
+                createSymlink "$src" "$dest"
+            fi
+        else
+            warn "Source not found: $src"
+        fi
+    done
 }
 
 # --- Main Execution ---
 if [[ $INIT -eq 1 ]]; then
-	install_packages
-	run_installs
-	run_env
-	setup_auto_commit
+    install_packages
+    run_installs
+    run_env
+    setup_auto_commit
 elif [[ $ONLY_ENV -eq 1 ]]; then
-	run_env
+    run_env
 else
-	run_installs
+    run_installs
 fi
 log "All scripts executed successfully."

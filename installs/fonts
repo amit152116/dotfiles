@@ -12,58 +12,58 @@ warn() { echo "[WARN] $1"; }
 # --- Ask user to install fonts ---
 read -r -p "Do you want to install Nerd Fonts? (y/n): " install_fonts
 if [[ "$install_fonts" != "y" && "$install_fonts" != "Y" ]]; then
-	log "Skipping font installation."
-	exit 0
+    log "Skipping font installation."
+    exit 0
 fi
 
 mkdir -p "$FONT_DIR"
 
 # --- Ensure required tools ---
 for cmd in wget unzip fc-cache; do
-	if ! command -v $cmd >/dev/null 2>&1; then
-		log "$cmd not found. Installing..."
-		sudo apt update -y
-		sudo apt install -y "$cmd"
-	fi
+    if ! command -v $cmd >/dev/null 2>&1; then
+        log "$cmd not found. Installing..."
+        sudo apt update -y
+        sudo apt install -y "$cmd"
+    fi
 done
 
 # --- Read fonts file ---
 if [[ ! -f "$FONTS_FILE" ]]; then
-	warn "Fonts file not found at $FONTS_FILE. Exiting."
-	exit 1
+    warn "Fonts file not found at $FONTS_FILE. Exiting."
+    exit 1
 fi
 
 while IFS= read -r font || [[ -n "$font" ]]; do
-	# Skip empty lines or comments
-	[[ -z "$font" || "$font" =~ ^# ]] && continue
+    # Skip empty lines or comments
+    [[ -z "$font" || "$font" =~ ^# ]] && continue
 
-	# Check if font is already installed
-	font_pattern="${font// /_}*" # Convert spaces to _ for matching
-	if find "$FONT_DIR" -name "$font_pattern" -o -name "${font}*.ttf" -o -name "${font}*.otf" 2>/dev/null | grep -q .; then
-		log "$font Nerd Font already installed. Skipping..."
-		continue
-	fi
+    # Check if font is already installed
+    font_pattern="${font// /_}*" # Convert spaces to _ for matching
+    if find "$FONT_DIR" -name "$font_pattern" -o -name "${font}*.ttf" -o -name "${font}*.otf" 2>/dev/null | grep -q .; then
+        log "$font Nerd Font already installed. Skipping..."
+        continue
+    fi
 
-	# Ask per-font installation
-	read -r -p "Install $font Nerd Font? (y/n): " choice
-	[[ "$choice" != "y" && "$choice" != "Y" ]] && {
-		log "Skipping $font."
-		continue
-	}
+    # Ask per-font installation
+    read -r -p "Install $font Nerd Font? (y/n): " choice
+    [[ "$choice" != "y" && "$choice" != "Y" ]] && {
+        log "Skipping $font."
+        continue
+    }
 
-	# Download and extract font
-	log "Downloading $font Nerd Font..."
-	temp_dir=$(mktemp -d)
-	zip_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip"
+    # Download and extract font
+    log "Downloading $font Nerd Font..."
+    temp_dir=$(mktemp -d)
+    zip_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip"
 
-	if wget -q --show-progress -O "$temp_dir/$font.zip" "$zip_url"; then
-		unzip -o "$temp_dir/$font.zip" -d "$FONT_DIR" >/dev/null 2>&1
-		rm -rf "$temp_dir"
-		log "$font installed successfully."
-	else
-		warn "Failed to download $font from $zip_url"
-		rm -rf "$temp_dir"
-	fi
+    if wget -q --show-progress -O "$temp_dir/$font.zip" "$zip_url"; then
+        unzip -o "$temp_dir/$font.zip" -d "$FONT_DIR" >/dev/null 2>&1
+        rm -rf "$temp_dir"
+        log "$font installed successfully."
+    else
+        warn "Failed to download $font from $zip_url"
+        rm -rf "$temp_dir"
+    fi
 done <"$FONTS_FILE"
 
 # --- Refresh font cache ---

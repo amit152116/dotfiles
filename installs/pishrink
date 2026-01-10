@@ -10,11 +10,11 @@ sudo apt-get install -y wget parted gzip pigz xz-utils udev e2fsprogs
 
 # Download PiShrink if not already installed
 if ! command -v pishrink &>/dev/null; then
-  echo "[INFO] Downloading PiShrink..."
-  wget -q https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh -O /tmp/pishrink.sh
-  chmod +x /tmp/pishrink.sh
-  sudo mv /tmp/pishrink.sh /usr/local/bin/pishrink
-  echo "[INFO] PiShrink installed successfully."
+    echo "[INFO] Downloading PiShrink..."
+    wget -q https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh -O /tmp/pishrink.sh
+    chmod +x /tmp/pishrink.sh
+    sudo mv /tmp/pishrink.sh /usr/local/bin/pishrink
+    echo "[INFO] PiShrink installed successfully."
 else
-  echo "[INFO] PiShrink already installed at $(command -v pishrink)"
+    echo "[INFO] PiShrink already installed at $(command -v pishrink)"
 fi
