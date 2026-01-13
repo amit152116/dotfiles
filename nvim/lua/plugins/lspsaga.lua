@@ -2,6 +2,17 @@ return {
   "nvimdev/lspsaga.nvim",
   event = "LspAttach",
   cmd = "Lspsaga",
+  finder = {
+    keys = {
+      -- 'toggle_or_open' handles both expanding nodes and opening files
+    },
+  },
+  callhierarchy = {
+    keys = {
+      -- 'edit' opens the file in the current window
+      -- edit = "<CR>",
+    },
+  },
   dependencies = {
     "nvim-treesitter/nvim-treesitter",
     {
