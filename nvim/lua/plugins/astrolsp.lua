@@ -157,10 +157,10 @@ return {
           desc = "Workspace Symbols",
         },
         -- Disable original mappings
-        ["<Leader>lr"] = {
-          function() Snacks.picker.lsp_references() end,
-          desc = "Search References",
-        },
+        -- ["<Leader>lr"] = {
+        --   function() Snacks.picker.lsp_references() end,
+        --   desc = "Search References",
+        -- },
         ["<Leader>ln"] = {
           function() vim.lsp.buf.rename() end,
           desc = "Rename symbol",

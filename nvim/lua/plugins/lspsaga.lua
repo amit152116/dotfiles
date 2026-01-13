@@ -39,16 +39,16 @@ return {
         }
 
         -- code action
-        -- maps.n["<Leader>la"] = {
-        --   "<Cmd>Lspsaga code_action<CR>",
-        --   desc = "LSP code action",
-        --   cond = "textDocument/codeAction",
-        -- }
-        -- maps.x["<Leader>la"] = {
-        --   ":<C-U>Lspsaga code_action<CR>",
-        --   desc = "LSP code action",
-        --   cond = "textDocument/codeAction",
-        -- }
+        maps.n["<Leader>la"] = {
+          "<Cmd>Lspsaga code_action<CR>",
+          desc = "LSP code action",
+          cond = "textDocument/codeAction",
+        }
+        maps.x["<Leader>la"] = {
+          ":<C-U>Lspsaga code_action<CR>",
+          desc = "LSP code action",
+          cond = "textDocument/codeAction",
+        }
 
         -- definition
         maps.n["<Leader>lp"] = {
@@ -66,8 +66,8 @@ return {
         }
 
         -- references
-        maps.n["grr"] = {
-          "<Cmd>Lspsaga finder<CR>",
+        maps.n["<Leader>lr"] = {
+          "<Cmd>Lspsaga finder ref<CR>",
           desc = "Search references",
           cond = function(client)
             return client.supports_method "textDocument/references"

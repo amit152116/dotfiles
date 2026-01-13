@@ -40,6 +40,7 @@
     if [ \"$#\" -lt 1 ]; then echo 'Usage: git tag-add <tag>'; exit 1; fi; \
     git tag \"$1\" && git push origin \"$1\"; \
   }; f"
+	save = !git stash push --include-untracked --message \"Auto-Backup $(date \"+%Y-%m-%d %H:%M:%S\")\" && git stash apply stash@{0}
 
 [diff]
 	tool = nvimdiff
@@ -58,3 +59,5 @@
 
 [merge]
     conflictStyle = diff3
+[color]
+	ui = auto

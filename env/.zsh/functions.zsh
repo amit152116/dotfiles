@@ -12,6 +12,14 @@ disable_sanitizers() {
     echo "C++ sanitizers disabled ❌"
 }
 
+idf(){
+    # Add esp-idf if installed
+    if [[ -d "$HOME/esp-idf" ]]; then
+        source $HOME/esp-idf/export.sh
+    fi
+    unset -f idf
+    alias idf="idf.py"
+}
 
 # Configuration reload
 reload() {

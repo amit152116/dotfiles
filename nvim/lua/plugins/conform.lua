@@ -155,6 +155,7 @@ return {
         kotlin = { "ktlint" },
         sql = { "pgformatter", "postgres-language-server" },
         qss = { "prettier" },
+        typescript = { "prettier", "ts-standard" },
       },
 
       -- 🎯 Custom formatter setup
