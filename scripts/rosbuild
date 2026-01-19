@@ -749,13 +749,6 @@ BUILD_TIME=$((END_TIME - START_TIME))
 # Save configuration
 save_config
 
-# Create compile_commands.json symlink only for Debug builds
-if [[ "$BUILD_TYPE" == "Debug" || "$BUILD_TYPE" == "RelWithDebInfo" ]]; then
-    if ln -sf build/compile_commands.json . 2>/dev/null; then
-        log_info "Created compile_commands.json symlink for IDE/LSP support"
-    fi
-fi
-
 log_success "Build completed successfully in ${BUILD_TIME}s"
 
 # Run tests if requested

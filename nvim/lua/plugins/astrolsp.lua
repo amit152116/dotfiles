@@ -51,6 +51,7 @@ return {
         filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
         cmd = {
           "clangd",
+          "--compile-commands-dir=build",
           "--background-index",
           "--background-index-priority=normal",
           "--clang-tidy",

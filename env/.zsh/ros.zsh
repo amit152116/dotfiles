@@ -49,6 +49,7 @@ _load_ros() {
     export GZ_VERSION=harmonic
     export ROS_DOMAIN_ID=0
     export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export MICRO_ROS_RMW_IMPLEMENTATION=rmw_microxrcedds
     export ROS_LOCALHOST_ONLY=0
     export RCUTILS_COLORIZED_OUTPUT=1
     export RCL_LOG_COLORIZE=1
@@ -66,11 +67,6 @@ _load_ros() {
 
     # Check for ROS2 installations in common locations
     local ROS_WS="$HOME/Documents/aim_ros2/"
-
-    # Source workspace if it exists
-    if [[ -d "$ROS_WS" ]]; then
-        source "$ROS_WS"install/setup.zsh
-    fi
 
     # Source completion scripts if they exist
     if [[ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.zsh ]]; then
@@ -96,7 +92,6 @@ _load_ros() {
     alias rqt_console='ros2 run rqt_console rqt_console'
     alias rqt_gui='ros2 run rqt_gui rqt_gui'
     alias roslaunch='ros2 launch'
-    alias ros_ws="cd $ROS_WS"
 
     # ROS2 functions
     rospkg() {
@@ -163,8 +158,9 @@ rosrun() {
 
 # Auto-load when entering ROS workspace
 chpwd_ros() {
-    if [[ -f "$(pwd)/install/setup.zsh" ]] || [[ -f "$(pwd)/../install/setup.zsh" ]] || [[ "$(pwd)" == *"aim_ros2"* ]]; then
+    if [[ -f "$(pwd)/install/setup.zsh" ]] || [[ -f "$(pwd)/../install/setup.zsh" ]]; then
         if [[ "$_ros_loaded" == "false" ]]; then
+            source "$(pwd)/install/setup.zsh"
             _load_ros
         fi
     fi

@@ -42,24 +42,32 @@ return {
     end
 
     -- Helper: Get git root
-    local function get_git_root()
+    local function get_git_details()
       local cmd = "git rev-parse --show-toplevel 2>/dev/null"
       local handle = io.popen(cmd)
       if not handle then return nil end
       local result = handle:read("*a"):gsub("%s+$", "")
       handle:close()
-      return result ~= "" and result or nil
+      if result == "" then return nil, nil end
+      local repo_name = vim.fn.fnamemodify(result, ":t")
+      -- Sanitize repo name (fix from previous turn)
+      repo_name = repo_name:gsub("[^%w%-]", "_")
+      return result, repo_name
     end
 
-    local function list_backups()
+    local function list_backups(repo_name)
       local backups = {}
-      local files = vim.fn.glob(backup_dir .. "/*.patch", false, true)
+      -- Only grab patches that start with the repo name
+      -- Using a wildcard specific to the repo prevents reading irrelevant files
+      local glob_pattern = string.format("%s/%s_*.patch", backup_dir, repo_name)
+      local files = vim.fn.glob(glob_pattern, false, true)
 
       for _, file in ipairs(files) do
         local name = vim.fn.fnamemodify(file, ":t")
         table.insert(backups, {
           name = name,
           file = file,
+          value = name,
         })
       end
 
@@ -71,7 +79,7 @@ return {
 
     -- Apply a backup patch
     local function apply_backup(backup_file)
-      local git_root = get_git_root()
+      local git_root = get_git_details()
       if not git_root then
         vim.notify("Not in a git repository", vim.log.levels.ERROR)
         return
@@ -109,12 +117,8 @@ return {
 
     -- CORE LOGIC: Create Backup
     function M.create_backup()
-      local git_root = get_git_root()
+      local git_root, repo_name = get_git_details()
       if not git_root then return end
-
-      local repo_name = vim.fn.fnamemodify(git_root, ":t")
-      -- Sanitize repo name (fix from previous turn)
-      repo_name = repo_name:gsub("[^%w%-]", "_")
 
       -- 1. Create a "Ghost Stash"
       -- -u includes untracked files
@@ -195,7 +199,10 @@ return {
 
     -- RESTORE LOGIC: Pick a backup
     function M.show_backups()
-      local backups = list_backups()
+      local git_root, repo_name = get_git_details()
+      if not git_root then return end
+
+      local backups = list_backups(repo_name)
 
       Snacks.picker.pick {
         title = "Git Backups",
@@ -319,7 +326,7 @@ return {
     vim.api.nvim_create_autocmd("VimEnter", {
       callback = function()
         vim.defer_fn(function()
-          if get_git_root() then
+          if get_git_details() then
             vim.keymap.set("n", "<leader>gB", M.show_backups, {
               desc = "View Git Backup",
             })
@@ -331,7 +338,10 @@ return {
 
     -- Correct: Run immediately, blocking exit for the few ms it takes to write
     vim.api.nvim_create_autocmd("VimLeavePre", {
-      callback = function() save_manifest(last_backup_trees) end,
+      callback = function()
+        M.create_backup()
+        save_manifest(last_backup_trees)
+      end,
     })
 
     return opts

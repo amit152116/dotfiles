@@ -12,11 +12,10 @@
 [http]
 	postBuffer = 524288000
 [alias]
- 	scommit = "!f() { git commit -m \"$1\" -m \"Affected Files:\n$(git diff --cached --name-status | sed 's/^/- /')\"; }; f"
-	; scommit= '!f() { git commit -e -m "$1" -m "$2" -m "Affected Files: $(git diff --cached --name-status | sed "s/^/- /")"; }; f'
 	logs = log --oneline --decorate --date=iso
+	home = "!f() { cd \"$(git rev-parse --show-toplevel)\"; }; f"
 	filelog = log --oneline --follow
-  tags = tag -l --sort=-creatordate
+  	tags = tag -l --sort=-creatordate
 	amend = commit --amend --no-edit
 	pick = cherry-pick
 	unstage = reset HEAD --
@@ -26,20 +25,20 @@
 	undo4 = reset --soft HEAD~4
 	undo5 = reset --soft HEAD~5
 	porcelain = status --porcelain	
-  tag-delete = "!f() { \
-    if [ \"$#\" -eq 0 ]; then echo 'Usage: git tag-delete <tag1> [tag2 ...]'; exit 1; fi; \
-    echo \"This will delete the following tags locally and remotely: $@\"; \
-    read -p \"Are you sure? [y/N] \" confirm; \
-    if [ \"$confirm\" != \"y\" ] && [ \"$confirm\" != \"Y\" ]; then echo \"Aborted.\"; exit 1; fi; \
-    for tag in \"$@\"; do \
-      echo \"Deleting tag $tag...\"; \
-      git tag -d \"$tag\" && git push origin --delete \"$tag\"; \
-    done; \
-  }; f"
+  	tag-delete = "!f() { \
+    	if [ \"$#\" -eq 0 ]; then echo 'Usage: git tag-delete <tag1> [tag2 ...]'; exit 1; fi; \
+    	echo \"This will delete the following tags locally and remotely: $@\"; \
+    	read -p \"Are you sure? [y/N] \" confirm; \
+    	if [ \"$confirm\" != \"y\" ] && [ \"$confirm\" != \"Y\" ]; then echo \"Aborted.\"; exit 1; fi; \
+    	for tag in \"$@\"; do \
+      	echo \"Deleting tag $tag...\"; \
+      	git tag -d \"$tag\" && git push origin --delete \"$tag\"; \
+    	done; \
+  	}; f"
 	tag-add = "!f() { \
-    if [ \"$#\" -lt 1 ]; then echo 'Usage: git tag-add <tag>'; exit 1; fi; \
-    git tag \"$1\" && git push origin \"$1\"; \
-  }; f"
+    	if [ \"$#\" -lt 1 ]; then echo 'Usage: git tag-add <tag>'; exit 1; fi; \
+    	git tag \"$1\" && git push origin \"$1\"; \
+  	}; f"
 	save = !git stash push --include-untracked --message \"Auto-Backup $(date \"+%Y-%m-%d %H:%M:%S\")\" && git stash apply stash@{0}
 
 [diff]
