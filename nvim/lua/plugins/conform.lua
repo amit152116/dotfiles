@@ -156,6 +156,7 @@ return {
         sql = { "pgformatter", "postgres-language-server" },
         qss = { "prettier" },
         typescript = { "prettier", "ts-standard" },
+        txt = { "cmakelang" },
       },
 
       -- 🎯 Custom formatter setup

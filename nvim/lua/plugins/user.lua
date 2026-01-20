@@ -7,6 +7,7 @@ return {
 
   -- == Examples of Adding Plugins ==
   { "andweeb/presence.nvim" },
+  { "tpope/vim-fugitive" },
 
   { "max397574/better-escape.nvim" },
 

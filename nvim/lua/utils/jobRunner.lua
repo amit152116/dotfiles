@@ -1,4 +1,4 @@
-local JobRunner = {}
+local M = {}
 
 ---@alias JobRunnerCmd string|string[]
 
@@ -87,7 +87,7 @@ end
 
 ---Asynchronously executes a shell command with optional caching and streaming.
 ---@type JobRunner
-function JobRunner.run(cmd, opts)
+function M.run(cmd, opts)
   opts = opts or {}
   opts.stream = opts.stream or false
 
@@ -198,17 +198,15 @@ end
 
 ---Asynchronously executes a shell command with optional caching
 ---@type JobRunner
-function JobRunner.stream(cmd, opts)
+function M.stream(cmd, opts)
   opts = opts or {}
   opts.stream = true
-  JobRunner.run(cmd, opts)
+  M.run(cmd, opts)
 end
 
 --- User-facing setup function.
 --- Merges user-provided options with the defaults.
 ---@param opts table? User configuration options.
-function JobRunner.setup(opts)
-  config = vim.tbl_deep_extend("force", config, opts or {})
-end
+function M.setup(opts) config = vim.tbl_deep_extend("force", config, opts or {}) end
 
-return JobRunner
+return M
