@@ -477,39 +477,35 @@ local function createFinder(opts)
     invalid_regex_notified = false
 
     return require("snacks.picker.source.proc").proc({
-      picker_opts,
-      {
-        cmd = "rg",
-        args = args,
-        notify = false,
-        cwd = opts.cwd,
-        transform = function(item)
-          item.cwd = opts.cwd
+      cmd = "rg",
+      args = args,
+      notify = false,
+      cwd = opts.cwd,
+      transform = function(item)
+        item.cwd = opts.cwd
 
-          -- Parse ripgrep output
-          local file, lnum, col, text =
-            item.text:match "^(.+):(%d+):(%d+):(.*)$"
+        -- Parse ripgrep output
+        local file, lnum, col, text = item.text:match "^(.+):(%d+):(%d+):(.*)$"
 
-          if not file then
-            if not item.text:match "WARNING" then
-              Snacks.notify.error("Invalid grep output:\n" .. item.text)
-            end
-            return false
+        if not file then
+          if not item.text:match "WARNING" then
+            Snacks.notify.error("Invalid grep output:\n" .. item.text)
           end
+          return false
+        end
 
-          -- Normalize and store
-          item.line = text
-          item.file = file
-          item.pos = { tonumber(lnum), tonumber(col) - 1 }
+        -- Normalize and store
+        item.line = text
+        item.file = file
+        item.pos = { tonumber(lnum), tonumber(col) - 1 }
 
-          -- Schedule replacement processing
-          vim.schedule(
-            function() process_find_replace(opts, item, "replace_text") end
-          )
+        -- Schedule replacement processing
+        vim.schedule(
+          function() process_find_replace(opts, item, "replace_text") end
+        )
 
-          return true
-        end,
-      },
+        return true
+      end,
     }, ctx)
   end
 end
@@ -587,7 +583,7 @@ local function createPreview(ctx)
 end
 
 ---@param opts snacks.picker.multigrep.Config
-function M.multigrep(opts)
+function M.Multigrep(opts)
   opts = opts or {}
   opts.regex = (opts.regex == nil) and true or opts.regex
   opts.cwd = opts.cwd or vim.uv.cwd()

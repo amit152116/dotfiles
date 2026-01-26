@@ -36,86 +36,83 @@ local function create_finder(opts)
   ---@type snacks.picker.finder
   return function(picker_opts, ctx)
     return require("snacks.picker.source.proc").proc({
-      picker_opts,
-      {
-        cmd = opts.cmd,
-        args = opts.args,
-        ---@param item snacks.picker.finder.Item
-        transform = function(item)
-          local content = vim.trim(item.text)
-          if content == "" or content:match "^---$" then
-            return false -- Skip empty or separator lines often found in ROS2 output
-          end
+      cmd = opts.cmd,
+      args = opts.args,
+      ---@param item snacks.picker.finder.Item
+      transform = function(item)
+        local content = vim.trim(item.text)
+        if content == "" or content:match "^---$" then
+          return false -- Skip empty or separator lines often found in ROS2 output
+        end
 
-          item.text = content
-          item.display = content -- This is the text displayed in the picker list
-          if opts.formatter then
-            if opts.formatter(item) == false then return false end
-          end
+        item.text = content
+        item.display = content -- This is the text displayed in the picker list
+        if opts.formatter then
+          if opts.formatter(item) == false then return false end
+        end
 
-          setmetatable(item, {
-            __index = function(_, k)
-              -- Lazy-load preview data only when 'data' or 'preview' is accessed for an item.
-              if k == "data" then
-                local preview_cmd_config = opts.preview.args
-                if not preview_cmd_config then
-                  rawset(item, "data", "No preview command configured.")
-                  return rawget(item, "data")
-                end
-
-                local preview_cmd_parts
-                local config_type = type(preview_cmd_config)
-
-                if config_type == "string" then
-                  -- e.g., cmd="topic info", content="/chatter" -> {"ros2", "topic", "info", "/chatter"}
-                  preview_cmd_parts = vim.split(
-                    opts.cmd .. " " .. preview_cmd_config .. " " .. item.text,
-                    "%s+"
-                  )
-                elseif config_type == "function" then
-                  preview_cmd_parts = preview_cmd_config(item)
-                elseif config_type == "table" then
-                  -- e.g., cmd={"topic", "info"}, content="/chatter" -> {"ros2", "topic", "info", "/chatter"}
-                  preview_cmd_parts = vim.deepcopy(preview_cmd_config)
-                  table.insert(preview_cmd_parts, 1, opts.cmd)
-                  table.insert(preview_cmd_parts, item.text)
-                end
-                if not preview_cmd_parts then
-                  rawset(
-                    item,
-                    "data",
-                    "Error: Could not construct preview command."
-                  )
-                  return rawget(item, "data")
-                end
-
-                -- Execute the command synchronously to get the preview data.
-                -- This blocks, but only for the preview of a single item, which is acceptable.
-                local data = vim.fn.system(preview_cmd_parts)
-                if vim.v.shell_error ~= 0 then
-                  local err_msg = "Error running preview command:\n"
-                    .. table.concat(preview_cmd_parts, " ")
-                    .. "\n\n"
-                    .. data
-                  rawset(item, "data", err_msg)
-                  return err_msg
-                end
-                -- Cache the result in the item table itself to avoid re-running the command
-                rawset(item, "data", data)
-                return data
-              elseif k == "preview" then
-                -- This is called by the snacks previewer for the highlighted item.
-                -- It implicitly accesses `item.data`, triggering the 'data' logic above if needed.
-                return {
-                  text = item.data,
-                  ft = opts.preview.ft or "markdown",
-                }
+        setmetatable(item, {
+          __index = function(_, k)
+            -- Lazy-load preview data only when 'data' or 'preview' is accessed for an item.
+            if k == "data" then
+              local preview_cmd_config = opts.preview.args
+              if not preview_cmd_config then
+                rawset(item, "data", "No preview command configured.")
+                return rawget(item, "data")
               end
-            end,
-          })
-          return true -- Keep the item
-        end,
-      },
+
+              local preview_cmd_parts
+              local config_type = type(preview_cmd_config)
+
+              if config_type == "string" then
+                -- e.g., cmd="topic info", content="/chatter" -> {"ros2", "topic", "info", "/chatter"}
+                preview_cmd_parts = vim.split(
+                  opts.cmd .. " " .. preview_cmd_config .. " " .. item.text,
+                  "%s+"
+                )
+              elseif config_type == "function" then
+                preview_cmd_parts = preview_cmd_config(item)
+              elseif config_type == "table" then
+                -- e.g., cmd={"topic", "info"}, content="/chatter" -> {"ros2", "topic", "info", "/chatter"}
+                preview_cmd_parts = vim.deepcopy(preview_cmd_config)
+                table.insert(preview_cmd_parts, 1, opts.cmd)
+                table.insert(preview_cmd_parts, item.text)
+              end
+              if not preview_cmd_parts then
+                rawset(
+                  item,
+                  "data",
+                  "Error: Could not construct preview command."
+                )
+                return rawget(item, "data")
+              end
+
+              -- Execute the command synchronously to get the preview data.
+              -- This blocks, but only for the preview of a single item, which is acceptable.
+              local data = vim.fn.system(preview_cmd_parts)
+              if vim.v.shell_error ~= 0 then
+                local err_msg = "Error running preview command:\n"
+                  .. table.concat(preview_cmd_parts, " ")
+                  .. "\n\n"
+                  .. data
+                rawset(item, "data", err_msg)
+                return err_msg
+              end
+              -- Cache the result in the item table itself to avoid re-running the command
+              rawset(item, "data", data)
+              return data
+            elseif k == "preview" then
+              -- This is called by the snacks previewer for the highlighted item.
+              -- It implicitly accesses `item.data`, triggering the 'data' logic above if needed.
+              return {
+                text = item.data,
+                ft = opts.preview.ft or "markdown",
+              }
+            end
+          end,
+        })
+        return true -- Keep the item
+      end,
     }, ctx)
   end
 end

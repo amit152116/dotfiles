@@ -1,7 +1,7 @@
 local Snacks = require "snacks"
 
 local M = {}
-M.grep = require("myPlugins.grep").multigrep
+M.grep = require("myPlugins.grep").Multigrep
 M.ros = require "myPlugins.ros"
 
 -- Create timer once and reuse
