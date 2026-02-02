@@ -55,7 +55,6 @@ return {
         }, "\n"),
       },
     },
-    lazygit = {},
     scratch = {},
   },
   specs = {
@@ -172,12 +171,17 @@ return {
               desc = "Find pickers",
             },
 
+            ["<Leader>gb"] = {
+              function() Snacks.picker.git_branches() end,
+              desc = "Git branches",
+            },
+
             -- Attach some git mapping when buffer is attached via gitsigns on_attach
             ["<Leader>gc"] = false,
             ["<Leader>gC"] = false,
             ["<Leader>go"] = false,
             ["<Leader>gl"] = {
-              function() Snacks.lazygit.log() end,
+              "<cmd>silent !tmux-sessionizer -c lazygit --args log -<cr>",
               desc = "Git Logs",
             },
 

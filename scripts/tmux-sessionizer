@@ -54,7 +54,7 @@ Options:
   -v, --version          Display version information
   -s, --session <name>   Session command index
   -c, --cmd <name>       Session command name
-      --args <args>      Session command arguments
+      -- <args>          Session command arguments
       --vsplit           Create vertical split (horizontal layout) for session command
       --hsplit           Create horizontal split (vertical layout) for session command
 
@@ -62,8 +62,8 @@ Examples:
   tmux-sessionizer                              # Open fuzzy finder
   tmux-sessionizer -s 0                         # Run session command at index 0
   tmux-sessionizer -s 1 --vsplit                # Run session command 1 in vertical split
-  tmux-sessionizer -s 2 --args "~/myrepo"       # Run session command 2 with args
-  tmux-sessionizer -s 3 --args "-a -b" --hsplit # Run with multiple args in hsplit
+  tmux-sessionizer -s 2 -- "~/myrepo"           # Run session command 2 with args
+  tmux-sessionizer -s 3 -- "-a -b" --hsplit     # Run with multiple args in hsplit
   tmux-sessionizer ~/projects                   # Open specific directory
 EOF
 }
@@ -79,6 +79,11 @@ show_version() {
 parse_arguments() {
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
+            --)
+                shift
+                session_args="$*"
+                break
+                ;;
             -h | --help)
                 show_help
                 exit 0
@@ -101,14 +106,6 @@ parse_arguments() {
                     exit 1
                 fi
                 session_cmd="$2"
-                shift
-                ;;
-            --args)
-                if [[ -z "$2" || "$2" == -* ]]; then
-                    echo "Error: --args requires a value" >&2
-                    exit 1
-                fi
-                session_args="$2"
                 shift
                 ;;
             --vsplit)
