@@ -91,26 +91,12 @@ return {
         ["n"] = { "nzzzv", silent = true },
         ["N"] = { "Nzzzv", silent = true },
 
-        ["<C-f>"] = {
-          "<cmd>silent !tmux-sessionizer<CR>",
-          desc = "Open tmux-sessionizer",
-          silent = true,
-        },
         ["<M-q>"] = {
           "<Cmd>confirm qall<CR>",
           desc = "Exit AstroNvim",
           silent = true,
         },
-        ["<M-m>"] = {
-          "<cmd>silent !tmux-sessionizer -s 0<cr>",
-          desc = "Man Pages Fzf",
-          silent = true,
-        },
-        ["<M-b>"] = {
-          "<cmd>silent !tmux-sessionizer -s 1<cr>",
-          desc = "Btop",
-          silent = true,
-        },
+
         ["<M-o>"] = {
           "<cmd>:silent !xdg-open .<cr>",
           desc = "Open File Explorer",
@@ -126,6 +112,7 @@ return {
           desc = "Prev Tmux Window",
           silent = true,
         },
+
         ["<Leader>qt"] = {
           "<cmd>tabclose<cr>",
           desc = "Quit Tab",

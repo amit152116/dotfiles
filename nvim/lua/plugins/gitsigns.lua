@@ -26,18 +26,16 @@ return {
       )
 
       map("<Leader>go", function() Snacks.gitbrowse() end, "Git Browse (open)")
-      map("<Leader>gf", function()
-        local file = vim.fn.expand "%"
-        if file == "" then
-          vim.notify("No file in current buffer", vim.log.levels.WARN)
-          return
-        end
-
-        vim.cmd(
-          "silent !tmux-sessionizer -c lazygit -- -f "
-            .. vim.fn.shellescape(vim.fn.expand "%:p")
-        )
-      end, "Git Logs (current file)")
+      map(
+        "<Leader>gf",
+        function() Snacks.picker.git_log_file { focus = "list" } end,
+        "Git Logs (current file)"
+      )
+      map(
+        "<Leader>gL",
+        function() Snacks.picker.git_log_line { focus = "list" } end,
+        "Git Logs (current Line)"
+      )
     end
     return opts
   end,

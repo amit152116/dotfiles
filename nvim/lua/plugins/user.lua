@@ -9,6 +9,8 @@ return {
   { "andweeb/presence.nvim" },
   { "tpope/vim-fugitive" },
 
+  { "ThePrimeagen/git-worktree.nvim" },
+
   { "max397574/better-escape.nvim" },
 
   { "wakatime/vim-wakatime", event = "User AstroFile" },

@@ -172,7 +172,7 @@ return {
             },
 
             ["<Leader>gb"] = {
-              function() Snacks.picker.git_branches() end,
+              function() Snacks.picker.git_branches { focus = "list" } end,
               desc = "Git branches",
             },
 
@@ -180,15 +180,12 @@ return {
             ["<Leader>gc"] = false,
             ["<Leader>gC"] = false,
             ["<Leader>go"] = false,
+            ["<Leader>gg"] = false,
             ["<Leader>gl"] = {
-              "<cmd>silent !tmux-sessionizer -c lazygit --args log -<cr>",
+              function() Snacks.picker.git_log { focus = "list" } end,
               desc = "Git Logs",
             },
 
-            ["<Leader>gg"] = {
-              "<cmd>silent !tmux-sessionizer -s 2<cr>",
-              desc = "LazyGit ",
-            },
             -- Find all Neovim plugins files
             ["<Leader>pf"] = {
               function()

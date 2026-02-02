@@ -141,7 +141,7 @@ parse_arguments() {
 
             session_idx=$((TS_HASHED_SESSION_BASE + $(ts_hash "$session_cmd") % TS_HASHED_SESSION_RANGE))
         fi
-    else
+    elif [[ -n "$session_idx" ]]; then
         # Using -s flag: validate and resolve from array
         if [[ -z "${TS_SESSION_COMMANDS[*]}" ]]; then
             echo "Error: TS_SESSION_COMMANDS is not set" >&2
