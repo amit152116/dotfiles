@@ -9,7 +9,10 @@ return {
   { "andweeb/presence.nvim" },
   { "tpope/vim-fugitive" },
 
-  { "ThePrimeagen/git-worktree.nvim" },
+  {
+    "Juksuu/worktrees.nvim",
+    config = function() require("worktrees").setup() end,
+  },
 
   { "max397574/better-escape.nvim" },
 
@@ -117,7 +120,7 @@ return {
   {
     "bloznelis/before.nvim",
     event = { "InsertEnter", "TextChanged" },
-    dependencies = {
+    specs = {
       {
         "AstroNvim/astrocore",
         opts = {

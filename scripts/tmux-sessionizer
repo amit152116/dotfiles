@@ -201,6 +201,16 @@ has_session() {
     tmux list-sessions 2>/dev/null | grep -q "^$1:"
 }
 
+tmux_popup() {
+    tmux neww -t 404 -n popup -- bash -c "
+    clear
+    echo \"$1\"
+    echo
+    echo 'Press any key to close'
+    read -n1
+  "
+}
+
 ts_hash() {
     local s="$1"
     local h=0
@@ -339,7 +349,13 @@ handle_window_session_cmd() {
         log "Creating new window: tmux neww -dt $target $full_cmd"
         tmux neww -dt "$target" "$full_cmd"
         hydrate "$target" "$selected"
-        tmux select-window -t "$target"
+        error=$(tmux select-window -t "$target" 2>&1 >/dev/null)
+
+        if [[ -n $error ]]; then
+            log "Error: Failed to open window: $error" >&2
+            tmux_popup "⚠️Error: Failed to open window: $error"
+
+        fi
     fi
 }
 
