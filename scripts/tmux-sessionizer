@@ -37,7 +37,6 @@ log() {
 
 session_idx=""
 session_cmd=""
-user_selected=""
 split_type=""
 session_args=""
 
@@ -52,7 +51,6 @@ Usage: tmux-sessionizer [OPTIONS] [SEARCH_PATH]
 Options:
   -h, --help             Display this help message
   -v, --version          Display version information
-  -s, --session <name>   Session command index
   -c, --cmd <name>       Session command name
       -- <args>          Session command arguments
       --vsplit           Create vertical split (horizontal layout) for session command
@@ -60,10 +58,9 @@ Options:
 
 Examples:
   tmux-sessionizer                              # Open fuzzy finder
-  tmux-sessionizer -s 0                         # Run session command at index 0
-  tmux-sessionizer -s 1 --vsplit                # Run session command 1 in vertical split
-  tmux-sessionizer -s 2 -- "~/myrepo"           # Run session command 2 with args
-  tmux-sessionizer -s 3 -- "-a -b" --hsplit     # Run with multiple args in hsplit
+  tmux-sessionizer -c help-fzf                  # Run session command at index 0
+  tmux-sessionizer -c btop -- ~/myrepo          # Run session command 2 with args
+  tmux-sessionizer -c lazygit --hsplit          # Run with multiple args in hsplit
   tmux-sessionizer ~/projects                   # Open specific directory
 EOF
 }
@@ -92,14 +89,6 @@ parse_arguments() {
                 show_version
                 exit 0
                 ;;
-            -s | --session)
-                if [[ -z "$2" ]]; then
-                    echo "Error: --session requires a value" >&2
-                    exit 1
-                fi
-                session_idx="$2"
-                shift
-                ;;
             -c | --cmd)
                 if [[ -z "$2" || "$2" == -* ]]; then
                     echo "Error: --cmd requires a value" >&2
@@ -115,7 +104,8 @@ parse_arguments() {
                 split_type="hsplit"
                 ;;
             *)
-                user_selected="$1"
+                echo "Error: Invalid argument: $1" >&2
+                exit 1
                 ;;
         esac
         shift
@@ -141,21 +131,21 @@ parse_arguments() {
 
             session_idx=$((TS_HASHED_SESSION_BASE + $(ts_hash "$session_cmd") % TS_HASHED_SESSION_RANGE))
         fi
-    elif [[ -n "$session_idx" ]]; then
-        # Using -s flag: validate and resolve from array
-        if [[ -z "${TS_SESSION_COMMANDS[*]}" ]]; then
-            echo "Error: TS_SESSION_COMMANDS is not set" >&2
-            echo "Must have a command set to run when switching to a session" >&2
-            exit 1
-        fi
-
-        if [[ -z "$session_idx" ]] || ((session_idx < 0 || session_idx >= ${#TS_SESSION_COMMANDS[@]})); then
-            echo "Error: Invalid index. Please provide an index between 0 and $((${#TS_SESSION_COMMANDS[@]} - 1))." >&2
-            exit 1
-        fi
-
-        session_cmd="${TS_SESSION_COMMANDS[$session_idx]}"
-        session_idx=$((TS_SESSION_BASE + session_idx))
+        # elif [[ -n "$session_idx" ]]; then
+        #     # Using -s flag: validate and resolve from array
+        #     if [[ -z "${TS_SESSION_COMMANDS[*]}" ]]; then
+        #         echo "Error: TS_SESSION_COMMANDS is not set" >&2
+        #         echo "Must have a command set to run when switching to a session" >&2
+        #         exit 1
+        #     fi
+        #
+        #     if [[ -z "$session_idx" ]] || ((session_idx < 0 || session_idx >= ${#TS_SESSION_COMMANDS[@]})); then
+        #         echo "Error: Invalid index. Please provide an index between 0 and $((${#TS_SESSION_COMMANDS[@]} - 1))." >&2
+        #         exit 1
+        #     fi
+        #
+        #     session_cmd="${TS_SESSION_COMMANDS[$session_idx]}"
+        #     session_idx=$((TS_SESSION_BASE + session_idx))
     fi
 
     # Validate split options are only used with session commands
@@ -164,7 +154,7 @@ parse_arguments() {
         exit 1
     fi
 
-    log "tmux-sessionizer($VERSION): idx=$session_idx cmd=$session_cmd args='$session_args' user_selected=$user_selected split_type=$split_type log=$TS_LOG log_file=$TS_LOG_FILE"
+    log "tmux-sessionizer($VERSION): idx=$session_idx cmd=$session_cmd args='$session_args' split_type=$split_type log=$TS_LOG log_file=$TS_LOG_FILE"
 }
 
 #------------------------------------------------------------------------------
@@ -481,11 +471,7 @@ main() {
 
         # Determine selected directory/session
         local selected
-        if [[ -n $user_selected ]]; then
-            selected="$user_selected"
-        else
-            selected=$(run_fuzzy_finder)
-        fi
+        selected=$(run_fuzzy_finder)
 
         # Exit if nothing selected
         if [[ -z $selected ]]; then
