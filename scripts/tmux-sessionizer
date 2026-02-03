@@ -39,6 +39,7 @@ session_idx=""
 session_cmd=""
 split_type=""
 session_args=""
+user_selected=""
 
 #------------------------------------------------------------------------------
 # Help & Version Functions
@@ -104,8 +105,7 @@ parse_arguments() {
             split_type="hsplit"
             ;;
         *)
-            echo "Error: Invalid argument: $1" >&2
-            exit 1
+            user_selected="$1"
             ;;
         esac
         shift
@@ -546,51 +546,69 @@ main() {
         TS_SEARCH_PATHS+=("${TS_EXTRA_SEARCH_PATHS[@]}")
     fi
 
-    # Get user selection
-    local selected
-    selected=$(run_fuzzy_finder)
-    [[ -z $selected ]] && exit 0
+    local raw_input
+    local selected_path
+    local selected_name
 
-    # Extract session name from TMUX session format
-    if [[ "$selected" =~ ^\[TMUX\]\ (.+)$ ]]; then
-        selected="${BASH_REMATCH[1]}"
-        selected_name="$selected"
-    elif [[ "$selected" =~ ^(.+)\ \[([^\]]+)\]$ ]]; then
-        # Directory with branch name
-        local dir_path="${BASH_REMATCH[1]}"
-        local branch_name="${BASH_REMATCH[2]}"
-
-        # This replaces ~ at the start with the value of $HOME
-        dir_path="${dir_path/#\~/$HOME}"
-
-        # Check if this is a worktree
-        if is_worktree "$dir_path"; then
-            local common_dir
-            common_dir=$(git -C "$dir_path" rev-parse --git-common-dir 2>/dev/null)
-
-            # Worktree: use bare_name [branch] format
-            local parent_name=$(basename "$common_dir" | sed 's/\.git$//')
-            selected_name="${parent_name} [${branch_name}]"
-        else
-            # Normal repo: just use directory name (no branch in session name)
-            selected_name="$(basename "$dir_path")"
+    # 1. Determine Input Source
+    if [[ -n "$user_selected" ]]; then
+        # Validation: Check if empty OR if NOT (!) a directory
+        if [[ -z "$user_selected" ]] || [[ ! -d "$user_selected" ]]; then
+            echo "Error: Invalid selection (empty or not a directory)" >&2
+            exit 1
         fi
-
-        selected="$dir_path"
+        raw_input="$user_selected"
     else
-        # Regular directory without branch - normalize it
-        selected_name=$(basename "$selected" | tr . _ | sed 's/^\(.\)/\L\1/')
+        raw_input=$(run_fuzzy_finder)
+        [[ -z "$raw_input" ]] && exit 0
     fi
 
-    # Create session if it doesn't exist
+    # 2. Handle Existing TMUX Sessions (Early Exit)
+    # If the selection is an existing session from the list, just switch to it.
+    if [[ "$raw_input" =~ ^\[TMUX\]\ (.+)$ ]]; then
+        switch_to "${BASH_REMATCH[1]}"
+        return
+    fi
+
+    # 3. Extract Path from Input
+    # Regex matches: "Path [Branch]" OR just "Path"
+    if [[ "$raw_input" =~ ^(.+)\ \[([^\]]+)\]$ ]]; then
+        selected_path="${BASH_REMATCH[1]}"
+    else
+        selected_path="$raw_input"
+    fi
+
+    # Expand tilde (~) to $HOME safely
+    selected_path="${selected_path/#\~/$HOME}"
+
+    # 4. Generate Session Name (Centralized Logic)
+    # We calculate the name here so we don't repeat code for CLI args vs FZF args
+    if is_worktree "$selected_path"; then
+        local common_dir
+        local branch_name
+        local parent_name
+
+        # Get git details
+        common_dir=$(git -C "$selected_path" rev-parse --git-common-dir 2>/dev/null)
+        branch_name=$(git -C "$selected_path" branch --show-current)
+
+        # Clean up parent name (remove .git suffix)
+        parent_name=$(basename "$common_dir" | sed 's/\.git$//')
+
+        # Format: bare_name [branch]
+        selected_name="${parent_name} [${branch_name}]"
+    else
+        # Regular directory: Normalize name (dots to underscores, lowercase first letter)
+        selected_name=$(basename "$selected_path" | tr . _ | sed 's/^\(.\)/\L\1/')
+    fi
+
+    # 5. Create & Switch
     if ! has_session "$selected_name"; then
-        tmux new-session -ds "$selected_name" -c "$selected"
-        hydrate "$selected_name" "$selected"
+        tmux new-session -ds "$selected_name" -c "$selected_path"
+        hydrate "$selected_name" "$selected_path"
     fi
 
-    # Switch to the session
     switch_to "$selected_name"
-
 }
 
 #------------------------------------------------------------------------------

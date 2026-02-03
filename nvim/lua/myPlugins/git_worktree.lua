@@ -141,7 +141,7 @@ local function get_branches()
     local upstream = vim.trim(parts[2] or "")
     local is_current = vim.trim(parts[3] or "") == "*"
 
-    if ref ~= "" and not ref:match "HEAD" then
+    if not is_current and ref ~= "" and not ref:match "HEAD" then
       local is_remote = false
       local branch_name = ref
       local display_name = ref
@@ -381,6 +381,42 @@ local function delete_worktree(worktree_path, force)
   return true, "Worktree deleted successfully"
 end
 
+--- Helper to ensure worktree exists before performing an action
+---@param branch table The branch object
+---@param on_ready function(path) Callback to run with the valid worktree path
+local function ensure_worktree(branch, on_ready)
+  if branch.has_worktree then
+    on_ready(branch.worktree_path)
+  else
+    -- Prompt for creation
+    if
+      vim.fn.confirm(
+        "Create new worktree for [" .. branch.branch_name .. "]?",
+        "&Yes\n&No",
+        2
+      ) ~= 1
+    then
+      snacks.notify.info(
+        "Worktree creation cancelled",
+        { title = "Git Worktree" }
+      )
+      return
+    end
+
+    -- Attempt creation
+    local success, result_path = create_worktree(branch)
+    if success then
+      snacks.notify.info(
+        "Worktree created: " .. result_path,
+        { title = "Git Worktree" }
+      )
+      on_ready(result_path)
+    else
+      snacks.notify.error(result_path, { title = "Git Worktree" })
+    end
+  end
+end
+
 --- Picker for switching/creating git worktrees
 function M.switch_worktree()
   local branches = get_branches()
@@ -406,7 +442,8 @@ function M.switch_worktree()
 
   snacks.picker.pick {
     title = "  Git Worktrees - Switch/Create",
-    finder = function() return items end,
+    items = items,
+    focus = "list",
     format = function(item, _)
       if not item or not item.data then return { { "" } } end
 
@@ -502,43 +539,37 @@ function M.switch_worktree()
       return true
     end,
     actions = {
-      switch_or_create = function(self, item)
+      -- Action: Switch inside Neovim
+      switch_nvim = function(self, item)
         local branch = item.data
-        self:close() -- Close the picker first
+        self:close()
 
-        -- Use schedule to wait for the picker UI to fully clean up
         vim.schedule(function()
-          if branch.has_worktree then
-            switch_to_worktree(branch.worktree_path, branch)
-          else
-            if
-              vim.fn.confirm(
-                "Create new worktree for [" .. branch.branch_name .. "]?",
-                "&Yes\n&No",
-                2
-              ) ~= 1
-            then
-              snacks.notify.notify("Worktree creation cancelled", {
-                title = "Git Worktree",
-                level = "info",
-              })
-              return
-            end
-
-            -- Proceed with creation
-            local success, result = create_worktree(branch)
-            if success then
-              snacks.notify.notify(
-                "Worktree created: " .. result,
-                { title = "Git Worktree" }
-              )
-              switch_to_worktree(result, branch)
-            else
-              snacks.notify.error(result, { title = "Git Worktree" })
-            end
-          end
+          ensure_worktree(
+            branch,
+            function(path) switch_to_worktree(path, branch) end
+          )
         end)
       end,
+
+      -- Action: Switch Tmux Session
+      switch_tmux = function(self, item)
+        local branch = item.data
+        self:close()
+
+        vim.schedule(function()
+          ensure_worktree(branch, function(path)
+            -- Execute external tmux script safely
+            local output = vim.fn.system { "tmux-sessionizer", path }
+
+            if vim.v.shell_error ~= 0 then
+              snacks.notify.error("Failed to switch tmux session:\n" .. output)
+            end
+          end)
+        end)
+      end,
+
+      -- Action: Cherry Pick (Unchanged)
       cherry_pick = function(self, item)
         local branch = item.data
         self:close()
@@ -548,13 +579,15 @@ function M.switch_worktree()
     win = {
       input = {
         keys = {
-          ["<CR>"] = { "switch_or_create", mode = { "n", "i" } },
+          ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
+          ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
           ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
         },
       },
       list = {
         keys = {
-          ["<CR>"] = { "switch_or_create", mode = { "n", "i" } },
+          ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
+          ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
           ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
         },
       },

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# -s: Formats output as 'export VAR="val";' automatically
+# tr: Replaces newlines with spaces to create a single string
+tmux-broadcast -s "$(tmux show-env -s | tr '\n' ' ')"

@@ -15,6 +15,13 @@ return {
             ["s"] = { "flash" },
           },
         },
+        list = {
+          ["<Esc>"] = { "close", mode = { "n", "i" } },
+          ["<a-s>"] = { "flash", mode = { "n", "i" } },
+          ["s"] = "flash",
+          ["<c-u>"] = "preview_scroll_up",
+          ["<c-d>"] = "preview_scroll_down",
+        },
       },
       actions = {
         flash = function(picker)
