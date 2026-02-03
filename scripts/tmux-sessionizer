@@ -26,8 +26,8 @@ TS_LOG_FILE="${TS_LOG_FILE:-$HOME/.local/share/tmux-sessionizer/tmux-sessionizer
 
 log() {
     case "$TS_LOG" in
-        "echo") echo "$*" ;;
-        "file") mkdir -p "$(dirname "$TS_LOG_FILE")" && echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$TS_LOG_FILE" ;;
+    "echo") echo "$*" ;;
+    "file") mkdir -p "$(dirname "$TS_LOG_FILE")" && echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$TS_LOG_FILE" ;;
     esac
 }
 
@@ -76,37 +76,37 @@ show_version() {
 parse_arguments() {
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
-            --)
-                shift
-                session_args="$*"
-                break
-                ;;
-            -h | --help)
-                show_help
-                exit 0
-                ;;
-            -v | --version)
-                show_version
-                exit 0
-                ;;
-            -c | --cmd)
-                if [[ -z "$2" || "$2" == -* ]]; then
-                    echo "Error: --cmd requires a value" >&2
-                    exit 1
-                fi
-                session_cmd="$2"
-                shift
-                ;;
-            --vsplit)
-                split_type="vsplit"
-                ;;
-            --hsplit)
-                split_type="hsplit"
-                ;;
-            *)
-                echo "Error: Invalid argument: $1" >&2
+        --)
+            shift
+            session_args="$*"
+            break
+            ;;
+        -h | --help)
+            show_help
+            exit 0
+            ;;
+        -v | --version)
+            show_version
+            exit 0
+            ;;
+        -c | --cmd)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --cmd requires a value" >&2
                 exit 1
-                ;;
+            fi
+            session_cmd="$2"
+            shift
+            ;;
+        --vsplit)
+            split_type="vsplit"
+            ;;
+        --hsplit)
+            split_type="hsplit"
+            ;;
+        *)
+            echo "Error: Invalid argument: $1" >&2
+            exit 1
+            ;;
         esac
         shift
     done
@@ -286,7 +286,15 @@ cleanup_dead_panes() {
 #------------------------------------------------------------------------------
 
 find_dirs() {
-    # List TMUX sessions (if inside tmux)
+    # 1️⃣ Get list of existing tmux session directories
+    local -A tmux_dirs
+    if command -v tmux >/dev/null 2>&1; then
+        while IFS= read -r session_dir; do
+            [[ -n "$session_dir" ]] && tmux_dirs["$session_dir"]=1
+        done < <(tmux list-sessions -F "#{session_path}" 2>/dev/null)
+    fi
+
+    # List TMUX sessions (if inside tmux) with branch names
     if [[ -n "${TMUX}" ]]; then
         local current_session
         current_session=$(tmux display-message -p '#S')
@@ -294,25 +302,58 @@ find_dirs() {
         tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null | grep -vFx "[TMUX] $current_session"
     fi
 
-    # Search configured paths
-    # Note: Paths can be suffixed with :number to limit search depth
-    # Example: "$HOME/projects:3" will search 3 levels deep
+    # 2️⃣ Search configured paths
     for entry in "${TS_SEARCH_PATHS[@]}"; do
-        local path depth
+        local path="${entry%%:*}"
+        local depth="${entry##*:}"
+        [[ "$depth" == "$entry" ]] && depth="${TS_MAX_DEPTH:-1}"
 
-        # Check if entry has :number suffix
-        if [[ "$entry" =~ ^([^:]+):([0-9]+)$ ]]; then
-            path="${BASH_REMATCH[1]}"
-            depth="${BASH_REMATCH[2]}"
-        else
-            path="$entry"
-            depth="${TS_MAX_DEPTH:-1}"
-        fi
+        [[ -d "$path" ]] || continue
 
-        # Search for directories, excluding .git
-        if [[ -d "$path" ]]; then
-            find "$path" -mindepth 1 -maxdepth "$depth" -path '*/.git' -prune -o -type d -print
-        fi
+        find "$path" -mindepth 1 -maxdepth "$depth" -type d -print0 | while IFS= read -r -d '' dir; do
+
+            # Check if it's a git repository (bare or normal)
+            if git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+                local git_dir
+                git_dir=$(git -C "$dir" rev-parse --git-dir 2>/dev/null)
+
+                # Check if it's a bare repository
+                if [[ "$git_dir" == "." ]]; then
+                    # Bare repo - list all worktrees
+                    git -C "$dir" worktree list --porcelain | awk '
+                        /^worktree / { path = substr($0, 10); next }
+                        /^branch / { 
+                            branch = substr($0, 8)
+                            sub(/^refs\/heads\//, "", branch)
+                            if (path) { printf "%s [%s]\n", path, branch; path = "" }
+                        }
+                    ' | while IFS= read -r worktree_line; do
+                        # Extract worktree path and check if it has a session
+                        local wt_path="${worktree_line%% \[*}"
+                        [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "$worktree_line"
+                    done
+                else
+                    # Skip if directory already has a tmux session
+                    [[ -n "${tmux_dirs[$dir]}" ]] && continue
+
+                    # Normal repo - show current branch
+                    local branch
+                    branch=$(git -C "$dir" symbolic-ref --short HEAD 2>/dev/null ||
+                        git -C "$dir" rev-parse --short HEAD 2>/dev/null)
+                    if [[ -n "$branch" ]]; then
+                        printf '%s [%s]\n' "$dir" "$branch"
+                    else
+                        printf '%s\n' "$dir"
+                    fi
+                fi
+            else
+                # Skip if directory already has a tmux session
+                [[ -n "${tmux_dirs[$dir]}" ]] && continue
+
+                # Not a git repository
+                printf '%s\n' "$dir"
+            fi
+        done
     done
 }
 
@@ -423,9 +464,12 @@ run_fuzzy_finder() {
     find_dirs | FZF_DEFAULT_OPTS="\
         --preview '
             if [[ {} == \[TMUX\]* ]]; then
-                session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\")
+                # Extract session name (remove [TMUX] prefix and optional [branch])
+                session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\" | sed \"s/ \\\[.*\\\]$//\")
+                branch=\$(echo {} | grep -oP \"\\\[\\K[^\\\]]+(?=\\\]$)\" || echo \"\")
                 {
                     echo \"🖥️  Session: \$session\"
+                    [[ -n \"\$branch\" ]] && echo \"🌿 Branch: \$branch\"
                     echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
                     echo \"Windows:\"
                     tmux list-windows -t \"\$session\" -F \"#I: #W #{?window_active,★, }\"
@@ -433,7 +477,26 @@ run_fuzzy_finder() {
                     echo \"Panes:\"
                     tmux list-panes -t \"\$session\" -F \"#I.#P: #{pane_current_command} (#{pane_width}x#{pane_height})\"
                 } 2>/dev/null | batcat -l yaml --color=always -p
+            elif [[ {} =~ ^(.+)\ \\\[([^\\\]]+)\\\]$ ]]; then
+                # Directory with branch name
+                dir=\"\${BASH_REMATCH[1]}\"
+                branch=\"\${BASH_REMATCH[2]}\"
+                if [[ -d \"\$dir\" ]]; then
+                    {
+                        echo \"📁 Directory: \$dir\"
+                        echo \"🌿 Branch: \$branch\"
+                        echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
+                        echo
+                    } | batcat -l yaml --color=always -p
+                    eza -1 --icons --color=always --group-directories-first \"\$dir\"
+                fi
             elif [[ -d {} ]]; then
+                # Regular directory without branch
+                {
+                    echo \"📁 Directory: {}\"
+                    echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
+                    echo
+                } | batcat -l yaml --color=always -p
                 eza -1 --icons --color=always --group-directories-first {}
             else
                 echo \"Not a directory or tmux session\"
@@ -448,10 +511,17 @@ run_fuzzy_finder() {
     " fzf
 }
 
+is_worktree() {
+    local dir_path="$1"
+    local parent_dir=$(dirname "$dir_path")
+    [[ -d "$parent_dir" ]] &&
+        git -C "$parent_dir" rev-parse --is-bare-repository >/dev/null 2>&1 &&
+        [[ "$(git -C "$parent_dir" rev-parse --is-bare-repository 2>/dev/null)" == "true" ]]
+}
+
 #------------------------------------------------------------------------------
 # Main Execution Logic
 #------------------------------------------------------------------------------
-
 main() {
     sanity_check
     parse_arguments "$@"
@@ -459,55 +529,62 @@ main() {
     # Handle session command if specified
     if [[ -n $session_cmd ]]; then
         handle_session_cmd
-    else
-
-        # Set default search paths if not configured
-        [[ -n "$TS_SEARCH_PATHS" ]] || TS_SEARCH_PATHS=(~/)
-
-        # Add extra search paths if configured
-        if [[ ${#TS_EXTRA_SEARCH_PATHS[@]} -gt 0 ]]; then
-            TS_SEARCH_PATHS+=("${TS_EXTRA_SEARCH_PATHS[@]}")
-        fi
-
-        # Determine selected directory/session
-        local selected
-        selected=$(run_fuzzy_finder)
-
-        # Exit if nothing selected
-        if [[ -z $selected ]]; then
-            exit 0
-        fi
-
-        # Extract session name from TMUX session format
-        if [[ "$selected" =~ ^\[TMUX\]\ (.+)$ ]]; then
-            selected="${BASH_REMATCH[1]}"
-        fi
-
-        # Normalize session name (replace dots with underscores)
-        local selected_name
-        selected_name=$(basename "$selected" | tr . _)
-
-        # Create tmux session if not running
-        if ! is_tmux_running; then
-            tmux new-session -ds "$selected_name" -c "$selected"
-            hydrate "$selected_name" "$selected"
-        fi
-
-        # Create session if it doesn't exist
-        if ! has_session "$selected_name"; then
-            selected_name=$(basename "$selected" | tr . _ | sed 's/^\(.\)/\L\1/')
-            tmux new-session -ds "$selected_name" -c "$selected"
-            hydrate "$selected_name" "$selected"
-        fi
-
-        # Switch to the session
-        switch_to "$selected_name"
+        return
     fi
+
+    # Set default search paths if not configured
+    [[ -n "$TS_SEARCH_PATHS" ]] || TS_SEARCH_PATHS=(~/)
+
+    # Add extra search paths if configured
+    if [[ ${#TS_EXTRA_SEARCH_PATHS[@]} -gt 0 ]]; then
+        TS_SEARCH_PATHS+=("${TS_EXTRA_SEARCH_PATHS[@]}")
+    fi
+
+    # Get user selection
+    local selected
+    selected=$(run_fuzzy_finder)
+    [[ -z $selected ]] && exit 0
+
+    # Extract session name from TMUX session format
+    if [[ "$selected" =~ ^\[TMUX\]\ (.+)$ ]]; then
+        selected="${BASH_REMATCH[1]}"
+        selected_name="$selected"
+    elif [[ "$selected" =~ ^(.+)\ \[([^\]]+)\]$ ]]; then
+        # Directory with branch name
+        local dir_path="${BASH_REMATCH[1]}"
+        local branch_name="${BASH_REMATCH[2]}"
+
+        # Check if this is a worktree
+        if is_worktree "$dir_path"; then
+            local common_dir
+            common_dir=$(git -C "$dir_path" rev-parse --git-common-dir 2>/dev/null)
+
+            # Worktree: use bare_name [branch] format
+            local parent_name=$(basename "$common_dir" | sed 's/\.git$//')
+            selected_name="${parent_name} [${branch_name}]"
+        else
+            # Normal repo: just use directory name (no branch in session name)
+            selected_name="$(basename "$dir_path")"
+        fi
+
+        selected="$dir_path"
+    else
+        # Regular directory without branch - normalize it
+        selected_name=$(basename "$selected" | tr . _ | sed 's/^\(.\)/\L\1/')
+    fi
+
+    # Create session if it doesn't exist
+    if ! has_session "$selected_name"; then
+        tmux new-session -ds "$selected_name" -c "$selected"
+        hydrate "$selected_name" "$selected"
+    fi
+
+    # Switch to the session
+    switch_to "$selected_name"
 
 }
 
 #------------------------------------------------------------------------------
 # Entry Point
 #------------------------------------------------------------------------------
-
 main "$@"
