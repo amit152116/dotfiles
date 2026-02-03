@@ -312,6 +312,12 @@ find_dirs() {
 
         find "$path" -mindepth 1 -maxdepth "$depth" -type d -print0 | while IFS= read -r -d '' dir; do
 
+            [[ "$(basename "$dir")" == .* ]] && continue
+
+            # Transform the path to use ~
+            # This replaces the literal value of $HOME at the start of the string with ~
+            local display_path="${dir/#$HOME/\~}"
+
             # Check if it's a git repository (bare or normal)
             if git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
                 local git_dir
@@ -330,7 +336,7 @@ find_dirs() {
                     ' | while IFS= read -r worktree_line; do
                         # Extract worktree path and check if it has a session
                         local wt_path="${worktree_line%% \[*}"
-                        [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "$worktree_line"
+                        [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "${worktree_line/#$HOME/\~}"
                     done
                 else
                     # Skip if directory already has a tmux session
@@ -341,9 +347,9 @@ find_dirs() {
                     branch=$(git -C "$dir" symbolic-ref --short HEAD 2>/dev/null ||
                         git -C "$dir" rev-parse --short HEAD 2>/dev/null)
                     if [[ -n "$branch" ]]; then
-                        printf '%s [%s]\n' "$dir" "$branch"
+                        printf '%s [%s]\n' "$display_path" "$branch"
                     else
-                        printf '%s\n' "$dir"
+                        printf '%s\n' "$display_path"
                     fi
                 fi
             else
@@ -351,7 +357,7 @@ find_dirs() {
                 [[ -n "${tmux_dirs[$dir]}" ]] && continue
 
                 # Not a git repository
-                printf '%s\n' "$dir"
+                printf '%s\n' "$display_path"
             fi
         done
     done
@@ -462,6 +468,7 @@ handle_session_cmd() {
 
 run_fuzzy_finder() {
     find_dirs | FZF_DEFAULT_OPTS="\
+        --tiebreak=index \
         --preview '
             if [[ {} == \[TMUX\]* ]]; then
                 # Extract session name (remove [TMUX] prefix and optional [branch])
@@ -515,7 +522,6 @@ is_worktree() {
     local dir_path="$1"
     local parent_dir=$(dirname "$dir_path")
     [[ -d "$parent_dir" ]] &&
-        git -C "$parent_dir" rev-parse --is-bare-repository >/dev/null 2>&1 &&
         [[ "$(git -C "$parent_dir" rev-parse --is-bare-repository 2>/dev/null)" == "true" ]]
 }
 
@@ -553,6 +559,9 @@ main() {
         # Directory with branch name
         local dir_path="${BASH_REMATCH[1]}"
         local branch_name="${BASH_REMATCH[2]}"
+
+        # This replaces ~ at the start with the value of $HOME
+        dir_path="${dir_path/#\~/$HOME}"
 
         # Check if this is a worktree
         if is_worktree "$dir_path"; then

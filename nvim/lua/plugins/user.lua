@@ -9,11 +9,6 @@ return {
   { "andweeb/presence.nvim" },
   { "tpope/vim-fugitive" },
 
-  {
-    "Juksuu/worktrees.nvim",
-    config = function() require("worktrees").setup() end,
-  },
-
   { "max397574/better-escape.nvim" },
 
   { "wakatime/vim-wakatime", event = "User AstroFile" },

@@ -41,6 +41,8 @@
   	}; f"
 	save = !git stash push --include-untracked --message \"Auto-Backup $(date \"+%Y-%m-%d %H:%M:%S\")\" && git stash apply stash@{0}
 
+	setup-bare = "!f() { git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' && git fetch origin; }; f"
+
 [diff]
 	tool = nvimdiff
 

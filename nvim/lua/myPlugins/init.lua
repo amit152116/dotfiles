@@ -3,6 +3,8 @@ local Snacks = require "snacks"
 local M = {}
 M.grep = require("myPlugins.grep").Multigrep
 M.ros = require "myPlugins.ros"
+M.git_worktree = require "myPlugins.git_worktree"
+M.git_worktree.setup()
 
 -- Create timer once and reuse
 local debounce_timer = vim.uv.new_timer()
