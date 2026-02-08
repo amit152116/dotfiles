@@ -294,12 +294,19 @@ find_dirs() {
         done < <(tmux list-sessions -F "#{session_path}" 2>/dev/null)
     fi
 
-    # List TMUX sessions (if inside tmux) with branch names
+    # List TMUX sessions (if inside tmux)
     if [[ -n "${TMUX}" ]]; then
         local current_session
         current_session=$(tmux display-message -p '#S')
-        # List all other sessions except current
-        tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null | grep -vFx "[TMUX] $current_session"
+
+        # 1. List timestamps and names separated by ':'
+        # 2. Sort numerically descending (-nr) by the first field (timestamp)
+        # 3. Filter out the current session
+        # 4. Remove the timestamp to show only the name
+        tmux list-sessions -F "#{session_last_attached}|[TMUX] #{session_name}" 2>/dev/null |
+            sort -t'|' -k1,1nr |
+            sed "s/^[^|]*|//" |
+            grep -vFx "[TMUX] $current_session"
     fi
 
     # 2️⃣ Search configured paths

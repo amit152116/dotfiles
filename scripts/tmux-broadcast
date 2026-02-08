@@ -40,7 +40,8 @@ if [ -z "$CMD" ]; then
     exit 1
 fi
 
-tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index} #{pane_pid} #{pane_current_command}" | grep -E " (zsh|bash|sh|fish)$" | while read pane pid cmd; do
+tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index}|#{pane_pid}|#{pane_current_command}" |
+grep -E "\|(zsh|bash|sh|fish)$" | while IFS="|" read -r pane pid cmd; do
 
     # Skip if shell has child processes
     pgrep -P "$pid" >/dev/null 2>&1 && continue

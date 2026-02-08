@@ -7,7 +7,10 @@ return {
 
   -- == Examples of Adding Plugins ==
   { "andweeb/presence.nvim" },
+
   { "tpope/vim-fugitive" },
+
+  { "nvim-treesitter/playground" },
 
   { "max397574/better-escape.nvim" },
 
@@ -30,7 +33,6 @@ return {
     },
   },
 
-  { "nvim-treesitter/playground" },
   {
     "nvim-treesitter/nvim-treesitter",
     opts = {
@@ -55,6 +57,44 @@ return {
     },
   },
 
+  {
+    "folke/twilight.nvim",
+    opts = {
+      dimming = {
+        alpha = 0.25, -- amount of dimming
+        -- we try to get the foreground from the highlight groups or fallback color
+        color = { "Normal", "#ffffff" },
+        term_bg = "#000000", -- if guibg=NONE, this will be used to calculate text color
+        inactive = false, -- when true, other windows will be fully dimmed (unless they contain the same buffer)
+      },
+      context = 10, -- amount of lines we will try to show around the current line
+      treesitter = true, -- use treesitter when available for the filetype
+      -- treesitter is used to automatically expand the visible text,
+      -- but you can further control the types of nodes that should always be fully expanded
+      expand = { -- for treesitter, we we always try to expand to the top-most ancestor with these types
+        "function",
+        "method",
+        "table",
+        "if_statement",
+      },
+      exclude = {}, -- exclude these filetypes
+    },
+    specs = {
+      {
+        "AstroNvim/astrocore",
+        opts = {
+          mappings = {
+            n = {
+              ["ux"] = {
+                function() require("twilight.view").toggle() end,
+                desc = "Toggle twilight",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
   {
     "MeanderingProgrammer/render-markdown.nvim",
     dependencies = {
@@ -109,6 +149,39 @@ return {
         separator = "─",
         zindex = 1, -- The Z-index of the context window
         on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
+      }
+    end,
+  },
+  {
+    "folke/noice.nvim",
+    event = "VeryLazy",
+    opts = {
+      -- add any options here
+    },
+    dependencies = {
+      -- if you lazy-load any plugin below, make sure to add proper `module="..."` entries
+      "MunifTanjim/nui.nvim",
+      -- { "echasnovski/mini.notify", version = false },
+    },
+
+    config = function()
+      require("noice").setup {
+        lsp = {
+          -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
+          override = {
+            ["vim.lsp.util.convert_input_to_markdown_lines"] = true,
+            ["vim.lsp.util.stylize_markdown"] = true,
+            ["cmp.entry.get_documentation"] = true, -- requires hrsh7th/nvim-cmp
+          },
+        },
+        -- you can enable a preset for easier configuration
+        presets = {
+          bottom_search = false, -- use a classic bottom cmdline for search
+          command_palette = true, -- position the cmdline and popupmenu together
+          long_message_to_split = true, -- long messages will be sent to a split
+          inc_rename = false, -- enables an input dialog for inc-rename.nvim
+          lsp_doc_border = true, -- add a border to hover docs and signature help
+        },
       }
     end,
   },

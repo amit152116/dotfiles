@@ -9,6 +9,10 @@ return {
       win = {
         input = {
           keys = {
+            ["<a-a>"] = {
+              "sidekick_send",
+              mode = { "n", "i" },
+            },
             ["<Esc>"] = { "close", mode = { "n", "i" } },
             -- ["<c-o"] = { "confirm", mode = { "n", "i" } },
             ["<a-s>"] = { "flash", mode = { "n", "i" } },
@@ -24,6 +28,9 @@ return {
         },
       },
       actions = {
+        sidekick_send = function(...)
+          return require("sidekick.cli.picker.snacks").send(...)
+        end,
         flash = function(picker)
           require("flash").jump {
             pattern = "^",
