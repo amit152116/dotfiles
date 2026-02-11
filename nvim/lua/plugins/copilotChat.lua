@@ -65,7 +65,7 @@ return {
         opts = {
           mappings = {
             n = {
-              ["<Leader>a"] = { name = "AI" },
+              ["<Leader>a"] = { name = "+AI" },
               ["<Leader>aa"] = {
                 "<cmd>CopilotChatToggle<CR>",
                 desc = "Toggle chat",
@@ -78,10 +78,10 @@ return {
                 "<cmd>CopilotChatLoad<CR>",
                 desc = "Load history",
               },
-              ["<Leader>ap"] = {
-                "<cmd>CopilotChatPrompts<CR>",
-                desc = "Show prompts",
-              },
+              -- ["<Leader>ap"] = {
+              --   "<cmd>CopilotChatPrompts<CR>",
+              --   desc = "Show prompts",
+              -- },
 
               ["<Leader>am"] = {
                 "<cmd>CopilotChatModels<CR>",
@@ -99,14 +99,14 @@ return {
                 "<cmd>CopilotChatOptimize<CR>",
                 desc = "Optimize code",
               },
-              ["<Leader>ad"] = {
-                "<cmd>CopilotChatDocs<CR>",
-                desc = "Generate docs",
-              },
-              ["<Leader>at"] = {
-                "<cmd>CopilotChatTests<CR>",
-                desc = "Generate tests",
-              },
+              -- ["<Leader>ad"] = {
+              --   "<cmd>CopilotChatDocs<CR>",
+              --   desc = "Generate docs",
+              -- },
+              -- ["<Leader>at"] = {
+              --   "<cmd>CopilotChatTests<CR>",
+              --   desc = "Generate tests",
+              -- },
               ["<Leader>ac"] = {
                 "<cmd>CopilotChatCommit<CR>",
                 desc = "Generate commit msg",
@@ -131,7 +131,7 @@ return {
                 desc = "Explain code",
               },
 
-              ["<Leader>af"] = { "<cmd>CopilotChatFix<CR>", desc = "Fix code" },
+              -- ["<Leader>af"] = { "<cmd>CopilotChatFix<CR>", desc = "Fix code" },
 
               ["<Leader>ao"] = {
                 "<cmd>CopilotChatOptimize<CR>",

@@ -42,6 +42,10 @@ return {
         "debugpy", -- Python
         "delve", -- Go
 
+        -- Go Code Actions
+        "gomodifytags", -- Go struct tag manipulation
+        "impl", -- Go interface implementation generator
+
         -- Other Tools
         "tree-sitter-cli", -- Syntax parsing / highlighting
         "cmakelang", -- CMake syntax

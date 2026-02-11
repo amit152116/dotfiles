@@ -575,212 +575,58 @@ function M.switch_worktree()
         self:close()
         vim.schedule(function() cherry_pick_from_branch(branch.branch_name) end)
       end,
-    },
-    win = {
-      input = {
-        keys = {
-          ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
-          ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
-          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
-        },
-      },
-      list = {
-        keys = {
-          ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
-          ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
-          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
-        },
-      },
-    },
-  }
-end
 
---- Picker for deleting git worktrees
-function M.delete_worktree()
-  local worktrees = get_worktrees()
-
-  if #worktrees == 0 then
-    snacks.notify.notify("No worktrees found", {
-      title = "Git Worktree",
-      level = "warn",
-    })
-    return
-  end
-
-  -- Filter out the main worktree (usually the first one)
-  local deletable_worktrees = {}
-  for i, wt in ipairs(worktrees) do
-    if i > 1 then -- Skip the main worktree
-      table.insert(deletable_worktrees, wt)
-    end
-  end
-
-  if #deletable_worktrees == 0 then
-    snacks.notify.notify(
-      "No additional worktrees to delete (main worktree cannot be deleted)",
-      {
-        title = "Git Worktree",
-        level = "warn",
-      }
-    )
-    return
-  end
-
-  -- Transform worktrees into picker items
-  local items = {}
-  for _, wt in ipairs(deletable_worktrees) do
-    table.insert(items, {
-      text = wt.branch or "detached",
-      data = wt,
-    })
-  end
-
-  snacks.picker.pick {
-    title = "  Git Worktrees - Delete",
-    finder = function() return items end,
-    format = function(item, _)
-      if not item or not item.data then return { { "" } } end
-
-      local wt = item.data
-      local branch_display = wt.branch or "detached"
-      local has_changes, _ = check_worktree_status(wt.path)
-
-      local icon = has_changes and "  " or "  "
-      local hl = has_changes and "DiagnosticWarn" or "Normal"
-
-      return {
-        { icon, hl },
-        { " " .. branch_display, hl },
-        { "  (" .. vim.fn.fnamemodify(wt.path, ":t") .. ")", "Comment" },
-      }
-    end,
-    preview = function(ctx)
-      local item = ctx.item
-      if not item or not item.data then return true end
-
-      local wt = item.data
-      local lines = {}
-      table.insert(lines, "Worktree Path:")
-      table.insert(lines, "  " .. wt.path)
-      table.insert(lines, "")
-      table.insert(lines, "Branch: " .. (wt.branch or "detached"))
-
-      if wt.head then table.insert(lines, "HEAD: " .. wt.head:sub(1, 12)) end
-
-      table.insert(lines, "")
-      table.insert(lines, "Status Check:")
-      table.insert(lines, "")
-
-      local has_changes, status_msg = check_worktree_status(wt.path)
-
-      if has_changes then
-        table.insert(lines, "⚠ WARNING: This worktree has " .. status_msg)
-        table.insert(lines, "")
-        table.insert(lines, "You can:")
-        table.insert(lines, "  - Press <CR> to delete anyway (will fail)")
-        table.insert(
-          lines,
-          "  - Press <C-f> to FORCE delete (⚠ LOSE CHANGES)"
-        )
-        table.insert(lines, "  - Press <Esc> to cancel")
-      else
-        table.insert(lines, "✓ Clean worktree")
-        table.insert(lines, "")
-        table.insert(lines, "Safe to delete:")
-        table.insert(lines, "  - No uncommitted changes")
-        table.insert(lines, "  - No unpushed commits")
-        table.insert(lines, "")
-        table.insert(lines, "Press <CR> to delete this worktree")
-      end
-
-      ctx.preview:set_lines(lines)
-      ctx.preview:highlight { ft = "markdown" }
-      ctx.preview:set_title(wt.branch or "detached")
-
-      return true
-    end,
-    actions = {
-      delete_normal = function(self, item)
-        local wt = item.data
-        local has_changes, status_msg = check_worktree_status(wt.path)
-
-        if has_changes then
-          snacks.notify.notify(
-            "Cannot delete: worktree has "
-              .. status_msg
-              .. "\nUse <C-f> to force delete (will lose changes)",
-            {
-              title = "Git Worktree",
-              level = "warn",
-            }
-          )
+      -- Action: Delete Worktree
+      delete_worktree = function(self, item)
+        self:close()
+        local branch = item.data
+        if not branch.has_worktree then
+          snacks.notify.warn "Selected item is not a worktree"
           return
         end
 
-        self:close()
+        local path = branch.worktree_path
+        local has_changes, status_msg = check_worktree_status(path)
 
-        -- Confirm force delete
-        local confirm_msg = "Delete worktree?"
+        local prompt = "Delete worktree for [" .. branch.branch_name .. "]?"
+        local force = false
+
         if has_changes then
-          confirm_msg = "⚠ Delete worktree with " .. status_msg .. "?"
+          prompt = "⚠ Worktree has uncommitted changes:\n"
+            .. status_msg
+            .. "\n\nForce delete?"
+          force = true
         end
 
-        local choice = vim.fn.confirm(confirm_msg, "&Yes\n&No", 2, "Warning")
-        if choice ~= 1 then return end
-
-        local success, message = delete_worktree(wt.path, false)
-        if success then
-          snacks.notify.notify(message, {
-            title = "Git Worktree",
-            level = "info",
-          })
-        else
-          snacks.notify.notify(message, {
-            title = "Git Worktree",
-            level = "error",
-          })
-        end
-      end,
-      delete_force = function(self, item)
-        local wt = item.data
-        local has_changes, status_msg = check_worktree_status(wt.path)
-
-        -- Confirm force delete
-        local confirm_msg = "Force delete worktree?"
-        if has_changes then
-          confirm_msg = "⚠ Force delete worktree with " .. status_msg .. "?"
-        end
-
-        local choice = vim.fn.confirm(confirm_msg, "&Yes\n&No", 2, "Warning")
-        if choice ~= 1 then return end
-
-        self:close()
-
-        local success, message = delete_worktree(wt.path, true)
-        if success then
-          snacks.notify.notify(message, {
-            title = "Git Worktree",
-            level = "info",
-          })
-        else
-          snacks.notify.notify(message, {
-            title = "Git Worktree",
-            level = "error",
-          })
-        end
+        vim.schedule(function()
+          local confirm = vim.fn.confirm(prompt, "&Yes\n&No", 2)
+          if confirm == 1 then
+            self:close()
+            local success, err = delete_worktree(path, force)
+            if success then
+              snacks.notify.info("Worktree deleted: " .. branch.branch_name)
+            else
+              snacks.notify.error("Failed to delete: " .. err)
+            end
+          end
+        end)
       end,
     },
     win = {
       input = {
         keys = {
-          ["<CR>"] = { "delete_normal", mode = { "n", "i" } },
-          ["<C-f>"] = { "delete_force", mode = { "n", "i" } },
+          ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
+          ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
+          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
+          ["<c-d>"] = { "delete_worktree", mode = { "n", "i" } },
         },
       },
       list = {
         keys = {
-          ["<CR>"] = { "delete_normal", mode = { "n", "i" } },
-          ["<C-f>"] = { "delete_force", mode = { "n", "i" } },
+          ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
+          ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
+          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
+          ["<c-d>"] = { "delete_worktree", mode = { "n", "i" } },
         },
       },
     },
@@ -845,12 +691,6 @@ function M.setup()
     "<leader>gw",
     M.switch_worktree,
     { desc = "Git Worktree: Switch/Create" }
-  )
-  vim.keymap.set(
-    "n",
-    "<leader>gW",
-    M.delete_worktree,
-    { desc = "Git Worktree: Delete" }
   )
 end
 return M

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 # Default values
@@ -17,6 +16,11 @@ COMPILER=""
 INSTALL_PREFIX=""
 COVERAGE=false
 BENCHMARK=false
+VENV_DIR=".venv"
+PYTHON_ENV_SETUP=false
+nproc=$(nproc 2>/dev/null)
+PARALLEL_JOBS=$((nproc / 4))
+((PARALLEL_JOBS < 4)) && PARALLEL_JOBS=4
 
 # Cross-compilation
 CROSS_COMPILE=""
@@ -31,6 +35,7 @@ NC='\033[0m' # No Color
 
 # Pre-allocate arrays for better performance
 CMAKE_ARGS=(--cmake-args)
+CMAKE_ARGS+=(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 CMAKE_CXX_FLAGS=()
 COLCON_ARGS=()
 
@@ -91,6 +96,7 @@ Build Options:
   -b, --build TYPE          Set build type (Debug|RelWithDebInfo|Release|MinSizeRel)
   -s, --sanitizer TYPE      Enable sanitizer (asan|msan|tsan)
   -p, --pkg LIST            Specify packages (comma or space-separated)
+  -j, --jobs N              Number of parallel build jobs (default: $PARALLEL_JOBS)
   --compiler COMPILER       Use specific compiler (gcc|clang)
   --install-prefix PATH     Set custom install prefix
 
@@ -182,8 +188,10 @@ set(CMAKE_CXX_FLAGS "\${CMAKE_CXX_FLAGS} -march=${arch}" CACHE STRING "" FORCE)
 EOF
 
     if [[ -n "$fpu" ]]; then
-        echo "set(CMAKE_C_FLAGS \"\${CMAKE_C_FLAGS} -mfpu=${fpu}\" CACHE STRING \"\" FORCE)" >>"$toolchain_file"
-        echo "set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} -mfpu=${fpu}\" CACHE STRING \"\" FORCE)" >>"$toolchain_file"
+        cat >>"$toolchain_file" <<EOF
+set(CMAKE_C_FLAGS "\${CMAKE_C_FLAGS} -mfpu=${fpu}" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS "\${CMAKE_CXX_FLAGS} -mfpu=${fpu}" CACHE STRING "" FORCE)
+EOF
     fi
 
     cat >>"$toolchain_file" <<'EOF'
@@ -254,21 +262,21 @@ setup_ccache() {
 # Function to setup compiler
 setup_compiler() {
     case "$COMPILER" in
-        gcc)
-            CMAKE_ARGS+=(-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++)
-            log_info "Using GCC compiler"
-            ;;
-        clang)
-            CMAKE_ARGS+=(-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++)
-            log_info "Using Clang compiler"
-            ;;
-        "")
-            # Use default
-            ;;
-        *)
-            log_error "Unknown compiler: $COMPILER"
-            exit 1
-            ;;
+    gcc)
+        CMAKE_ARGS+=(-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++)
+        log_info "Using GCC compiler"
+        ;;
+    clang)
+        CMAKE_ARGS+=(-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++)
+        log_info "Using Clang compiler"
+        ;;
+    "")
+        # Use default
+        ;;
+    *)
+        log_error "Unknown compiler: $COMPILER"
+        exit 1
+        ;;
     esac
 }
 
@@ -276,15 +284,15 @@ setup_compiler() {
 normalize_build_type() {
     local input="$1"
     case "${input,,}" in
-        debug) echo "Debug" ;;
-        release) echo "Release" ;;
-        relwithdebinfo) echo "RelWithDebInfo" ;;
-        minsizerel) echo "MinSizeRel" ;;
-        *)
-            log_error "Invalid build type '$input'"
-            echo "Valid types: Debug, Release, RelWithDebInfo, MinSizeRel" >&2
-            exit 1
-            ;;
+    debug) echo "Debug" ;;
+    release) echo "Release" ;;
+    relwithdebinfo) echo "RelWithDebInfo" ;;
+    minsizerel) echo "MinSizeRel" ;;
+    *)
+        log_error "Invalid build type '$input'"
+        echo "Valid types: Debug, Release, RelWithDebInfo, MinSizeRel" >&2
+        exit 1
+        ;;
     esac
 }
 
@@ -313,12 +321,12 @@ load_config() {
             var_name="${BASH_REMATCH[1]}"
             var_value="${BASH_REMATCH[2]}"
 
-            # Remove surrounding quotes if present
-            var_value="${var_value%\"}"
+            # Remove surrounding quotes if present using parameter expansion
             var_value="${var_value#\"}"
+            var_value="${var_value%\"}"
             declare -g "$var_name=$var_value"
         fi
-    done <"$CONFIG_FILE"
+    done < <(cat "$CONFIG_FILE")
 }
 
 # Function to check if rebuild is needed
@@ -393,32 +401,32 @@ EOF
 # Function to configure build type
 configure_build_type() {
     case "$BUILD_TYPE" in
-        Release)
-            CMAKE_CXX_FLAGS+=("-O3" "-DNDEBUG")
+    Release)
+        CMAKE_CXX_FLAGS+=("-O3" "-DNDEBUG")
 
-            # Don't use -march=native for cross-compilation
-            if [[ -z "$CROSS_COMPILE" && ! "${CMAKE_CXX_FLAGS[*]}" =~ -march= ]]; then
-                CMAKE_CXX_FLAGS+=("-march=native")
-            fi
+        # Don't use -march=native for cross-compilation
+        if [[ -z "$CROSS_COMPILE" &&
+            ! "${CMAKE_CXX_FLAGS[*]}" =~ -march= ]]; then
+            log_info "Using -march=native"
+            CMAKE_CXX_FLAGS+=("-march=native")
+        fi
 
-            if [[ "$BENCHMARK" == true ]]; then
-                CMAKE_CXX_FLAGS+=("-flto" "-ffast-math")
-                log_info "Benchmark optimizations enabled (LTO, fast-math)"
-            fi
-            ;;
-        Debug)
-            CMAKE_CXX_FLAGS+=("-O0" "-g3" "-Wall" "-Wextra" "-Wpedantic")
-            CMAKE_ARGS+=(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
-            COLCON_ARGS+=(--symlink-install --continue-on-error)
-            ;;
-        RelWithDebInfo)
-            CMAKE_CXX_FLAGS+=("-O2" "-g3" "-DNDEBUG")
-            CMAKE_ARGS+=(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
-            COLCON_ARGS+=(--symlink-install --continue-on-error)
-            ;;
-        MinSizeRel)
-            CMAKE_CXX_FLAGS+=("-Os" "-DNDEBUG")
-            ;;
+        if [[ "$BENCHMARK" == true ]]; then
+            CMAKE_CXX_FLAGS+=("-flto" "-ffast-math")
+            log_info "Benchmark optimizations enabled (LTO, fast-math)"
+        fi
+        ;;
+    Debug)
+        CMAKE_CXX_FLAGS+=("-O0" "-g3" "-Wall" "-Wextra" "-Wpedantic")
+        COLCON_ARGS+=(--symlink-install --continue-on-error)
+        ;;
+    RelWithDebInfo)
+        CMAKE_CXX_FLAGS+=("-O2" "-g3" "-DNDEBUG")
+        COLCON_ARGS+=(--symlink-install --continue-on-error)
+        ;;
+    MinSizeRel)
+        CMAKE_CXX_FLAGS+=("-Os" "-DNDEBUG")
+        ;;
     esac
 }
 
@@ -451,17 +459,17 @@ run_linters() {
 
     if command_exists clang-tidy && [[ -f compile_commands.json ]]; then
         log_info "Running clang-tidy..."
-        run-clang-tidy -p . 2>&1 | tee clang-tidy.log
+        tee clang-tidy.log < <(run-clang-tidy -p . 2>&1)
     fi
 
     if command_exists cppcheck; then
         log_info "Running cppcheck..."
         if [[ ${#PACKAGES[@]} -eq 0 ]]; then
-            cppcheck --enable=all --suppress=missingIncludeSystem src/ 2>&1 | tee cppcheck.log
+            tee cppcheck.log < <(cppcheck --enable=all --suppress=missingIncludeSystem src/ 2>&1)
         else
             for pkg in "${PACKAGES[@]}"; do
                 if [[ -d "src/$pkg" ]]; then
-                    cppcheck --enable=all --suppress=missingIncludeSystem "src/$pkg" 2>&1 | tee "cppcheck_$pkg.log"
+                    tee "cppcheck_$pkg.log" < <(cppcheck --enable=all --suppress=missingIncludeSystem "src/$pkg" 2>&1)
                 fi
             done
         fi
@@ -479,7 +487,7 @@ list_packages() {
 show_dependencies() {
     local pkg="$1"
     log_info "Dependencies for package: $pkg"
-    colcon graph --packages-select "$pkg" --dot | grep -v "^//" || true
+    grep -v "^//" < <(colcon graph --packages-select "$pkg" --dot) || true
     exit 0
 }
 
@@ -510,161 +518,230 @@ show_stats() {
     exit 0
 }
 
+setup_python_env() {
+    log_info "Checking Python Virtual Environment..."
+
+    # 1. Determine which directories to scan
+    local search_targets=()
+
+    if [[ ${#PACKAGES[@]} -eq 0 ]]; then
+        return
+    else
+        # Case B: Specific packages listed. Resolve their paths.
+        # We use 'colcon list' to get the exact path of each selected package
+        log_info "Resolving paths for selected packages..."
+        while IFS= read -r path; do
+            [[ -n "$path" ]] && search_targets+=("$path")
+        done < <(colcon list --packages-select "${PACKAGES[@]}" --paths-only 2>/dev/null)
+
+        if [[ ${#search_targets[@]} -eq 0 ]]; then
+            log_warning "Could not resolve paths for the selected packages. Skipping Python setup."
+            return
+        fi
+    fi
+
+    # 2. Create venv if missing
+    if [[ ! -d "$VENV_DIR" ]]; then
+        log_warning "Virtual environment not found. Creating at $VENV_DIR..."
+        python3 -m venv "$VENV_DIR" --system-site-packages
+
+        # Upgrade pip immediately
+        "$VENV_DIR/bin/python" -m pip install --upgrade pip >/dev/null
+        log_success "Virtual environment created."
+    fi
+
+    # 3. Iterate through resolved paths to setup environment
+    for target in "${search_targets[@]}"; do
+        [[ ! -d "$target" ]] && continue
+
+        # A. Make scripts executable (Only matches */scripts/*.py inside the target)
+        while IFS= read -r -d '' script_file; do
+            if [[ ! -x "$script_file" ]]; then
+                chmod +x "$script_file"
+                log_success "Made executable: $script_file"
+            fi
+        done < <(find "$target" -type f -path "*/scripts/*.py" -print0)
+
+        # B. Install requirements.txt
+        while IFS= read -r -d '' req_file; do
+            # Get package name from directory structure for cleaner logs
+            local pkg_name
+            pkg_name=$(basename "$(dirname "$req_file")")
+
+            log_info "Installing dependencies for package: $pkg_name"
+            "$VENV_DIR/bin/pip" install -r "$req_file" >/dev/null
+        done < <(find "$target" -name "requirements.txt" -print0)
+    done
+}
+
 # Main argument parsing
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -b | --build)
-            [[ -z "${2:-}" || "$2" == -* ]] && {
-                log_error "-b requires an argument"
-                exit 1
-            }
-            BUILD_TYPE=$(normalize_build_type "$2")
+    -b | --build)
+        [[ -z "${2:-}" || "$2" == -* ]] && {
+            log_error "-b requires an argument"
+            exit 1
+        }
+        BUILD_TYPE=$(normalize_build_type "$2")
+        shift 2
+        ;;
+    -s | --sanitizer)
+        if [[ -n "${2:-}" && "$2" =~ ^(asan|msan|tsan)$ ]]; then
+            SANITIZER="$2"
             shift 2
-            ;;
-        -s | --sanitizer)
-            if [[ -n "${2:-}" && "$2" =~ ^(asan|msan|tsan)$ ]]; then
-                SANITIZER="$2"
+        else
+            log_error "-s requires asan, msan, or tsan"
+            exit 1
+        fi
+        ;;
+    -p | --pkg)
+        PACKAGES=()
+        if [[ -n "${2:-}" && "$2" != -* ]]; then
+            if [[ "$2" == *,* ]]; then
+                IFS=',' read -ra PACKAGES <<<"$2"
                 shift 2
             else
-                log_error "-s requires asan, msan, or tsan"
-                exit 1
-            fi
-            ;;
-        -p | --pkg)
-            PACKAGES=()
-            if [[ -n "${2:-}" && "$2" != -* ]]; then
-                if [[ "$2" == *,* ]]; then
-                    IFS=',' read -ra PACKAGES <<<"$2"
-                    shift 2
-                else
+                shift
+                while [[ $# -gt 0 && "$1" != -* ]]; do
+                    PACKAGES+=("$1")
                     shift
-                    while [[ $# -gt 0 && "$1" != -* ]]; do
-                        PACKAGES+=("$1")
-                        shift
-                    done
-                fi
-            else
-                shift
+                done
             fi
-            ;;
-        --compiler)
-            [[ -z "${2:-}" || "$2" == -* ]] && {
-                log_error "--compiler requires gcc or clang"
-                exit 1
-            }
-            COMPILER="$2"
-            shift 2
-            ;;
-        --install-prefix)
-            [[ -z "${2:-}" || "$2" == -* ]] && {
-                log_error "--install-prefix requires a path"
-                exit 1
-            }
-            INSTALL_PREFIX="$2"
-            shift 2
-            ;;
-        --cross)
-            [[ -z "${2:-}" || "$2" == -* ]] && {
-                log_error "--cross requires a target"
-                exit 1
-            }
-            CROSS_COMPILE="$2"
-            shift 2
-            ;;
-        --toolchain-file)
-            [[ -z "${2:-}" || "$2" == -* ]] && {
-                log_error "--toolchain-file requires a path"
-                exit 1
-            }
-            CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="$2")
-            shift 2
-            ;;
-        --sysroot)
-            [[ -z "${2:-}" || "$2" == -* ]] && {
-                log_error "--sysroot requires a path"
-                exit 1
-            }
-            CMAKE_ARGS+=(-DCMAKE_SYSROOT="$2")
-            shift 2
-            ;;
-        --cmake-args)
+        else
             shift
-            while [[ $# -gt 0 && "$1" != --* ]]; do
-                CMAKE_ARGS+=("$1")
-                shift
-            done
-            ;;
-        --cxx-args)
-            shift
-            while [[ $# -gt 0 && "$1" != --* ]]; do
-                CMAKE_CXX_FLAGS+=("$1")
-                shift
-            done
-            ;;
-        --colcon-args)
-            shift
-            while [[ $# -gt 0 && "$1" != --* ]]; do
-                COLCON_ARGS+=("--$1")
-                shift
-            done
-            ;;
-        --ccache)
-            CCACHE_ENABLED=true
-            shift
-            ;;
-        --coverage)
-            COVERAGE=true
-            shift
-            ;;
-        --benchmark)
-            BENCHMARK=true
-            BUILD_TYPE="Release"
-            shift
-            ;;
-        --clean)
-            CLEAN_ONLY=true
-            shift
-            ;;
-        --test)
-            RUN_TESTS=true
-            shift
-            ;;
-        --lint)
-            RUN_LINT=true
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        -v | --verbose)
-            VERBOSE=true
-            shift
-            ;;
-        --stats)
-            show_stats
-            ;;
-        --list-pkgs)
-            list_packages
-            ;;
-        --list-targets)
-            list_cross_targets
-            ;;
-        --dependencies)
-            [[ -z "${2:-}" ]] && {
-                log_error "--dependencies requires a package name"
-                exit 1
-            }
-            show_dependencies "$2"
-            ;;
-        -h | --help)
-            show_help
-            ;;
-        *)
-            log_error "Unknown option '$1'"
-            echo "Use -h or --help for usage information" >&2
+        fi
+        ;;
+    -j | --jobs)
+        [[ -z "${2:-}" || "$2" == -* ]] && {
+            log_error "-j requires a number"
             exit 1
-            ;;
+        }
+        PARALLEL_JOBS="$2"
+        COLCON_ARGS+=(--parallel-workers "$PARALLEL_JOBS")
+        shift 2
+        ;;
+    --compiler)
+        [[ -z "${2:-}" || "$2" == -* ]] && {
+            log_error "--compiler requires gcc or clang"
+            exit 1
+        }
+        COMPILER="$2"
+        shift 2
+        ;;
+    --install-prefix)
+        [[ -z "${2:-}" || "$2" == -* ]] && {
+            log_error "--install-prefix requires a path"
+            exit 1
+        }
+        INSTALL_PREFIX="$2"
+        shift 2
+        ;;
+    --cross)
+        [[ -z "${2:-}" || "$2" == -* ]] && {
+            log_error "--cross requires a target"
+            exit 1
+        }
+        CROSS_COMPILE="$2"
+        shift 2
+        ;;
+    --toolchain-file)
+        [[ -z "${2:-}" || "$2" == -* ]] && {
+            log_error "--toolchain-file requires a path"
+            exit 1
+        }
+        CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="$2")
+        shift 2
+        ;;
+    --sysroot)
+        [[ -z "${2:-}" || "$2" == -* ]] && {
+            log_error "--sysroot requires a path"
+            exit 1
+        }
+        CMAKE_ARGS+=(-DCMAKE_SYSROOT="$2")
+        shift 2
+        ;;
+    --cmake-args)
+        shift
+        while [[ $# -gt 0 && "$1" != --* ]]; do
+            CMAKE_ARGS+=("$1")
+            shift
+        done
+        ;;
+    --cxx-args)
+        shift
+        while [[ $# -gt 0 && "$1" != --* ]]; do
+            CMAKE_CXX_FLAGS+=("$1")
+            shift
+        done
+        ;;
+    --colcon-args)
+        shift
+        while [[ $# -gt 0 && "$1" != --* ]]; do
+            COLCON_ARGS+=("--$1")
+            shift
+        done
+        ;;
+    --ccache)
+        CCACHE_ENABLED=true
+        shift
+        ;;
+    --coverage)
+        COVERAGE=true
+        shift
+        ;;
+    --benchmark)
+        BENCHMARK=true
+        BUILD_TYPE="Release"
+        shift
+        ;;
+    --clean)
+        CLEAN_ONLY=true
+        shift
+        ;;
+    --test)
+        RUN_TESTS=true
+        shift
+        ;;
+    --python-env-setup)
+        PYTHON_ENV_SETUP=true
+        shift
+        ;;
+    --lint)
+        RUN_LINT=true
+        shift
+        ;;
+    --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+    -v | --verbose)
+        VERBOSE=true
+        shift
+        ;;
+    --stats)
+        show_stats
+        ;;
+    --list-pkgs)
+        list_packages
+        ;;
+    --list-targets)
+        list_cross_targets
+        ;;
+    --dependencies)
+        [[ -z "${2:-}" ]] && {
+            log_error "--dependencies requires a package name"
+            exit 1
+        }
+        show_dependencies "$2"
+        ;;
+    -h | --help)
+        show_help
+        ;;
+    *)
+        log_error "Unknown option '$1'"
+        echo "Use -h or --help for usage information" >&2
+        exit 1
+        ;;
     esac
 done
 
@@ -713,6 +790,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Build Configuration:"
 echo "  Type: $BUILD_TYPE"
 echo "  Packages: ${PACKAGES[*]:-all}"
+echo "  Jobs: $PARALLEL_JOBS"
 [[ -n "$COMPILER" ]] && echo "  Compiler: $COMPILER"
 [[ -n "$CROSS_COMPILE" ]] && echo "  Cross-Compile: $CROSS_COMPILE"
 [[ -n "$SANITIZER" ]] && echo "  Sanitizer: $SANITIZER"
@@ -734,9 +812,24 @@ if [[ "$DRY_RUN" == true ]]; then
     exit 0
 fi
 
+# Setup Python Environment (Before build)
+if [[ "$PYTHON_ENV_SETUP" == true && "$DRY_RUN" == false && -z "$CROSS_COMPILE" ]]; then
+    setup_python_env
+
+    # 1. Activate Python Environment (in current script scope)
+    if [[ -f "$VENV_DIR/bin/activate" && -z "$CROSS_COMPILE" ]]; then
+        log_info "Activating Virtual Environment: $VENV_DIR"
+        # Disabling unbound variable check briefly because activate scripts sometimes have unset vars
+        set +u
+        source "$VENV_DIR/bin/activate"
+        set -u
+    fi
+fi
+
 # Execute colcon build
 START_TIME=$(date +%s)
 
+# Run Build
 if [[ ${#PACKAGES[@]} -eq 0 ]]; then
     colcon build "${COLCON_ARGS[@]}" "${CMAKE_ARGS[@]}"
 else

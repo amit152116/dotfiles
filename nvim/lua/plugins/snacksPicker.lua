@@ -1,6 +1,6 @@
-local Snacks = require "snacks"
 local helper = require "utils.helper"
 local myPicker = require "myPlugins"
+local Snacks = require "snacks"
 return {
   "folke/snacks.nvim",
   lazy = false,

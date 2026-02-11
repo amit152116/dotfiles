@@ -37,7 +37,10 @@ return {
     cmd = "Copilot",
     build = ":Copilot auth",
     event = "InsertEnter",
-
+    dependencies = {
+      "copilotlsp-nvim/copilot-lsp", -- (optional) for NES functionality
+      init = function() vim.g.copilot_nes_debounce = 500 end,
+    },
     opts = {
       suggestion = {
         enabled = false,
@@ -51,6 +54,14 @@ return {
       filetypes = {
         markdown = false,
         help = false,
+      },
+      nes = {
+        enabled = true,
+        keymap = {
+          accept_and_goto = "<leader>p",
+          accept = false,
+          dismiss = "<Esc>",
+        },
       },
     },
     specs = {
@@ -66,14 +77,6 @@ return {
                   return true
                 end
               end,
-            },
-          },
-          mappings = {
-            n = {
-              ["<Leader>as"] = {
-                "<cmd>Copilot status<CR>",
-                desc = "Copilot Status",
-              },
             },
           },
         },

@@ -209,9 +209,9 @@ return {
           function() require("astrocore.toggles").diagnostics() end,
           desc = "Toggle diagnostics",
         },
-        ["<Leader>r"] = {
+        ["<Leader>pR"] = {
           "<cmd>AstroRoot<CR>",
-          desc = "AstroRoot",
+          desc = "Show project root",
           silent = true,
         },
         ["<Leader>pr"] = {

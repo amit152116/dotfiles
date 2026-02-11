@@ -81,16 +81,16 @@ return {
           "<Cmd>Lspsaga finder ref<CR>",
           desc = "Search references",
           cond = function(client)
-            return client.supports_method "textDocument/references"
-              or client.supports_method "textDocument/implementation"
+            return client:supports_method "textDocument/references"
+              or client:supports_method "textDocument/implementation"
           end,
         }
         maps.n["<Leader>li"] = {
           "<Cmd>Lspsaga finder imp<CR>",
           desc = "Search Implementation",
           cond = function(client)
-            return client.supports_method "textDocument/references"
-              or client.supports_method "textDocument/implementation"
+            return client:supports_method "textDocument/references"
+              or client:supports_method "textDocument/implementation"
           end,
         }
         maps.n["gd"] = {

@@ -1,5 +1,3 @@
-local Snacks = require "snacks"
-
 local M = {}
 M.grep = require("myPlugins.grep").Multigrep
 M.ros = require "myPlugins.ros"
@@ -29,6 +27,7 @@ end
 
 ---@param direction "next"|"prev" Direction to cycle buffers
 function M.buffer_cycle(direction)
+  local Snacks = require "snacks"
   Snacks.picker.buffers {
     focus = "list",
     auto_close = true,

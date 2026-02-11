@@ -41,3 +41,10 @@ source ~/.zsh/keybindings.zsh
 
 # opencode
 export PATH=/home/amit_152116/.opencode/bin:$PATH
+
+# fnm
+FNM_PATH="/home/amit_152116/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+  export PATH="$FNM_PATH:$PATH"
+  eval "`fnm env`"
+fi

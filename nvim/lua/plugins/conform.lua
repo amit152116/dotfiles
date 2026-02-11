@@ -145,7 +145,7 @@ return {
         c = { "clang_format" },
         proto = { "buf_ls" },
         cpp = { "clang_format" },
-        go = { "goimports", "gofumpt", "golines", "gomodifytags", "impl" },
+        go = { "goimports", "gofumpt", "golines" },
         python = { "ruff", "isort", "black" },
         json = { "prettier" }, -- if you install prettier later
         yaml = { "prettier" },
