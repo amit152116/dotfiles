@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+#==============================================================================
+# tmux-agent-selector - FZF-based coding agent selector for tmux-sessionizer
+#==============================================================================
+
+# List of available coding agents
+AGENTS=(
+    "claude"
+    "codex"
+    "gemini"
+    "opencode"
+)
+
+# Check if fzf is available
+if ! command -v fzf &>/dev/null; then
+    echo "Error: fzf is not installed" >&2
+    exit 1
+fi
+
+# Check if tmux-sessionizer exists
+if ! command -v tmux-sessionizer &>/dev/null; then
+    echo "Error: tmux-sessionizer is not installed" >&2
+    exit 1
+fi
+
+# Use fzf to select an agent
+selected_agent=$(printf '%s\n' "${AGENTS[@]}" | fzf \
+        --prompt='Select Agent ❯ ' \
+        --pointer='➤ ' \
+        --marker='✓ ' \
+        --height=40% \
+        --reverse \
+        --border \
+        --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
+    --header='Select a coding agent to launch')
+
+# Exit if nothing selected
+[[ -z "$selected_agent" ]] && exit 0
+
+# Launch the selected agent using tmux-sessionizer
+exec tmux-sessionizer -c "$selected_agent"

@@ -53,6 +53,8 @@ _load_ros() {
     export ROS_LOCALHOST_ONLY=0
     export RCUTILS_COLORIZED_OUTPUT=1
     export RCL_LOG_COLORIZE=1
+    # export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}] [({file_name}:{line_number})]: {message}"
+    export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message}"
 
     # GZ/ROS
     if [[ -d "$HOME/ardupilot_gazebo" ]]; then

@@ -392,6 +392,7 @@ handle_window_session_cmd() {
     else
         log "Creating new window: tmux neww -dt $target $full_cmd"
         tmux neww -dt "$target" "$full_cmd"
+        tmux rename-window -t "$target" "$session_cmd"
         hydrate "$target" "$selected"
         error=$(tmux select-window -t "$target" 2>&1 >/dev/null)
 
