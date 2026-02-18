@@ -48,7 +48,7 @@ _load_ros() {
     # ROS settings
     export GZ_VERSION=harmonic
     export ROS_DOMAIN_ID=0
-    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
     export MICRO_ROS_RMW_IMPLEMENTATION=rmw_microxrcedds
     export ROS_LOCALHOST_ONLY=0
     export RCUTILS_COLORIZED_OUTPUT=1
@@ -64,8 +64,6 @@ _load_ros() {
         # export GZ_FUEL_DOWNLOAD_MODE=none
 
     fi
-
-    # export CYCLONEDDS_URI=file:///home/amit_152116/Documents/aim_ros2/cyclonedds.xml
 
     # Check for ROS2 installations in common locations
     local ROS_WS="$HOME/Documents/aim_ros2/"
@@ -160,10 +158,26 @@ rosrun() {
 
 # Auto-load when entering ROS workspace
 chpwd_ros() {
-    if [[ -f "$(pwd)/install/setup.zsh" ]] || [[ -f "$(pwd)/../install/setup.zsh" ]]; then
+    local workspace_dir=""
+
+    # Check if we're in a ROS workspace (current or parent directory)
+    if [[ -f "$(pwd)/install/setup.zsh" ]]; then
+        workspace_dir="$(pwd)"
+    elif [[ -f "$(pwd)/../install/setup.zsh" ]]; then
+        workspace_dir="$(pwd)/.."
+    fi
+
+    # If we found a ROS workspace
+    if [[ -n "$workspace_dir" ]]; then
+        # Load ROS environment if not already loaded
         if [[ "$_ros_loaded" == "false" ]]; then
-            source "$(pwd)/install/setup.zsh"
+            source "$workspace_dir/install/setup.zsh"
             _load_ros
+        fi
+
+        # Source env.sh if it exists in the workspace root
+        if [[ -f "$workspace_dir/env.sh" ]]; then
+            source "$workspace_dir/env.sh"
         fi
     fi
 }

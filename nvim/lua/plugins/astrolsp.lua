@@ -42,6 +42,7 @@ return {
     },
     -- enable servers that you already have installed without mason
     servers = {
+      "lemminx", -- XML Language Server
       -- "pyright"
     },
     -- customize language server configuration options passed to `lspconfig`
@@ -73,8 +74,21 @@ return {
       },
       lemminx = {
         filetypes = { "xml", "urdf" },
-        init_options = {
-          documentFormatting = true,
+        settings = {
+          xml = {
+            downloadExternalResources = {
+              enabled = true,
+            },
+            validation = {
+              enabled = true,
+              schema = {
+                enabled = true,
+              },
+            },
+            format = {
+              enabled = true,
+            },
+          },
         },
       },
       bashls = {

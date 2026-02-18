@@ -15,6 +15,38 @@ return {
       luasnip.filetype_extend("javascript", { "javascriptreact" })
 
       -- 🔥 Add your custom snippets
+      -- XML snippet with XSD schema configuration
+      luasnip.add_snippets("xml", {
+        snippet("xsd", {
+          text { '<?xml version="1.0" encoding="UTF-8"?>', "" },
+          text { "<!-- " },
+          insert(1, "Description"),
+          text { " -->", "" },
+          text { "<" },
+          insert(2, "RootElement"),
+          text { ' xmlns="' },
+          insert(3, "https://cdds.io/config"),
+          text { '"', "" },
+          text {
+            '            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+            "",
+          },
+          text { '            xsi:schemaLocation="' },
+          insert(4, "https://cdds.io/config"),
+          text { " " },
+          insert(
+            5,
+            "https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclonedds.xsd"
+          ),
+          text { '">', "" },
+          text { "  " },
+          insert(0),
+          text { "", "</" },
+          insert(2, "RootElement"),
+          text { ">" },
+        }),
+      })
+
       luasnip.add_snippets("cpp", {
         snippet("stdc", {
           text { "#include <bits/stdc++.h>", "", "" },
