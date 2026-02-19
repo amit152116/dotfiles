@@ -303,10 +303,6 @@ find_dirs() {
         local current_session
         current_session=$(tmux display-message -p '#S')
 
-        # 1. List timestamps and names separated by ':'
-        # 2. Sort numerically descending (-nr) by the first field (timestamp)
-        # 3. Filter out the current session
-        # 4. Remove the timestamp to show only the name
         tmux list-sessions -F "#{session_last_attached}|[TMUX] #{session_name}" 2>/dev/null |
             sort -t'|' -k1,1nr |
             sed "s/^[^|]*|//" |
@@ -325,49 +321,58 @@ find_dirs() {
 
             [[ "$(basename "$dir")" == .* ]] && continue
 
-            # Transform the path to use ~
-            # This replaces the literal value of $HOME at the start of the string with ~
             local display_path="${dir/#$HOME/\~}"
 
-            # Check if it's a git repository (bare or normal)
-            if git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
-                local git_dir
-                git_dir=$(git -C "$dir" rev-parse --git-dir 2>/dev/null)
-
-                # Check if it's a bare repository
-                if [[ "$git_dir" == "." ]]; then
-                    # Bare repo - list all worktrees
-                    git -C "$dir" worktree list --porcelain | awk '
-                        /^worktree / { path = substr($0, 10); next }
-                        /^branch / { 
-                            branch = substr($0, 8)
-                            sub(/^refs\/heads\//, "", branch)
-                            if (path) { printf "%s [%s]\n", path, branch; path = "" }
-                        }
-                    ' | while IFS= read -r worktree_line; do
-                        # Extract worktree path and check if it has a session
-                        local wt_path="${worktree_line%% \[*}"
-                        [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "${worktree_line/#$HOME/\~}"
-                    done
-                else
-                    # Skip if directory already has a tmux session
-                    [[ -n "${tmux_dirs[$dir]}" ]] && continue
-
-                    # Normal repo - show current branch
-                    local branch
-                    branch=$(git -C "$dir" symbolic-ref --short HEAD 2>/dev/null ||
-                        git -C "$dir" rev-parse --short HEAD 2>/dev/null)
-                    if [[ -n "$branch" ]]; then
-                        printf '%s [%s]\n' "$display_path" "$branch"
-                    else
-                        printf '%s\n' "$display_path"
-                    fi
-                fi
-            else
-                # Skip if directory already has a tmux session
+            # Fast git detection: avoid spawning git processes where possible
+            if [[ -f "$dir/.git" || -d "$dir/.git" ]]; then
+                # Normal repo (.git is a dir) or worktree (.git is a file pointing elsewhere)
                 [[ -n "${tmux_dirs[$dir]}" ]] && continue
 
+                # Resolve actual git dir without calling git
+                local git_dir="$dir/.git"
+                if [[ -f "$git_dir" ]]; then
+                    # .git file: read the gitdir pointer (worktree or submodule)
+                    local gitdir_line
+                    gitdir_line=$(<"$git_dir")
+                    git_dir="${gitdir_line#gitdir: }"
+                    [[ "$git_dir" != /* ]] && git_dir="$dir/$git_dir"
+                fi
+
+                # Read HEAD directly — zero git subprocess overhead
+                local branch=""
+                if [[ -f "$git_dir/HEAD" ]]; then
+                    local head_content
+                    head_content=$(<"$git_dir/HEAD")
+                    if [[ "$head_content" == ref:* ]]; then
+                        branch="${head_content#ref: refs/heads/}"
+                    else
+                        branch="${head_content:0:7}"
+                    fi
+                fi
+
+                if [[ -n "$branch" ]]; then
+                    printf '%s [%s]\n' "$display_path" "$branch"
+                else
+                    printf '%s\n' "$display_path"
+                fi
+
+            elif [[ -f "$dir/HEAD" && -d "$dir/objects" ]]; then
+                # Bare repo: must use git for worktree listing
+                git -C "$dir" worktree list --porcelain | awk '
+                    /^worktree / { path = substr($0, 10); next }
+                    /^branch / {
+                        branch = substr($0, 8)
+                        sub(/^refs\/heads\//, "", branch)
+                        if (path) { printf "%s [%s]\n", path, branch; path = "" }
+                    }
+                ' | while IFS= read -r worktree_line; do
+                    local wt_path="${worktree_line%% \[*}"
+                    [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "${worktree_line/#$HOME/\~}"
+                done
+
+            else
                 # Not a git repository
+                [[ -n "${tmux_dirs[$dir]}" ]] && continue
                 printf '%s\n' "$display_path"
             fi
         done
@@ -479,10 +484,9 @@ handle_session_cmd() {
 #------------------------------------------------------------------------------
 
 run_fuzzy_finder() {
-    # When running inside the popup (subshell), DIRS_CACHE and RESULT_FILE are set
-    # by the parent; just run fzf and write the selection to RESULT_FILE.
-    if [[ -n "${_TS_DIRS_CACHE:-}" && -n "${_TS_RESULT_FILE:-}" ]]; then
-        FZF_DEFAULT_OPTS="\
+    # Popup re-invocation: stream find_dirs directly into fzf — no buffering.
+    if [[ -n "${_TS_RESULT_FILE:-}" ]]; then
+        find_dirs | FZF_DEFAULT_OPTS="\
             --tiebreak=index \
             --preview '
                 if [[ {} == \[TMUX\]* ]]; then
@@ -527,27 +531,21 @@ run_fuzzy_finder() {
             --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
             --bind 'ctrl-v:toggle-preview' \
             --header '↵:open  ctrl-v:toggle preview' \
-        " fzf <"$_TS_DIRS_CACHE" >"$_TS_RESULT_FILE"
+        " fzf >"$_TS_RESULT_FILE"
         return
     fi
 
-    # Parent path: cache dirs, open a popup that re-invokes this script in
-    # "fzf-only" mode, then read back the selection.
-    local dirs_cache result_file
-    dirs_cache=$(mktemp)
+    # Parent path: open popup that re-invokes this script in fzf-only mode,
+    # then read back the selection from the result file.
+    local result_file
     result_file=$(mktemp)
-    find_dirs >"$dirs_cache"
-
-    export _TS_DIRS_CACHE="$dirs_cache"
-    export _TS_RESULT_FILE="$result_file"
 
     tmux display-popup -E -w 70% -h 70% \
-        "bash -c '_TS_DIRS_CACHE=${dirs_cache} _TS_RESULT_FILE=${result_file} ${0} --_fzf-only'"
+        "bash -c '_TS_RESULT_FILE=${result_file} ${0} --_fzf-only'"
 
     local result
     result=$(cat "$result_file")
-    rm -f "$dirs_cache" "$result_file"
-    unset _TS_DIRS_CACHE _TS_RESULT_FILE
+    rm -f "$result_file"
     echo "$result"
 }
 
@@ -565,6 +563,14 @@ main() {
     sanity_check
     parse_arguments "$@"
 
+    # Set default search paths if not configured
+    [[ -n "$TS_SEARCH_PATHS" ]] || TS_SEARCH_PATHS=(~/)
+
+    # Add extra search paths if configured
+    if [[ ${#TS_EXTRA_SEARCH_PATHS[@]} -gt 0 ]]; then
+        TS_SEARCH_PATHS+=("${TS_EXTRA_SEARCH_PATHS[@]}")
+    fi
+
     # Popup re-invocation: just run fzf and exit
     if [[ -n "$_TS_FZF_ONLY" ]]; then
         run_fuzzy_finder
@@ -575,14 +581,6 @@ main() {
     if [[ -n $session_cmd ]]; then
         handle_session_cmd
         return
-    fi
-
-    # Set default search paths if not configured
-    [[ -n "$TS_SEARCH_PATHS" ]] || TS_SEARCH_PATHS=(~/)
-
-    # Add extra search paths if configured
-    if [[ ${#TS_EXTRA_SEARCH_PATHS[@]} -gt 0 ]]; then
-        TS_SEARCH_PATHS+=("${TS_EXTRA_SEARCH_PATHS[@]}")
     fi
 
     local raw_input
