@@ -40,6 +40,7 @@ session_cmd=""
 split_type=""
 session_args=""
 user_selected=""
+_TS_FZF_ONLY=""
 
 #------------------------------------------------------------------------------
 # Help & Version Functions
@@ -103,6 +104,9 @@ parse_arguments() {
             ;;
         --hsplit)
             split_type="hsplit"
+            ;;
+        --_fzf-only)
+            _TS_FZF_ONLY=1
             ;;
         *)
             user_selected="$1"
@@ -475,55 +479,76 @@ handle_session_cmd() {
 #------------------------------------------------------------------------------
 
 run_fuzzy_finder() {
-    find_dirs | FZF_DEFAULT_OPTS="\
-        --tiebreak=index \
-        --preview '
-            if [[ {} == \[TMUX\]* ]]; then
-                # Extract session name (remove [TMUX] prefix and optional [branch])
-                session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\" | sed \"s/ \\\[.*\\\]$//\")
-                branch=\$(echo {} | grep -oP \"\\\[\\K[^\\\]]+(?=\\\]$)\" || echo \"\")
-                {
-                    echo \"🖥️  Session: \$session\"
-                    [[ -n \"\$branch\" ]] && echo \"🌿 Branch: \$branch\"
-                    echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
-                    echo \"Windows:\"
-                    tmux list-windows -t \"\$session\" -F \"#I: #W #{?window_active,★, }\"
-                    echo
-                    echo \"Panes:\"
-                    tmux list-panes -t \"\$session\" -F \"#I.#P: #{pane_current_command} (#{pane_width}x#{pane_height})\"
-                } 2>/dev/null | batcat -l yaml --color=always -p
-            elif [[ {} =~ ^(.+)\ \\\[([^\\\]]+)\\\]$ ]]; then
-                # Directory with branch name
-                dir=\"\${BASH_REMATCH[1]}\"
-                branch=\"\${BASH_REMATCH[2]}\"
-                if [[ -d \"\$dir\" ]]; then
+    # When running inside the popup (subshell), DIRS_CACHE and RESULT_FILE are set
+    # by the parent; just run fzf and write the selection to RESULT_FILE.
+    if [[ -n "${_TS_DIRS_CACHE:-}" && -n "${_TS_RESULT_FILE:-}" ]]; then
+        FZF_DEFAULT_OPTS="\
+            --tiebreak=index \
+            --preview '
+                if [[ {} == \[TMUX\]* ]]; then
+                    session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\" | sed \"s/ \\\[.*\\\]$//\")
+                    branch=\$(echo {} | grep -oP \"\\\[\\K[^\\\]]+(?=\\\]$)\" || echo \"\")
                     {
-                        echo \"📁 Directory: \$dir\"
-                        echo \"🌿 Branch: \$branch\"
+                        echo \"🖥️  Session: \$session\"
+                        [[ -n \"\$branch\" ]] && echo \"🌿 Branch: \$branch\"
+                        echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
+                        echo \"Windows:\"
+                        tmux list-windows -t \"\$session\" -F \"#I: #W #{?window_active,★, }\"
+                        echo
+                        echo \"Panes:\"
+                        tmux list-panes -t \"\$session\" -F \"#I.#P: #{pane_current_command} (#{pane_width}x#{pane_height})\"
+                    } 2>/dev/null | batcat -l yaml --color=always -p
+                elif [[ {} =~ ^(.+)\ \\\[([^\\\]]+)\\\]$ ]]; then
+                    dir=\"\${BASH_REMATCH[1]}\"
+                    branch=\"\${BASH_REMATCH[2]}\"
+                    if [[ -d \"\$dir\" ]]; then
+                        {
+                            echo \"📁 Directory: \$dir\"
+                            echo \"🌿 Branch: \$branch\"
+                            echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
+                            echo
+                        } | batcat -l yaml --color=always -p
+                        eza -1 --icons --color=always --group-directories-first \"\$dir\"
+                    fi
+                elif [[ -d {} ]]; then
+                    {
+                        echo \"📁 Directory: {}\"
                         echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
                         echo
                     } | batcat -l yaml --color=always -p
-                    eza -1 --icons --color=always --group-directories-first \"\$dir\"
+                    eza -1 --icons --color=always --group-directories-first {}
+                else
+                    echo \"Not a directory or tmux session\"
                 fi
-            elif [[ -d {} ]]; then
-                # Regular directory without branch
-                {
-                    echo \"📁 Directory: {}\"
-                    echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
-                    echo
-                } | batcat -l yaml --color=always -p
-                eza -1 --icons --color=always --group-directories-first {}
-            else
-                echo \"Not a directory or tmux session\"
-            fi
-        ' \
-        --prompt='❯ ' \
-        --pointer='➤ ' \
-        --marker='✓ ' \
-        --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
-        --bind 'ctrl-v:toggle-preview' \
-        --header '↵:open  ctrl-v:toggle preview' \
-    " fzf
+            ' \
+            --prompt='❯ ' \
+            --pointer='➤ ' \
+            --marker='✓ ' \
+            --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
+            --bind 'ctrl-v:toggle-preview' \
+            --header '↵:open  ctrl-v:toggle preview' \
+        " fzf <"$_TS_DIRS_CACHE" >"$_TS_RESULT_FILE"
+        return
+    fi
+
+    # Parent path: cache dirs, open a popup that re-invokes this script in
+    # "fzf-only" mode, then read back the selection.
+    local dirs_cache result_file
+    dirs_cache=$(mktemp)
+    result_file=$(mktemp)
+    find_dirs >"$dirs_cache"
+
+    export _TS_DIRS_CACHE="$dirs_cache"
+    export _TS_RESULT_FILE="$result_file"
+
+    tmux display-popup -E -w 70% -h 70% \
+        "bash -c '_TS_DIRS_CACHE=${dirs_cache} _TS_RESULT_FILE=${result_file} ${0} --_fzf-only'"
+
+    local result
+    result=$(cat "$result_file")
+    rm -f "$dirs_cache" "$result_file"
+    unset _TS_DIRS_CACHE _TS_RESULT_FILE
+    echo "$result"
 }
 
 is_worktree() {
@@ -539,6 +564,12 @@ is_worktree() {
 main() {
     sanity_check
     parse_arguments "$@"
+
+    # Popup re-invocation: just run fzf and exit
+    if [[ -n "$_TS_FZF_ONLY" ]]; then
+        run_fuzzy_finder
+        return
+    fi
 
     # Handle session command if specified
     if [[ -n $session_cmd ]]; then

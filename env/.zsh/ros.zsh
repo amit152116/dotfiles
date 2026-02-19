@@ -82,7 +82,6 @@ _load_ros() {
     fi
 
     _ros_loaded=true
-    echo "ROS environment loaded!"
 
     # ROS2 aliases
     alias ros='ros2'

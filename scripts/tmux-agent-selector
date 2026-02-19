@@ -25,16 +25,28 @@ if ! command -v tmux-sessionizer &>/dev/null; then
     exit 1
 fi
 
-# Use fzf to select an agent
-selected_agent=$(printf '%s\n' "${AGENTS[@]}" | fzf \
+# Popup re-invocation: just run fzf and write selection to result file
+if [[ -n "${_TAS_RESULT_FILE:-}" ]]; then
+    printf '%s\n' "${AGENTS[@]}" | fzf \
         --prompt='Select Agent ❯ ' \
         --pointer='➤ ' \
         --marker='✓ ' \
-        --height=40% \
         --reverse \
         --border \
         --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
-    --header='Select a coding agent to launch')
+        --header='Select a coding agent to launch' \
+        >"$_TAS_RESULT_FILE" || true
+    exit 0
+fi
+
+# Parent path: open popup that re-invokes this script in fzf-only mode
+result_file=$(mktemp)
+
+tmux display-popup -E -w 50% -h 50% \
+    "bash -c '_TAS_RESULT_FILE=${result_file} ${0}'"
+
+selected_agent=$(cat "$result_file")
+rm -f "$result_file"
 
 # Exit if nothing selected
 [[ -z "$selected_agent" ]] && exit 0
