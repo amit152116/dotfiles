@@ -1,6 +1,9 @@
 # Paths
 export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$HOME/.fzf/bin:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
 
+# opencode
+export PATH=/home/amit_152116/.opencode/bin:$PATH
+
 export DOTFILES_DIR=$HOME/.dotfiles
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
@@ -49,13 +52,18 @@ if [[ -d "$HOME/Android/Sdk" ]]; then
     alias releasePath="app/build/outputs/apk/release/app-release.apk"
 fi
 
-# Add Ardupilot-Autopilot if installed
-if [[ -d "$HOME/ardupilot" ]]; then
-    export PATH=$PATH:$HOME/ardupilot/Tools/autotest
-    source $HOME/ardupilot/Tools/completion/completion.zsh
+if [[ -d "$HOME/ardu_ws" ]]; then
+
+    export PATH=$PATH:$HOME/ardu_ws/Micro-XRCE-DDS-Gen/scripts
+    export PATH=$PATH:$HOME/ardu_ws/src/ardupilot/Tools/autotest
+    source $HOME/ardu_ws/src/ardupilot/Tools/completion/completion.zsh
+
+    # export GZ_FUEL_CACHE_ONLY=1
+    # export GZ_FUEL_DOWNLOAD_MODE=none
+
 fi
 
-# Add Micro-XRCE-DDS-Gen if installed
-if [[ -d "$HOME/Micro-XRCE-DDS-Gen" ]]; then
-    export PATH=$PATH:$HOME/Micro-XRCE-DDS-Gen/scripts
+# Set GAZEBO_MODEL_PATH if required
+if [[ -d $HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models ]]; then
+    export GAZEBO_MODEL_PATH=$HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models:$GAZEBO_MODEL_PATH
 fi

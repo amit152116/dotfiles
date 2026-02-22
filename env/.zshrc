@@ -34,17 +34,26 @@ source ~/.zsh/aliases.zsh
 
 source ~/.zsh/keybindings.zsh
 
-
-
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-# opencode
-export PATH=/home/amit_152116/.opencode/bin:$PATH
 
 # fnm
 FNM_PATH="/home/amit_152116/.local/share/fnm"
 if [ -d "$FNM_PATH" ]; then
-  export PATH="$FNM_PATH:$PATH"
-  eval "`fnm env`"
+    export PATH="$FNM_PATH:$PATH"
+    eval "`fnm env`"
 fi
+
+# Source env.sh or .env if present in current directory
+_source_local_env() {
+    if [[ -f "$PWD/env.sh" ]]; then
+        source "$PWD/env.sh"
+    fi
+    if [[ -f "$PWD/.env" ]]; then
+        source "$PWD/.env"
+    fi
+}
+
+autoload -U add-zsh-hook
+add-zsh-hook chpwd _source_local_env
+_source_local_env

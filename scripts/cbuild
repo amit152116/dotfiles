@@ -23,9 +23,6 @@ nproc=$(nproc 2>/dev/null)
 PARALLEL_JOBS=$((nproc / 2))
 ((PARALLEL_JOBS < 4)) && PARALLEL_JOBS=4
 
-# Cross-compilation
-CROSS_COMPILE=""
-
 # Pre-allocate arrays for better performance
 CMAKE_ARGS=()
 CMAKE_CXX_FLAGS=()
@@ -44,35 +41,6 @@ log_info() { echo -e "${BLUE}ℹ${GRAY} $*" >&2; }
 log_success() { echo -e "${GREEN}✓${NC} $*" >&2; }
 log_warning() { echo -e "${YELLOW}⚠${YELLOW} $*" >&2; }
 log_error() { echo -e "${RED}✗${RED} $*" >&2; }
-log_cross() { echo -e "${MAGENTA}🔧${GRAY} $*" >&2; }
-
-# Cross-compilation toolchain configurations
-declare -A CROSS_TOOLCHAINS=(
-    # ARM 32-bit
-    ["arm32_toolchain"]="arm-linux-gnueabihf"
-    ["arm32_cmake_file"]="arm-linux-gnueabihf.cmake"
-    ["arm32_arch"]="armv7-a"
-    ["arm32_fpu"]="neon-vfpv4"
-    ["arm32_processor"]="arm"
-
-    # ARM 64-bit (aarch64)
-    ["aarch64_toolchain"]="aarch64-linux-gnu"
-    ["aarch64_cmake_file"]="aarch64-linux-gnu.cmake"
-    ["aarch64_arch"]="armv8-a"
-    ["aarch64_processor"]="aarch64"
-
-    # Raspberry Pi 3/4
-    ["rpi3_toolchain"]="arm-linux-gnueabihf"
-    ["rpi3_cmake_file"]="rpi3.cmake"
-    ["rpi3_arch"]="armv8-a"
-    ["rpi3_fpu"]="neon-fp-armv8"
-    ["rpi3_processor"]="arm"
-
-    ["rpi4_toolchain"]="aarch64-linux-gnu"
-    ["rpi4_cmake_file"]="rpi4.cmake"
-    ["rpi4_arch"]="armv8-a"
-    ["rpi4_processor"]="aarch64"
-)
 
 # Sanitizer configurations (centralized for maintainability)
 declare -A SANITIZER_CONFIGS=(
@@ -106,11 +74,6 @@ Build Options:
   -g, --generator GEN       CMake generator (Ninja|Unix Makefiles|Xcode) (default: Ninja)
   -t, --target TARGET       Build specific target(s)
 
-Cross-Compilation:
-  --cross TARGET            Cross-compile for target (arm32|aarch64|rpi3|rpi4)
-  --toolchain-file FILE     Custom CMake toolchain file
-  --sysroot PATH            Sysroot path for cross-compilation
-
 Advanced Build:
   --cmake-args FLAGS        Additional CMake flags (e.g., -DENABLE_FEATURE=ON)
   --cxx-flags FLAGS         Additional C++ compiler flags
@@ -129,7 +92,6 @@ Actions:
 Utilities:
   --stats                   Show build statistics
   --list-targets            List available build targets
-  --list-cross-targets      List available cross-compilation targets
   -h, --help                Display this help message
 
 Examples:
@@ -141,10 +103,6 @@ Examples:
   $0 --coverage --test
   $0 --cmake-args -DENABLE_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
-  # Cross-compilation
-  $0 --cross aarch64 -b Release
-  $0 --cross rpi4 --install
-
   # Building specific targets
   $0 --target my_executable --install
   $0 -t my_lib my_test -j 8
@@ -152,19 +110,6 @@ Examples:
   # Benchmarking
   $0 --benchmark --target benchmark_suite
 EOF
-    exit 0
-}
-
-# Function to list cross-compilation targets
-list_cross_targets() {
-    log_info "Available cross-compilation targets:"
-    echo ""
-    echo "  arm32      - ARM 32-bit (ARMv7-A with NEON)"
-    echo "  aarch64    - ARM 64-bit (ARMv8-A)"
-    echo "  rpi3       - Raspberry Pi 3 (32-bit ARMv8-A)"
-    echo "  rpi4       - Raspberry Pi 4 (64-bit ARMv8-A)"
-    echo ""
-    echo "Usage: $0 --cross <target>"
     exit 0
 }
 
@@ -183,87 +128,6 @@ detect_generator() {
         log_error "No build system found (ninja or make required)"
         exit 1
     fi
-}
-
-# Function to create CMake toolchain file
-create_toolchain_file() {
-    local target="$1"
-    local toolchain_file="./${CROSS_TOOLCHAINS[${target}_cmake_file]}"
-    local toolchain_prefix="${CROSS_TOOLCHAINS[${target}_toolchain]}"
-    local arch="${CROSS_TOOLCHAINS[${target}_arch]}"
-    local processor="${CROSS_TOOLCHAINS[${target}_processor]}"
-    local fpu="${CROSS_TOOLCHAINS[${target}_fpu]:-}"
-
-    log_cross "Creating toolchain file: $toolchain_file"
-
-    cat >"$toolchain_file" <<EOF
-# CMake toolchain file for ${target}
-set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR ${processor})
-
-# Cross-compiler settings
-set(CMAKE_C_COMPILER ${toolchain_prefix}-gcc)
-set(CMAKE_CXX_COMPILER ${toolchain_prefix}-g++)
-
-# Compiler flags
-set(CMAKE_C_FLAGS "\${CMAKE_C_FLAGS} -march=${arch}" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS "\${CMAKE_CXX_FLAGS} -march=${arch}" CACHE STRING "" FORCE)
-
-EOF
-
-    if [[ -n "$fpu" ]]; then
-        echo "set(CMAKE_C_FLAGS \"\${CMAKE_C_FLAGS} -mfpu=${fpu}\" CACHE STRING \"\" FORCE)" >>"$toolchain_file"
-        echo "set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} -mfpu=${fpu}\" CACHE STRING \"\" FORCE)" >>"$toolchain_file"
-    fi
-
-    cat >>"$toolchain_file" <<'EOF'
-
-# Search paths
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-EOF
-
-    echo "$toolchain_file"
-}
-
-# Function to verify cross-compilation toolchain
-verify_cross_toolchain() {
-    local target="$1"
-    local toolchain_prefix="${CROSS_TOOLCHAINS[${target}_toolchain]}"
-
-    if ! command_exists "${toolchain_prefix}-gcc"; then
-        log_error "Cross-compilation toolchain not found: ${toolchain_prefix}-gcc"
-        log_info "Install with: sudo apt-get install gcc-${toolchain_prefix} g++-${toolchain_prefix}"
-        exit 1
-    fi
-
-    log_success "Found cross-compiler: $(${toolchain_prefix}-gcc --version | head -n1)"
-}
-
-# Function to setup cross-compilation
-setup_cross_compilation() {
-    local target="$1"
-
-    # Verify target exists
-    if [[ -z "${CROSS_TOOLCHAINS[${target}_toolchain]:-}" ]]; then
-        log_error "Unknown cross-compilation target: $target"
-        log_info "Use --list-cross-targets to see available targets"
-        exit 1
-    fi
-
-    log_cross "Setting up cross-compilation for: $target"
-    verify_cross_toolchain "$target"
-
-    # Create toolchain file
-    local toolchain_file
-    toolchain_file=$(create_toolchain_file "$target")
-
-    # Add toolchain file to CMake args
-    CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="${PWD}/$toolchain_file")
-
-    log_success "Cross-compilation configured for $target"
 }
 
 # Function to setup ccache
@@ -327,7 +191,6 @@ save_config() {
         echo "PREV_SANITIZER=$SANITIZER"
         echo "PREV_COMPILER=$COMPILER"
         echo "PREV_COVERAGE=$COVERAGE"
-        echo "PREV_CROSS_COMPILE=$CROSS_COMPILE"
         echo "PREV_BUILD_DIR=$BUILD_DIR"
     } >"$CONFIG_FILE"
 }
@@ -375,11 +238,6 @@ check_rebuild_needed() {
 
     if [[ -n "${PREV_COVERAGE:-}" && "$PREV_COVERAGE" != "$COVERAGE" ]]; then
         log_warning "Coverage changed: ${PREV_COVERAGE} → ${COVERAGE}"
-        needs_clean=true
-    fi
-
-    if [[ -n "${PREV_CROSS_COMPILE:-}" && "$PREV_CROSS_COMPILE" != "$CROSS_COMPILE" ]]; then
-        log_warning "Cross-compilation target changed: ${PREV_CROSS_COMPILE:-native} → ${CROSS_COMPILE:-native}"
         needs_clean=true
     fi
 
@@ -436,11 +294,6 @@ configure_build_type() {
         Release)
             CMAKE_CXX_FLAGS+=("-O3" "-DNDEBUG")
 
-            # Don't use -march=native for cross-compilation
-            if [[ -z "$CROSS_COMPILE" && ! "${CMAKE_CXX_FLAGS[*]}" =~ -march= ]]; then
-                CMAKE_CXX_FLAGS+=("-march=native")
-            fi
-
             if [[ "$BENCHMARK" == true ]]; then
                 CMAKE_CXX_FLAGS+=("-flto" "-ffast-math")
                 log_info "Benchmark optimizations enabled (LTO, fast-math)"
@@ -465,9 +318,6 @@ clean_build() {
     log_info "Cleaning build artifacts..."
     rm -rf "$BUILD_DIR" "$INSTALL_DIR"
     rm -f compile_commands.json "$CONFIG_FILE"
-
-    # Clean cross-compilation toolchain files
-    rm -f ./*.cmake 2>/dev/null || true
 
     log_success "Cleaned all build artifacts"
 }
@@ -660,14 +510,6 @@ while [[ $# -gt 0 ]]; do
             INSTALL_PREFIX="$2"
             shift 2
             ;;
-        --cross)
-            [[ -z "${2:-}" || "$2" == -* ]] && {
-                log_error "--cross requires a target"
-                exit 1
-            }
-            CROSS_COMPILE="$2"
-            shift 2
-            ;;
         --toolchain-file)
             [[ -z "${2:-}" || "$2" == -* ]] && {
                 log_error "--toolchain-file requires a path"
@@ -743,9 +585,6 @@ while [[ $# -gt 0 ]]; do
         --list-targets)
             list_targets
             ;;
-        --list-cross-targets)
-            list_cross_targets
-            ;;
         -h | --help)
             show_help
             ;;
@@ -771,11 +610,6 @@ check_rebuild_needed
 if [[ "$GENERATOR" == "Ninja" ]] && ! command_exists ninja; then
     GENERATOR=$(detect_generator)
     log_info "Auto-detected generator: $GENERATOR"
-fi
-
-# Setup cross-compilation
-if [[ -n "$CROSS_COMPILE" ]]; then
-    setup_cross_compilation "$CROSS_COMPILE"
 fi
 
 # Setup compiler
@@ -815,7 +649,6 @@ echo "  Build Directory: $BUILD_DIR"
 echo "  Install Directory: $INSTALL_DIR"
 echo "  Parallel Jobs: $PARALLEL_JOBS"
 [[ -n "$COMPILER" ]] && echo "  Compiler: $COMPILER"
-[[ -n "$CROSS_COMPILE" ]] && echo "  Cross-Compile: $CROSS_COMPILE"
 [[ -n "$SANITIZER" ]] && echo "  Sanitizer: $SANITIZER"
 [[ -n "$TARGET" ]] && echo "  Target(s): $TARGET"
 [[ "$CCACHE_ENABLED" == true ]] && echo "  ccache: enabled"
@@ -893,14 +726,6 @@ if [[ "$VERBOSE" == true && "$CCACHE_ENABLED" == true ]]; then
     echo ""
     log_info "Final ccache statistics:"
     ccache -s
-fi
-
-# Cross-compilation reminder
-if [[ -n "$CROSS_COMPILE" ]]; then
-    echo ""
-    log_cross "Cross-compilation completed for: $CROSS_COMPILE"
-    log_info "Binaries are in: $BUILD_DIR/"
-    log_info "Transfer binaries to target device and ensure shared libraries are available"
 fi
 
 # Show next steps

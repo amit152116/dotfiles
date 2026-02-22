@@ -48,22 +48,13 @@ _load_ros() {
     # ROS settings
     export GZ_VERSION=harmonic
     export ROS_DOMAIN_ID=0
-    export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     export MICRO_ROS_RMW_IMPLEMENTATION=rmw_microxrcedds
     export ROS_LOCALHOST_ONLY=0
     export RCUTILS_COLORIZED_OUTPUT=1
     export RCL_LOG_COLORIZE=1
     # export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}] [({file_name}:{line_number})]: {message}"
     export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message}"
-
-    # GZ/ROS
-    if [[ -d "$HOME/ardupilot_gazebo" ]]; then
-        export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}
-        export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
-        # export GZ_FUEL_CACHE_ONLY=1
-        # export GZ_FUEL_DOWNLOAD_MODE=none
-
-    fi
 
     # Check for ROS2 installations in common locations
     local ROS_WS="$HOME/Documents/aim_ros2/"
@@ -74,11 +65,6 @@ _load_ros() {
     fi
     if [[ -f /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh ]]; then
         source /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh
-    fi
-
-    # Set GAZEBO_MODEL_PATH if required
-    if [[ -d $HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models ]]; then
-        export GAZEBO_MODEL_PATH=$HOME/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models:$GAZEBO_MODEL_PATH
     fi
 
     _ros_loaded=true
@@ -174,10 +160,6 @@ chpwd_ros() {
             _load_ros
         fi
 
-        # Source env.sh if it exists in the workspace root
-        if [[ -f "$workspace_dir/env.sh" ]]; then
-            source "$workspace_dir/env.sh"
-        fi
     fi
 }
 
