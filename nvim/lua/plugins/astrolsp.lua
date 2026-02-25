@@ -43,7 +43,7 @@ return {
     -- enable servers that you already have installed without mason
     servers = {
       "lemminx", -- XML Language Server
-      -- "pyright"
+      -- "pyright",
     },
     -- customize language server configuration options passed to `lspconfig`
     ---@diagnostic disable: missing-fields
@@ -65,7 +65,53 @@ return {
           "--log=error", -- Only log errors
         },
       },
+      ruff = {
+        on_attach = function(client)
+          client.server_capabilities.hoverProvider = false
+        end,
+      },
+      basedpyright = {
+        before_init = function(_, c)
+          if not c.settings then c.settings = {} end
+          if not c.settings.python then c.settings.python = {} end
+          c.settings.python.pythonPath = vim.fn.exepath "python"
+        end,
+        settings = {
+          basedpyright = {
+            analysis = {
+              autoimportCompletions = true,
+              autoFormatStrings = true,
+              autoSearchPaths = true,
+              diagnosticMode = "workspace",
+              diagnosticSeverityOverrides = {
+                reportUnusedImport = "information",
+                reportUnusedFunction = "information",
+                reportUnusedVariable = "information",
+                reportGeneralTypeIssues = "none",
+                reportOptionalMemberAccess = "none",
+                reportOptionalSubscript = "none",
+                reportPrivateImportUsage = "none",
+              },
+              inlayHints = {
+                variableTypes = true,
+                callArgumentNames = true,
+                functionReturnTypes = true,
+                genericTypes = true,
+              },
+              typeCheckingMode = "standard",
+              useLibraryCodeForTypes = true,
+            },
+          },
 
+          python = {
+            analysis = {
+              autoSearchPaths = true,
+              useLibraryCodeForTypes = true,
+              diagnosticMode = "workspace",
+            },
+          },
+        },
+      },
       gopls = {
         settings = {
           usePlaceholders = false,
@@ -188,29 +234,11 @@ return {
       -- Disable semantic tokens if needed
       -- client.server_capabilities.semanticTokensProvider = nil
 
+      -- inspect(client.name, bufnr)
+
       if client.name == "clangd" then
         local opts =
           { buffer = bufnr, noremap = true, silent = true, desc = "" }
-
-        -- 🧩 Run the current C++ file using CMake plugin
-        vim.keymap.set(
-          "n",
-          "<Leader>le",
-          ":CMakeRunCurrentFile<CR>",
-          vim.tbl_extend("force", opts, { desc = "Run Current File" })
-        )
-        vim.keymap.set(
-          "n",
-          "<Leader>lE",
-          ":CMakeQuickRun<CR>",
-          vim.tbl_extend("force", opts, { desc = "Run Executable" })
-        )
-        vim.keymap.set(
-          "n",
-          "<Leader>lt",
-          ":CMakeRunTest<CR>",
-          vim.tbl_extend("force", opts, { desc = "Run Tests" })
-        )
 
         -- -- 🧩 Compile current buffer to assembly (Compiler Explorer)
         -- vim.keymap.set(

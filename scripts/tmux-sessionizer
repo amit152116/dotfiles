@@ -486,52 +486,57 @@ handle_session_cmd() {
 run_fuzzy_finder() {
     # Popup re-invocation: stream find_dirs directly into fzf — no buffering.
     if [[ -n "${_TS_RESULT_FILE:-}" ]]; then
-        find_dirs | FZF_DEFAULT_OPTS="\
+        fzf_preview_script='
+    item={}
+    if [[ "$item" == \[TMUX\]* ]]; then
+        session=$(echo "$item" | sed "s/^\[TMUX\] //" | sed "s/ \[.*\]$//")
+        branch=$(echo "$item" | grep -oP "\[\K[^\]]+(?=\]$)" || echo "")
+        {
+            echo "🖥️  Session: $session"
+            [[ -n "$branch" ]] && echo "🌿 Branch: $branch"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Windows:"
+            tmux list-windows -t "$session" -F "#I: #W #{?window_active,★, }"
+            echo
+            echo "Panes:"
+            tmux list-panes -t "$session" -F "#I.#P: #{pane_current_command} (#{pane_width}x#{pane_height})"
+        } 2>/dev/null | batcat -l yaml --color=always -p
+    elif [[ "$item" =~ ^(.+)\ \[([^\]]+)\]$ ]]; then
+        dir="${BASH_REMATCH[1]}"
+        dir="${dir/#\~/$HOME}"
+        branch="${BASH_REMATCH[2]}"
+        if [[ -d "$dir" ]]; then
+            {
+                echo "📁 Directory: $dir"
+                echo "🌿 Branch: $branch"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━"
+                echo
+            } | batcat -l yaml --color=always -p
+            eza -1 --icons --color=always --group-directories-first "$dir"
+        fi
+    elif [[ -d "$item" ]]; then
+        expanded="${item/#\~/$HOME}"
+        {
+            echo "📁 Directory: $item"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━"
+            echo
+        } | batcat -l yaml --color=always -p
+        eza -1 --icons --color=always --group-directories-first "$expanded"
+    else
+        echo "Not a directory or tmux session"
+    fi
+'
+
+        find_dirs | fzf \
             --tiebreak=index \
-            --preview '
-                if [[ {} == \[TMUX\]* ]]; then
-                    session=\$(echo {} | sed \"s/^\\\[TMUX\\\] //\" | sed \"s/ \\\[.*\\\]$//\")
-                    branch=\$(echo {} | grep -oP \"\\\[\\K[^\\\]]+(?=\\\]$)\" || echo \"\")
-                    {
-                        echo \"🖥️  Session: \$session\"
-                        [[ -n \"\$branch\" ]] && echo \"🌿 Branch: \$branch\"
-                        echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
-                        echo \"Windows:\"
-                        tmux list-windows -t \"\$session\" -F \"#I: #W #{?window_active,★, }\"
-                        echo
-                        echo \"Panes:\"
-                        tmux list-panes -t \"\$session\" -F \"#I.#P: #{pane_current_command} (#{pane_width}x#{pane_height})\"
-                    } 2>/dev/null | batcat -l yaml --color=always -p
-                elif [[ {} =~ ^(.+)\ \\\[([^\\\]]+)\\\]$ ]]; then
-                    dir=\"\${BASH_REMATCH[1]}\"
-                    branch=\"\${BASH_REMATCH[2]}\"
-                    if [[ -d \"\$dir\" ]]; then
-                        {
-                            echo \"📁 Directory: \$dir\"
-                            echo \"🌿 Branch: \$branch\"
-                            echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
-                            echo
-                        } | batcat -l yaml --color=always -p
-                        eza -1 --icons --color=always --group-directories-first \"\$dir\"
-                    fi
-                elif [[ -d {} ]]; then
-                    {
-                        echo \"📁 Directory: {}\"
-                        echo \"━━━━━━━━━━━━━━━━━━━━━━━\"
-                        echo
-                    } | batcat -l yaml --color=always -p
-                    eza -1 --icons --color=always --group-directories-first {}
-                else
-                    echo \"Not a directory or tmux session\"
-                fi
-            ' \
+            --preview "$fzf_preview_script" \
             --prompt='❯ ' \
             --pointer='➤ ' \
             --marker='✓ ' \
-            --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75 \
+            --color='marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75' \
             --bind 'ctrl-v:toggle-preview' \
             --header '↵:open  ctrl-v:toggle preview' \
-        " fzf >"$_TS_RESULT_FILE"
+            >"$_TS_RESULT_FILE" || true
         return
     fi
 

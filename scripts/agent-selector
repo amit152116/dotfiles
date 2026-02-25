@@ -2,7 +2,7 @@
 set -euo pipefail
 
 #==============================================================================
-# tmux-agent-selector - FZF-based coding agent selector for tmux-sessionizer
+# agent-selector - FZF-based coding agent selector for tmux-sessionizer
 #==============================================================================
 
 # List of available coding agents
@@ -52,4 +52,4 @@ rm -f "$result_file"
 [[ -z "$selected_agent" ]] && exit 0
 
 # Launch the selected agent using tmux-sessionizer
-exec tmux-sessionizer -c "$selected_agent"
+tmux neww tmux-sessionizer -c "$selected_agent"

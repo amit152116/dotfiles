@@ -15,7 +15,18 @@ return {
     specs = {
       {
         "AstroNvim/astrocore",
+        ---@type AstroCoreOpts
         opts = {
+          autocmds = {
+            -- Add a atuocmd when AstroLargeBuf is triggered it should  stop the supermaven for that
+            ai_large_buf = {
+              {
+                event = "User",
+                pattern = "AstroLargeBuf",
+                callback = "<cmd>SupermavenStop<CR>",
+              },
+            },
+          },
           options = {
             g = {
               -- set the ai_accept function
@@ -37,9 +48,14 @@ return {
     cmd = "Copilot",
     build = ":Copilot auth",
     event = "InsertEnter",
+    config = function()
+      require("copilot").setup {
+        copilot_node_command = "/usr/bin/node",
+      }
+    end,
     dependencies = {
       "copilotlsp-nvim/copilot-lsp", -- (optional) for NES functionality
-      init = function() vim.g.copilot_nes_debounce = 500 end,
+      init = function() vim.g.copilot_nes_debounce = 200 end,
     },
     opts = {
       suggestion = {
@@ -58,7 +74,7 @@ return {
       nes = {
         enabled = true,
         keymap = {
-          accept_and_goto = "<leader>p",
+          accept_and_goto = "<Tab>",
           accept = false,
           dismiss = "<Esc>",
         },

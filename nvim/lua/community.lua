@@ -5,8 +5,18 @@
 ---@type LazySpec
 return {
   "AstroNvim/astrocommunity",
-  { import = "astrocommunity.pack.lua" },
+  { import = "astrocommunity.pack.bash" },
   { import = "astrocommunity.pack.cpp" },
+  { import = "astrocommunity.pack.docker" },
+  { import = "astrocommunity.pack.go" },
+  { import = "astrocommunity.pack.markdown" },
+  { import = "astrocommunity.pack.lua" },
+  { import = "astrocommunity.pack.proto" },
+  { import = "astrocommunity.pack.python" },
+  { import = "astrocommunity.pack.sql" },
+  { import = "astrocommunity.pack.toml" },
+  { import = "astrocommunity.pack.yaml" },
+
   { import = "astrocommunity.editing-support.todo-comments-nvim" },
   { import = "astrocommunity.editing-support.bigfile-nvim" },
   -- { import = "astrocommunity.editing-support.wildfire-nvim" },

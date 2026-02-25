@@ -5,6 +5,9 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
     source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+if  command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init zsh)"
+fi
 
 # 0️⃣ Environment exports (PATH, etc.)
 source ~/.zsh/exports.zsh
@@ -19,9 +22,6 @@ source ~/.zsh/fzf.zsh
 source ~/.zsh/completions.zsh
 source ~/.zsh/netclient.zsh
 
-if  command -v zoxide >/dev/null 2>&1; then
-    eval "$(zoxide init zsh)"
-fi
 
 # 4️⃣ Load functions
 source ~/.zsh/functions.zsh
@@ -37,12 +37,6 @@ source ~/.zsh/keybindings.zsh
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-# fnm
-FNM_PATH="/home/amit_152116/.local/share/fnm"
-if [ -d "$FNM_PATH" ]; then
-    export PATH="$FNM_PATH:$PATH"
-    eval "`fnm env`"
-fi
 
 # Source env.sh or .env if present in current directory
 _source_local_env() {

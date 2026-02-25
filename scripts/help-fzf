@@ -3,19 +3,19 @@
 
 # Get man list
 list_man_pages() {
-    man -k . 2>/dev/null | sort -u | awk -F' - ' '{printf "%-50s [man]\n", $1}'
+    man -k . 2>/dev/null | sort -u | awk -F' - ' '{printf "%-39s [man] \n", $1}'
 }
 
 # Get tldr list
 list_tldr() {
-    $HOME/.cargo/bin/tldr --list 2>/dev/null | awk '{printf "%-50s [tldr]\n", $1}'
+    tldr --list 2>/dev/null | awk '{printf "%-39s [tldr]\n", $1}'
 }
 
 # Popup re-invocation: run fzf and write selection to result file
 if [[ -n "${_HF_RESULT_FILE:-}" ]]; then
     {
         list_man_pages
-        # list_tldr
+        list_tldr
     } |
     FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
     --preview "
@@ -29,7 +29,7 @@ if [[ -n "${_HF_RESULT_FILE:-}" ]]; then
                     man \"\$section\" \"\$name\" 2>/dev/null | col -bx | batcat -l man -p --color=always | head -n 40
                 else
                     # tldr preview
-                    tldr \"\$page\" 2>/dev/null | col -bx | batcat -l md -p --color=always
+                    tldr \"\$page\" 2>/dev/null | col -bx | batcat -pf -l md
                 fi
             " \
         --bind "enter:accept" \
@@ -68,5 +68,5 @@ if [[ $type == "[man]" ]]; then
     tmux neww -n "${name}(${section})" "man ${section} ${name} | col -bx | batcat -p -l man --paging=always"
 else
     # tldr page
-    tmux neww -n "${page}" "tldr ${page} | col -bx | batcat -l md --paging=always"
+    tmux neww -n "${page}" "tldr --raw ${page} | glow -"
 fi

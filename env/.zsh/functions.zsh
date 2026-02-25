@@ -164,3 +164,6 @@ conda(){
     conda "$@"
 }
 
+function cd() {
+    __zoxide_z "$@"
+}

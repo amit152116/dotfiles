@@ -1,9 +1,6 @@
 # Paths
 export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$HOME/.fzf/bin:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
 
-# opencode
-export PATH=/home/amit_152116/.opencode/bin:$PATH
-
 export DOTFILES_DIR=$HOME/.dotfiles
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
@@ -16,11 +13,6 @@ fi
 if [[ -d "/usr/local/cuda" ]]; then
     export PATH="/usr/local/cuda/bin:$PATH"
     export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
-fi
-
-# Node.js
-if [[ -d "/usr/local/nodejs/bin" ]]; then
-    export PATH="/usr/local/nodejs/bin:$PATH"
 fi
 
 # GO

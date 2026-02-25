@@ -1,0 +1,252 @@
+#!/usr/bin/env bash
+
+#==============================================================================
+# command-runner - Open tmux popup with fzf to select a directory, then open zsh
+#==============================================================================
+
+VERSION="0.1.0"
+
+#------------------------------------------------------------------------------
+# Logging Function
+#------------------------------------------------------------------------------
+
+log() {
+    case "$PS_LOG" in
+        "echo") echo "$*" ;;
+        "file")
+            local log_file="${PS_LOG_FILE:-$HOME/.local/share/command-runner/command-runner.log}"
+            mkdir -p "$(dirname "$log_file")"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$log_file"
+            ;;
+    esac
+}
+
+#------------------------------------------------------------------------------
+# Help & Version Functions
+#------------------------------------------------------------------------------
+
+show_help() {
+    cat <<EOF
+Usage: command-runner [OPTIONS]
+
+Options:
+  -h, --help             Display this help message
+  -v, --version          Display version information
+  -d, --dir <path>       Start search from specific directory
+  -p, --prompt <text>    Custom fzf prompt
+
+Examples:
+  command-runner                      # Open fzf from default search paths
+  command-runner -d ~/projects        # Start from specific directory
+  command-runner -p "Select:"         # Custom prompt
+EOF
+}
+
+show_version() {
+    echo "command-runner version $VERSION"
+}
+
+#------------------------------------------------------------------------------
+# Global Variables
+#------------------------------------------------------------------------------
+
+user_search_dir="/"
+custom_prompt=""
+
+#------------------------------------------------------------------------------
+# Argument Parsing
+#------------------------------------------------------------------------------
+
+parse_arguments() {
+    while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+            -h | --help)
+                show_help
+                exit 0
+                ;;
+            -v | --version)
+                show_version
+                exit 0
+                ;;
+            -d | --dir)
+                if [[ -z "$2" || "$2" == -* ]]; then
+                    echo "Error: --dir requires a path value" >&2
+                    exit 1
+                fi
+                user_search_dir="$2"
+                shift
+                ;;
+            -p | --prompt)
+                if [[ -z "$2" || "$2" == -* ]]; then
+                    echo "Error: --prompt requires a text value" >&2
+                    exit 1
+                fi
+                custom_prompt="$2"
+                shift
+                ;;
+            --_fzf-only)
+                _PS_FZF_ONLY=1
+                ;;
+            *)
+                echo "Error: Unknown option: $1" >&2
+                show_help >&2
+                exit 1
+                ;;
+        esac
+        shift
+    done
+}
+
+#------------------------------------------------------------------------------
+# Sanity Checks
+#------------------------------------------------------------------------------
+
+sanity_check() {
+    if ! command -v tmux &>/dev/null; then
+        echo "Error: tmux is not installed. Please install it first." >&2
+        exit 1
+    fi
+
+    if ! command -v fzf &>/dev/null; then
+        echo "Error: fzf is not installed. Please install it first." >&2
+        exit 1
+    fi
+}
+
+#------------------------------------------------------------------------------
+# Directory Search Function
+#------------------------------------------------------------------------------
+
+find_dirs() {
+    local search_path="${1:-$HOME}"
+
+    # Expand tilde
+    search_path="${search_path/#\~/$HOME}"
+    [[ -d "$search_path" ]] || search_path="$HOME"
+
+    log "Searching in: $search_path"
+
+    {
+        # 1. Zoxide entries first (sorted by frecency)
+        zoxide query --list --score 2>/dev/null |
+        sort -rn |
+        awk '{print $2}' |
+        grep "^$search_path"
+
+        # 2. Find the rest
+        find "$search_path" -mindepth 1 -maxdepth 5 -type d \
+            -not -path '*/\.*' \
+            -not -path '*/node_modules/*' \
+            -not -path '*/.git/*' \
+            -not -path '*/__pycache__/*' \
+            -not -path '*/venv/*' \
+            -not -path '*/.venv/*' \
+            -not -path '*/env/*' \
+            -not -path '*/.direnv/*' \
+            2>/dev/null
+    } |
+    while IFS= read -r dir; do
+        [[ -d "$dir" ]] || continue
+        printf '%s\n' "$dir"
+    done |
+    awk '!seen[$0]++' |
+    while IFS= read -r dir; do
+        local display_path
+        if [[ "$dir" == "$HOME" ]]; then
+            display_path="$HOME"
+        else
+            display_path="${dir/#$HOME/\~}"
+        fi
+        printf '%s\n' "$display_path"
+    done
+}
+
+#------------------------------------------------------------------------------
+# Main Execution Logic
+#------------------------------------------------------------------------------
+
+main() {
+    sanity_check
+    parse_arguments "$@"
+
+    # Set default search path if not specified
+    local search_path="${user_search_dir:-$HOME}"
+
+    # Popup re-invocation: just run fzf and write result to file
+    if [[ -n "${_PS_FZF_ONLY:-}" ]]; then
+        log "Running fzf in popup mode with search path: $search_path"
+        # Define preview script separately - no escaping needed
+
+        find_dirs "$search_path" | fzf \
+            --height=90% \
+            --layout=reverse \
+            --tiebreak=index \
+            --prompt="${custom_prompt:-> }" \
+            --pointer='>' \
+            --marker='+' \
+            --color='marker:#50fa7b,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75' \
+            --bind 'ctrl-v:toggle-preview' \
+        --bind "alt-f:transform:
+            selected={}
+            expanded=\"\${selected/#\~/$HOME}\"
+            if [[ -d \"\$expanded\" ]]; then
+                echo \"reload(PS_RESULT_FILE='$PS_RESULT_FILE' bash '$0' --_fzf-only -d '\$expanded')+change-prompt(\$selected > )\"
+            fi
+        " \
+        --preview '
+        expanded={}
+        expanded="${expanded/#\~/$HOME}"
+        if [[ -d "$expanded" ]]; then
+            eza -1 --icons --color=always --group-directories-first "$expanded" 2>/dev/null || echo "(empty or unreadable)"
+        else
+            echo "Not a directory"
+        fi
+    ' \
+            --header 'ctrl-v:toggle preview  alt-f:drill into dir' \
+            >"$PS_RESULT_FILE" || true
+        exit 0
+    fi
+
+    # Parent mode: create result file, run popup, read result
+    local result_file
+    result_file=$(mktemp)
+
+    log "Opening tmux popup with result file: $result_file"
+
+    # Run popup that re-invokes this script in fzf-only mode
+    # Added '|| true' inside the command string AND after the tmux command
+    tmux display-popup -E -w 65% -h 70% \
+        "bash -c 'PS_RESULT_FILE=\"${result_file}\" ${0} --_fzf-only -d \"${search_path}\"; exit 0'" || true
+
+    # Read the result
+    local selected
+    selected=$(cat "$result_file" 2>/dev/null)
+    rm -f "$result_file"
+
+    # Handle empty selection
+    if [[ -z "$selected" ]]; then
+        log "No selection made"
+        return 0
+    fi
+
+    # Expand ~ back to $HOME
+    local selected_path="${selected/#\~/$HOME}"
+
+    # Validate it's a directory
+    if [[ ! -d "$selected_path" ]]; then
+        echo "Error: Selected path is not a directory: $selected_path" >&2
+        log "Error: Selected path is not a directory: $selected_path"
+        return 1
+    fi
+
+    # After resolving selected_path
+    log "Selected path: $selected_path"
+    zoxide add "$selected_path" 2>/dev/null || true # update zoxide db
+    tmux display-popup -d "$selected_path"
+    exit 0
+}
+
+#------------------------------------------------------------------------------
+# Entry Point
+#------------------------------------------------------------------------------
+main "$@"

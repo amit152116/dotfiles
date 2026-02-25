@@ -146,7 +146,7 @@ return {
         proto = { "buf_ls" },
         cpp = { "clang_format" },
         go = { "goimports", "gofumpt", "golines" },
-        python = { "ruff", "isort", "black" },
+        python = { "ruff_organize_imports", "ruff_format", "isort", "black" },
         json = { "prettier" }, -- if you install prettier later
         yaml = { "prettier" },
         markdown = { "markdownlint" },

@@ -97,22 +97,6 @@ return {
           silent = true,
         },
 
-        ["<M-o>"] = {
-          "<cmd>:silent !xdg-open .<cr>",
-          desc = "Open File Explorer",
-          silent = true,
-        },
-        ["<M-l>"] = {
-          "<cmd>:silent !tmux switch-client -l<cr>",
-          desc = "Prev Tmux Session",
-          silent = true,
-        },
-        ["<M-w>"] = {
-          "<cmd>:silent !tmux last-window<cr>",
-          desc = "Prev Tmux Window",
-          silent = true,
-        },
-
         ["<Leader>qt"] = {
           "<cmd>tabclose<cr>",
           desc = "Quit Tab",
@@ -168,17 +152,17 @@ return {
         },
 
         -- View/Edit last command
-        ["<Leader>;"] = {
-          function()
-            local last_cmd = vim.fn.histget(":", -1) -- get last Ex command
-            if last_cmd ~= "" then
-              vim.api.nvim_feedkeys(":" .. last_cmd, "n", false)
-            else
-              vim.api.nvim_feedkeys(":", "n", false) -- just open empty cmdline if no history
-            end
-          end,
-          desc = "Last command",
-        },
+        -- ["<Leader>;"] = {
+        --   function()
+        --     local last_cmd = vim.fn.histget(":", -1) -- get last Ex command
+        --     if last_cmd ~= "" then
+        --       vim.api.nvim_feedkeys(":" .. last_cmd, "n", false)
+        --     else
+        --       vim.api.nvim_feedkeys(":", "n", false) -- just open empty cmdline if no history
+        --     end
+        --   end,
+        --   desc = "Last command",
+        -- },
 
         -- mappings seen under group name "Buffer"
         ["<Leader>bd"] = {

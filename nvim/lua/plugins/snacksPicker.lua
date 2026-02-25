@@ -94,6 +94,30 @@ return {
               desc = "Dismiss notifications",
             },
 
+            ["<Leader>;"] = {
+              function()
+                Snacks.picker.command_history {
+                  focus = "list",
+                }
+              end,
+              desc = "Last command",
+            },
+
+            ["<Leader>fA"] = {
+              function() Snacks.picker.autocmds() end,
+              desc = "Find autocmds",
+            },
+
+            ["<leader>fe"] = {
+              function() Snacks.picker.explorer() end,
+              desc = "Find Explorer",
+            },
+
+            ["<leader>ff"] = {
+              function() Snacks.picker.files {} end,
+              desc = "Find Files",
+            },
+
             ["<Leader>fi"] = {
               function() Snacks.picker.icons() end,
               desc = "Find icons",
@@ -104,31 +128,6 @@ return {
               desc = "Find jumps",
             },
 
-            -- ["<Leader>fp"] = {
-            --   function()
-            --     Snacks.picker.projects {
-            --       dev = {
-            --         "~/",
-            --         "~/Documents/",
-            --         "~/Downloads/",
-            --         "~/myDisk/Personal Projects/",
-            --         "~/.config/",
-            --         "~/myDisk/GithubRepositories/",
-            --         "~/go/src/github.com/amit152116/",
-            --         "~/.local/share/",
-            --       },
-            --       patterns = {
-            --         ".git",
-            --         "package.json",
-            --         "go.mod",
-            --         "README.md",
-            --         "README",
-            --         "Makefile",
-            --       },
-            --     }
-            --   end,
-            --   desc = "Find projects",
-            -- },
             ["<Leader>fT"] = {
               function() Snacks.picker.colorschemes() end,
               desc = "Find themes",

@@ -2,6 +2,44 @@ local osys = require "cmake-tools.osys"
 return {
   {
     "Civitasv/cmake-tools.nvim",
+    dependencies = {
+      {
+        "AstroNvim/astrocore",
+        opts = {
+          autocmds = {
+            cmake_command = {
+              {
+                event = "LspAttach",
+                desc = "Load cmake-tools mappings",
+                callback = function(args)
+                  if
+                    assert(vim.lsp.get_client_by_id(args.data.client_id)).name
+                    == "clangd"
+                  then
+                    require("astrocore").set_mappings({
+                      n = {
+                        ["<Leader>le"] = {
+                          "<Cmd>CMakeRunCurrentFile<CR>",
+                          desc = "Run Current File",
+                        },
+                        ["<Leader>lE"] = {
+                          "<Cmd>CMakeQuickRun<CR>",
+                          desc = "Run Executable",
+                        },
+                        ["<Leader>lt"] = {
+                          "<Cmd>CMakeRunTest<CR>",
+                          desc = "Run Tests",
+                        },
+                      },
+                    }, { buffer = args.buf })
+                  end
+                end,
+              },
+            },
+          },
+        },
+      },
+    },
     opts = {
 
       cmake_command = "cmake", -- this is used to specify cmake command path
