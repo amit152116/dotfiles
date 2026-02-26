@@ -185,7 +185,7 @@ find_dirs() {
                 fd_args+=("--exclude" "$folder")
             done
 
-            fd . "$search_path" \
+            fdfind . "$search_path" \
                 --min-depth 1 \
                 --max-depth 5 \
                 --type d \
@@ -306,7 +306,7 @@ main() {
     # After resolving selected_path
     log "Selected path: $selected_path"
     zoxide add "$selected_path" 2>/dev/null || true # update zoxide db
-    tmux display-popup -d "$selected_path"
+    tmux display-popup -d "$selected_path" -E "zsh"
     exit 0
 }
 

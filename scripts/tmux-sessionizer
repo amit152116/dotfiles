@@ -130,26 +130,9 @@ parse_arguments() {
             # Found in array: use offset TS_OFFSET_IDX + array index
             session_idx=$((TS_SESSION_BASE + found_idx))
         else
-            # Not found: use hash-based index (range 50-149)
-            # session_idx=$((TS_HASHED_SESSION_IDX + $(echo -n "$session_cmd" | cksum | cut -d' ' -f1) % TS_HASHED_SESSION_RANGE))
 
-            session_idx=$((TS_HASHED_SESSION_BASE + $(ts_hash "$session_cmd") % TS_HASHED_SESSION_RANGE))
+            session_idx=$((TS_SESSION_START_IDX + $(ts_hash "$session_cmd") % TS_SESSION_RANGE))
         fi
-        # elif [[ -n "$session_idx" ]]; then
-        #     # Using -s flag: validate and resolve from array
-        #     if [[ -z "${TS_SESSION_COMMANDS[*]}" ]]; then
-        #         echo "Error: TS_SESSION_COMMANDS is not set" >&2
-        #         echo "Must have a command set to run when switching to a session" >&2
-        #         exit 1
-        #     fi
-        #
-        #     if [[ -z "$session_idx" ]] || ((session_idx < 0 || session_idx >= ${#TS_SESSION_COMMANDS[@]})); then
-        #         echo "Error: Invalid index. Please provide an index between 0 and $((${#TS_SESSION_COMMANDS[@]} - 1))." >&2
-        #         exit 1
-        #     fi
-        #
-        #     session_cmd="${TS_SESSION_COMMANDS[$session_idx]}"
-        #     session_idx=$((TS_SESSION_BASE + session_idx))
     fi
 
     # Validate split options are only used with session commands
@@ -325,6 +308,7 @@ find_dirs() {
         # IFS=$'\n' readarray -t TS_SEARCH_PATHS < <(printf '%s\n' "${TS_SEARCH_PATHS[@]}" | sort -r)
         # unset IFS
 
+        printf '%s\n' "/"
         for entry in "${TS_SEARCH_PATHS[@]}"; do
             local path="${entry%%:*}"
             local depth="${entry##*:}"

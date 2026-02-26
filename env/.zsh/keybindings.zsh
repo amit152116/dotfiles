@@ -24,28 +24,6 @@ zle -N __open_file_explorer
 bindkey '^o' __open_file_explorer
 
 
-# Man FZF
-if [[ ! -n "$TMUX" ]]; then
-    __man_fzf(){
-        help-fzf
-    }
-
-    zle -N __man_fzf
-    bindkey '\em' __man_fzf
-fi
-
-
-if [[ ! -n "$TMUX" ]]; then
-
-    # Define ZLE widget to exit Zsh
-    __exit_zsh() {
-        exit
-    }
-
-    zle -N __exit_zsh
-    bindkey '\eq' __exit_zsh   # Alt+Q
-
-fi
 
 # Define a ZLE widget
 __silent_run() {
@@ -59,28 +37,36 @@ __silent_run() {
 zle -N __silent_run
 bindkey '^B' __silent_run
 
+# Define ZLE widget to cleanly exit Zsh
+__exit_zsh() {
+    # Clear whatever is currently typed, write "exit", and press Enter
+    zle kill-whole-line
+    BUFFER="exit"
+    zle accept-line
+}
+zle -N __exit_zsh
 
 # TMUX BINDINGS
 if [[ -n "$TMUX" ]]; then
 
     __tmux_kill_pane() {
-        current_pane=$TMUX_PANE
-        panes=$(tmux list-panes -s | wc -l)
+        local current_pane=$TMUX_PANE
+        local panes=$(tmux list-panes -s | wc -l)
 
-        # Only switch if there is more than 1 pane
+        # Only switch if there is exactly 1 pane in the session
         if [ "$panes" -eq 1 ]; then
             if ! tmux switch-client -l 2>/dev/null; then
                 tmux switch-client -p
             fi
         fi
 
-        # Kill the current pane
-        tmux kill-pane -t "$current_pane"
+        # Exit the shell, which will naturally close the pane/popup
+        __exit_zsh
     }
-
     zle -N __tmux_kill_pane
 
-    bindkey '\eq' __tmux_kill_pane
-
+    bindkey '\eq' __tmux_kill_pane   # Alt+Q
+else
+    # Not in tmux, just exit the shell
+    bindkey '\eq' __exit_zsh         # Alt+Q
 fi
-
