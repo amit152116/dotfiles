@@ -1,32 +1,58 @@
 local helper = require "utils.helper"
 local myPicker = require "myPlugins"
 local Snacks = require "snacks"
+_G.Snacks = require "snacks"
+
 return {
   "folke/snacks.nvim",
   lazy = false,
+  ---@type snacks.Config
   opts = {
-    picker = {
-      win = {
-        input = {
-          keys = {
-            ["<a-a>"] = {
-              "sidekick_send",
-              mode = { "n", "i" },
-            },
-            ["<Esc>"] = { "close", mode = { "n", "i" } },
-            -- ["<c-o"] = { "confirm", mode = { "n", "i" } },
-            ["<a-s>"] = { "flash", mode = { "n", "i" } },
-            ["s"] = { "flash" },
-          },
-        },
-        list = {
-          ["<Esc>"] = { "close", mode = { "n", "i" } },
-          ["<a-s>"] = { "flash", mode = { "n", "i" } },
-          ["s"] = "flash",
-          ["<c-u>"] = "preview_scroll_up",
-          ["<c-d>"] = "preview_scroll_down",
+    animate = {},
+
+    dashboard = {
+      preset = {
+        header = table.concat({
+          [[                                                                       ]],
+          [[                                                                     ]],
+          [[       ████ ██████           █████      ██                     ]],
+          [[      ███████████             █████                             ]],
+          [[      █████████ ███████████████████ ███   ███████████   ]],
+          [[     █████████  ███    █████████████ █████ ██████████████   ]],
+          [[    █████████ ██████████ █████████ █████ █████ ████ █████   ]],
+          [[  ███████████ ███    ███ █████████ █████ █████ ████ █████  ]],
+          [[ ██████  █████████████████████ ████ █████ █████ ████ ██████ ]],
+          [[                                                                       ]],
+        }, "\n"),
+      },
+    },
+    scratch = {},
+    indent = {
+      enabled = true,
+      indent = { char = "▏" },
+      scope = { char = "▏" },
+      chunk = {
+        enabled = true,
+        char = {
+          corner_top = "╭",
+          corner_bottom = "╰",
+          horizontal = "─",
+          vertical = "│",
+          arrow = ">",
         },
       },
+      animate = {
+        enabled = true,
+        style = "out",
+      },
+    },
+    explorer = {
+      trash = true,
+      replace_netrw = true,
+    },
+
+    picker = {
+      ui_select = true,
       actions = {
         sidekick_send = function(...)
           return require("sidekick.cli.picker.snacks").send(...)
@@ -51,25 +77,28 @@ return {
           }
         end,
       },
-      layout = {},
-    },
-    dashboard = {
-      preset = {
-        header = table.concat({
-          [[                                                                       ]],
-          [[                                                                     ]],
-          [[       ████ ██████           █████      ██                     ]],
-          [[      ███████████             █████                             ]],
-          [[      █████████ ███████████████████ ███   ███████████   ]],
-          [[     █████████  ███    █████████████ █████ ██████████████   ]],
-          [[    █████████ ██████████ █████████ █████ █████ ████ █████   ]],
-          [[  ███████████ ███    ███ █████████ █████ █████ ████ █████  ]],
-          [[ ██████  █████████████████████ ████ █████ █████ ████ ██████ ]],
-          [[                                                                       ]],
-        }, "\n"),
+      win = {
+        input = {
+          keys = {
+            ["<a-a>"] = {
+              "sidekick_send",
+              mode = { "n", "i" },
+            },
+            ["<Esc>"] = { "close", mode = { "n", "i" } },
+            -- ["<c-o"] = { "confirm", mode = { "n", "i" } },
+            ["<a-s>"] = { "flash", mode = { "n", "i" } },
+            ["s"] = { "flash" },
+          },
+        },
+        list = {
+          ["<Esc>"] = { "close", mode = { "n", "i" } },
+          ["<a-s>"] = { "flash", mode = { "n", "i" } },
+          ["s"] = "flash",
+          ["<c-u>"] = "preview_scroll_up",
+          ["<c-d>"] = "preview_scroll_down",
+        },
       },
     },
-    scratch = {},
   },
   specs = {
     {
@@ -78,6 +107,11 @@ return {
       opts = {
         mappings = {
           n = {
+
+            ["<leader>e"] = {
+              function() Snacks.picker.explorer() end,
+              desc = "Toggle Explorer",
+            },
 
             ["<Leader>."] = {
               function() Snacks.scratch() end,
@@ -138,7 +172,7 @@ return {
                 if not package.loaded["todo-comments"] then -- make sure to load todo-comments
                   require("lazy").load { plugins = { "todo-comments.nvim" } }
                 end
-                Snacks.picker.todo_comments()
+                require("snacks").picker.todo_comments()
               end,
               desc = "Todo Comments",
             },

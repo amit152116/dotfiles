@@ -309,56 +309,72 @@ find_dirs() {
             grep -vFx "[TMUX] $current_session"
     fi
 
-    # 2️⃣ Search configured paths
-    for entry in "${TS_SEARCH_PATHS[@]}"; do
-        local path="${entry%%:*}"
-        local depth="${entry##*:}"
-        [[ "$depth" == "$entry" ]] && depth="${TS_MAX_DEPTH:-1}"
+    # 2️⃣ Prepare fd arguments (Build the exclude list once)
+    # fd is the correct tool here, NOT ripgrep (rg)
+    local fd_args=("--type" "d" "--absolute-path" "--color" "never" "--min-depth" "1" "--hidden")
 
-        [[ -d "$path" ]] || continue
+    # Add TS_IGNORE_PATHS to fd exclusions
+    for ignore in "${TS_IGNORE_PATHS[@]}"; do
+        fd_args+=("--exclude" "$ignore")
+    done
 
-        find "$path" -mindepth 1 -maxdepth "$depth" -type d -print0 | while IFS= read -r -d '' dir; do
+    # 3️⃣ Search configured paths
+    {
+        # 2. Sort the array effectively
+        # We print the array elements (newline separated), sort them, and read them back in
+        # IFS=$'\n' readarray -t TS_SEARCH_PATHS < <(printf '%s\n' "${TS_SEARCH_PATHS[@]}" | sort -r)
+        # unset IFS
 
-            [[ "$(basename "$dir")" == .* ]] && continue
+        for entry in "${TS_SEARCH_PATHS[@]}"; do
+            local path="${entry%%:*}"
+            local depth="${entry##*:}"
+            [[ "$depth" == "$entry" ]] && depth="${TS_MAX_DEPTH:-1}"
 
-            local display_path="${dir/#$HOME/\~}"
+            [[ -d "$path" ]] || continue
 
-            # Fast git detection: avoid spawning git processes where possible
-            if [[ -f "$dir/.git" || -d "$dir/.git" ]]; then
-                # Normal repo (.git is a dir) or worktree (.git is a file pointing elsewhere)
-                [[ -n "${tmux_dirs[$dir]}" ]] && continue
+            fdfind . "$path" --max-depth "$depth" "${fd_args[@]}" -0 | while IFS= read -r -d '' dir; do
 
-                # Resolve actual git dir without calling git
-                local git_dir="$dir/.git"
-                if [[ -f "$git_dir" ]]; then
-                    # .git file: read the gitdir pointer (worktree or submodule)
-                    local gitdir_line
-                    gitdir_line=$(<"$git_dir")
-                    git_dir="${gitdir_line#gitdir: }"
-                    [[ "$git_dir" != /* ]] && git_dir="$dir/$git_dir"
-                fi
+                [[ "$dir" == "/home/" ]] && continue
 
-                # Read HEAD directly — zero git subprocess overhead
-                local branch=""
-                if [[ -f "$git_dir/HEAD" ]]; then
-                    local head_content
-                    head_content=$(<"$git_dir/HEAD")
-                    if [[ "$head_content" == ref:* ]]; then
-                        branch="${head_content#ref: refs/heads/}"
-                    else
-                        branch="${head_content:0:7}"
-                    fi
-                fi
-
-                if [[ -n "$branch" ]]; then
-                    printf '%s [%s]\n' "$display_path" "$branch"
+                local display_path
+                if [[ "$dir" == "$HOME/" ]]; then
+                    display_path="home"
                 else
-                    printf '%s\n' "$display_path"
+                    display_path="${dir/#$HOME/\~}"
                 fi
 
-            elif [[ -f "$dir/HEAD" && -d "$dir/objects" ]]; then
-                # Bare repo: must use git for worktree listing
-                git -C "$dir" worktree list --porcelain | awk '
+                # --- Git Detection Logic (Unchanged & Optimized) ---
+                if [[ -f "$dir/.git" || -d "$dir/.git" ]]; then
+                    [[ -n "${tmux_dirs[$dir]}" ]] && continue
+
+                    local git_dir="$dir/.git"
+                    if [[ -f "$git_dir" ]]; then
+                        local gitdir_line
+                        gitdir_line=$(<"$git_dir")
+                        git_dir="${gitdir_line#gitdir: }"
+                        [[ "$git_dir" != /* ]] && git_dir="$dir/$git_dir"
+                    fi
+
+                    local branch=""
+                    if [[ -f "$git_dir/HEAD" ]]; then
+                        local head_content
+                        head_content=$(<"$git_dir/HEAD")
+                        if [[ "$head_content" == ref:* ]]; then
+                            branch="${head_content#ref: refs/heads/}"
+                        else
+                            branch="${head_content:0:7}"
+                        fi
+                    fi
+
+                    if [[ -n "$branch" ]]; then
+                        printf '%s [%s]\n' "$display_path" "$branch"
+                    else
+                        printf '%s\n' "$display_path"
+                    fi
+
+                elif [[ -f "$dir/HEAD" && -d "$dir/objects" ]]; then
+                    # Bare repo handling
+                    git -C "$dir" worktree list --porcelain | awk '
                     /^worktree / { path = substr($0, 10); next }
                     /^branch / {
                         branch = substr($0, 8)
@@ -366,17 +382,17 @@ find_dirs() {
                         if (path) { printf "%s [%s]\n", path, branch; path = "" }
                     }
                 ' | while IFS= read -r worktree_line; do
-                    local wt_path="${worktree_line%% \[*}"
-                    [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "${worktree_line/#$HOME/\~}"
-                done
+                        local wt_path="${worktree_line%% \[*}"
+                        [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "${worktree_line/#$HOME/\~}"
+                    done
 
-            else
-                # Not a git repository
-                [[ -n "${tmux_dirs[$dir]}" ]] && continue
-                printf '%s\n' "$display_path"
-            fi
+                else
+                    [[ -n "${tmux_dirs[$dir]}" ]] && continue
+                    printf '%s\n' "$display_path"
+                fi
+            done
         done
-    done
+    }
 }
 
 #------------------------------------------------------------------------------
@@ -528,6 +544,7 @@ run_fuzzy_finder() {
 '
 
         find_dirs | fzf \
+            --cycle \
             --tiebreak=index \
             --preview "$fzf_preview_script" \
             --prompt='❯ ' \
@@ -569,7 +586,7 @@ main() {
     parse_arguments "$@"
 
     # Set default search paths if not configured
-    [[ -n "$TS_SEARCH_PATHS" ]] || TS_SEARCH_PATHS=(~/)
+    [[ -n "$TS_SEARCH_PATHS" ]] || TS_SEARCH_PATHS=("$HOME")
 
     # Add extra search paths if configured
     if [[ ${#TS_EXTRA_SEARCH_PATHS[@]} -gt 0 ]]; then

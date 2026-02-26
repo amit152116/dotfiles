@@ -120,40 +120,103 @@ sanity_check() {
 find_dirs() {
     local search_path="${1:-$HOME}"
 
-    # Expand tilde
+    # --- Configuration: Add folders to ignore here ---
+    local ignored_folders=(
+        # --- Your Existing Rules ---
+        "node_modules"
+        ".git"
+        "target"
+        "build"
+        "dist"
+        ".venv"
+        "venv"
+        "env"
+        "__pycache__"
+        ".direnv"
+        ".cache"
+        "root"
+
+        # --- C++ & ROS 2 Workspaces ---
+        "install" # ROS 2 workspace install directories
+        "log"     # ROS 2 workspace log directories
+        ".clangd" # C++ language server cache
+
+        # --- Linux Virtual Filesystems (CRITICAL) ---
+        "proc" # Kernel/process virtual filesystem (will cause hangs)
+        "sys"  # Hardware virtual filesystem
+        "dev"  # Device files
+        "run"  # System runtime data
+
+        # --- Heavy System & OS Directories ---
+        "var" # Contains logs, databases, and heavy Docker layers (/var/lib/docker)
+        "usr" # System binaries, headers, and libraries (massive)
+        "lib" # System libraries
+        "lib32"
+        "lib64"
+        "libx32"
+        "boot"       # Kernel images and bootloader
+        "tmp"        # Temporary files
+        "lost+found" # Filesystem recovery folder
+
+        # --- Package Managers & Mounts ---
+        "snap"    # Snap packages (creates many virtual loop mounts)
+        "flatpak" # Flatpak system files
+        ".var"    # Flatpak user data
+    )
+
+    # Expand tilde (~ -> /home/user)
     search_path="${search_path/#\~/$HOME}"
     [[ -d "$search_path" ]] || search_path="$HOME"
 
-    log "Searching in: $search_path"
-
     {
         # 1. Zoxide entries first (sorted by frecency)
-        zoxide query --list --score 2>/dev/null |
-        sort -rn |
-        awk '{print $2}' |
-        grep "^$search_path"
+        if command -v zoxide >/dev/null 2>&1; then
+            zoxide query --list --score 2>/dev/null |
+            sort -rn |
+            awk '{print $2}' |
+            grep "^$search_path"
+        fi
 
-        # 2. Find the rest
-        find "$search_path" -mindepth 1 -maxdepth 5 -type d \
-            -not -path '*/\.*' \
-            -not -path '*/node_modules/*' \
-            -not -path '*/.git/*' \
-            -not -path '*/__pycache__/*' \
-            -not -path '*/venv/*' \
-            -not -path '*/.venv/*' \
-            -not -path '*/env/*' \
-            -not -path '*/.direnv/*' \
-            2>/dev/null
+        # 2. Use fd if available (Faster), otherwise fallback to find
+        if command -v fd >/dev/null 2>&1; then
+            # Build fd exclude arguments dynamically
+            local fd_args=()
+            for folder in "${ignored_folders[@]}"; do
+                fd_args+=("--exclude" "$folder")
+            done
+
+            fd . "$search_path" \
+                --min-depth 1 \
+                --max-depth 5 \
+                --type d \
+                --absolute-path \
+                --color never \
+                "${fd_args[@]}"
+
+        else
+            # Build find exclude arguments dynamically
+            local find_args=()
+            for folder in "${ignored_folders[@]}"; do
+                find_args+=("-not" "-path" "*/$folder/*")
+            done
+
+            find "$search_path" -mindepth 1 -maxdepth 5 -type d \
+                "${find_args[@]}" \
+                2>/dev/null
+        fi
     } |
+    # Filter for valid directories only
     while IFS= read -r dir; do
         [[ -d "$dir" ]] || continue
         printf '%s\n' "$dir"
     done |
+    # Deduplicate (remove paths found by fd that were already listed by zoxide)
     awk '!seen[$0]++' |
+    # Format output (Absolute path -> Tilde path)
     while IFS= read -r dir; do
         local display_path
         if [[ "$dir" == "$HOME" ]]; then
-            display_path="$HOME"
+            display_path="home"
         else
             display_path="${dir/#$HOME/\~}"
         fi
@@ -178,6 +241,7 @@ main() {
         # Define preview script separately - no escaping needed
 
         find_dirs "$search_path" | fzf \
+            --cycle \
             --height=90% \
             --layout=reverse \
             --tiebreak=index \

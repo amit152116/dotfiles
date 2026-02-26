@@ -15,6 +15,7 @@ export FZF_COMMON_OPTS='
 # FZF Default Options
 export FZF_DEFAULT_OPTS="
 $FZF_COMMON_OPTS
+--cycle
 --height=50%
 --layout=reverse
 --border=rounded
