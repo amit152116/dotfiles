@@ -1,0 +1,293 @@
+#!/bin/bash
+
+# ==========================================
+# Batman-Adv Mesh Configuration Script
+# Compatible with Raspberry Pi and laptops
+# ==========================================
+
+set -euo pipefail
+
+# --- Configuration ---
+MESH_ESSID="swarm-mesh"
+MESH_FREQ="2412"
+MESH_BSSID="02:12:34:56:78:90"
+BAT_IFACE="bat0"
+DEFAULT_MODE="auto"
+
+# --- Root check ---
+[[ "$EUID" -ne 0 ]] && {
+    echo "Error: Run as root (sudo)."
+    exit 1
+}
+
+usage() {
+    cat <<EOF
+Usage: $0 {start|stop|restart|status} [interface] [mode: auto|mesh|ibss] [ip_address/cidr]
+
+Examples:
+  sudo $0 start wlx98038eb48701 auto 10.42.0.1/24
+  sudo $0 start wlan0 mesh 10.42.0.2/24
+  sudo $0 start wlan0 auto 5          # expands to 10.42.0.5/24
+  sudo $0 stop wlan0
+  sudo $0 status
+EOF
+    exit 1
+}
+
+# --- Dependency checks ---
+check_base_deps() {
+    local missing=()
+    for dep in iw ip modprobe; do
+        command -v "$dep" &>/dev/null || missing+=("$dep")
+    done
+    [[ ${#missing[@]} -gt 0 ]] && {
+        echo "Error: Missing tools: ${missing[*]}"
+        exit 1
+    }
+}
+
+install_batctl_if_missing() {
+    command -v batctl &>/dev/null && return 0
+    echo "batctl not found. Installing..."
+    if command -v apt-get &>/dev/null; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y batctl
+    elif command -v dnf &>/dev/null; then
+        dnf install -y batctl
+    elif command -v yum &>/dev/null; then
+        yum install -y batctl
+    elif command -v pacman &>/dev/null; then
+        pacman -Sy --noconfirm batctl
+    elif command -v zypper &>/dev/null; then
+        zypper --non-interactive install batctl
+    else
+        echo "Error: No supported package manager found to install batctl."
+        exit 1
+    fi
+    command -v batctl &>/dev/null || {
+        echo "Error: batctl install failed."
+        exit 1
+    }
+}
+
+# --- Interface helpers ---
+get_iface() {
+    local requested="${1:-}"
+    if [[ -n "$requested" ]]; then
+        ip link show "$requested" &>/dev/null || {
+            echo "Error: Interface '$requested' not found." >&2
+            exit 1
+        }
+        echo "$requested"
+        return
+    fi
+    # Auto-detect: prefer iw, fall back to ip link
+    local detected
+    detected=$(iw dev 2>/dev/null | awk '$1=="Interface"{print $2; exit}')
+    [[ -z "$detected" ]] && detected=$(ip -br link show | awk '/^wl/{print $1; exit}')
+    [[ -z "$detected" ]] && {
+        echo "Error: No wireless interface detected." >&2
+        exit 1
+    }
+    echo "$detected"
+}
+
+get_phy_from_iface() {
+    local wiphy
+    wiphy=$(iw dev "$1" info 2>/dev/null | awk '/wiphy/{print $2; exit}')
+    [[ -z "$wiphy" ]] && return 1
+    echo "phy${wiphy}"
+}
+
+supports_mode() {
+    local iface="$1" mode="$2"
+    local phy phy_info
+    phy=$(get_phy_from_iface "$iface") || return 1
+    phy_info=$(iw phy "$phy" info 2>/dev/null) || return 1
+    case "$mode" in
+        mesh) echo "$phy_info" | grep -q "mesh point" && echo "$phy_info" | grep -q "join_mesh" ;;
+        ibss) echo "$phy_info" | grep -q "IBSS" && echo "$phy_info" | grep -q "join_ibss" ;;
+        *) return 1 ;;
+    esac
+}
+
+choose_mode() {
+    local iface="$1" requested="${2:-$DEFAULT_MODE}"
+    case "$requested" in
+        auto)
+            supports_mode "$iface" mesh && echo "mesh" && return
+            supports_mode "$iface" ibss && echo "ibss" && return
+            echo "Error: '$iface' supports neither mesh point nor IBSS." >&2
+            exit 1
+            ;;
+        mesh)
+            supports_mode "$iface" mesh && echo "mesh" && return
+            echo "Error: '$iface' does not support 802.11s mesh." >&2
+            exit 1
+            ;;
+        ibss)
+            supports_mode "$iface" ibss && echo "ibss" && return
+            echo "Error: '$iface' does not support IBSS." >&2
+            exit 1
+            ;;
+        *)
+            echo "Error: Invalid mode '$requested'. Use auto|mesh|ibss." >&2
+            exit 1
+            ;;
+    esac
+}
+
+set_nm_managed() {
+    command -v nmcli &>/dev/null && nmcli dev set "$1" managed "$2" 2>/dev/null || true
+}
+
+ensure_bat_iface() {
+    ip link show "$BAT_IFACE" &>/dev/null && return
+    ip link add name "$BAT_IFACE" type batadv || {
+        echo "Error: Failed to create $BAT_IFACE."
+        exit 1
+    }
+}
+
+# --- Core actions ---
+start_mesh() {
+    local input_ip="${1:-}" requested_mode="${2:-$DEFAULT_MODE}"
+
+    [[ -z "$input_ip" ]] && {
+        echo "Error: IP address required. Example: sudo $0 start wlan0 auto 10.42.0.5/24"
+        exit 1
+    }
+
+    # Expand short IP notation (e.g. "5" -> "10.42.0.5/24")
+    local mesh_ip
+    [[ "$input_ip" =~ ^[0-9]+$ ]] && mesh_ip="10.42.0.${input_ip}/24" || mesh_ip="$input_ip"
+
+    local mode
+    mode=$(choose_mode "$IFACE" "$requested_mode")
+
+    install_batctl_if_missing
+
+    echo "Starting batman-adv mesh: iface=$IFACE, mode=$mode, ip=$mesh_ip"
+
+    modprobe batman-adv || {
+        echo "Error: Could not load batman-adv kernel module."
+        exit 1
+    }
+    ensure_bat_iface
+    set_nm_managed "$IFACE" "no"
+    sleep 1
+
+    echo "  [1/5] Resetting $IFACE..."
+    ip link set "$IFACE" down
+    ip addr flush dev "$IFACE"
+    ip link set mtu 1500 dev "$IFACE"
+    local bat_mtu=1468
+    echo "  - MTU capped at 1500; setting bat0 MTU to $bat_mtu to prevent fragmentation."
+
+    echo "  [2/5] Configuring wireless mode ($mode)..."
+    if [[ "$mode" == "mesh" ]]; then
+        iw dev "$IFACE" set type mesh
+        ip link set "$IFACE" up
+        iw dev "$IFACE" mesh join "$MESH_ESSID" freq "$MESH_FREQ"
+    else
+        iw dev "$IFACE" set type ibss
+        ip link set "$IFACE" up
+        echo "  - Scanning for existing '$MESH_ESSID'..."
+        local target_bssid
+        target_bssid=$(iw dev "$IFACE" scan ssid "$MESH_ESSID" 2>/dev/null |
+        awk '/^BSS /{gsub(/\(.*/,"",$2); print $2; exit}')
+        if [[ -n "$target_bssid" ]]; then
+            echo "  - Found existing mesh. Joining BSSID: $target_bssid"
+            iw dev "$IFACE" ibss join "$MESH_ESSID" "$MESH_FREQ" "$target_bssid"
+        else
+            echo "  - No existing mesh found. Starting new cell ($MESH_BSSID)..."
+            iw dev "$IFACE" ibss join "$MESH_ESSID" "$MESH_FREQ" "$MESH_BSSID"
+        fi
+    fi
+
+    echo "  [3/5] Adding $IFACE to $BAT_IFACE..."
+    batctl -m "$BAT_IFACE" if add "$IFACE" || {
+        echo "Error: Failed to add $IFACE to $BAT_IFACE."
+        exit 1
+    }
+
+    echo "  [4/5] Bringing up $BAT_IFACE (IP: $mesh_ip, MTU: $bat_mtu)..."
+    ip link set mtu "$bat_mtu" dev "$BAT_IFACE"
+    ip link set up dev "$BAT_IFACE"
+    ip addr add "$mesh_ip" dev "$BAT_IFACE" 2>/dev/null || echo "  - IP already assigned, skipping."
+
+    echo "  [5/5] Done. Mesh active: $IFACE -> $BAT_IFACE ($mesh_ip, $mode)"
+}
+
+stop_mesh() {
+    echo "Stopping mesh (iface=$IFACE)..."
+
+    if ip link show "$BAT_IFACE" &>/dev/null; then
+        echo "  - Flushing and bringing down $BAT_IFACE..."
+        ip addr flush dev "$BAT_IFACE" 2>/dev/null || true
+        ip link set "$BAT_IFACE" down 2>/dev/null || true
+
+        if command -v batctl &>/dev/null; then
+            echo "  - Detaching $IFACE from $BAT_IFACE..."
+            batctl -m "$BAT_IFACE" if del "$IFACE" 2>/dev/null || true
+        fi
+    else
+        echo "  - $BAT_IFACE not active, skipping teardown."
+    fi
+
+    echo "  - Restoring $IFACE to managed mode..."
+    ip link set "$IFACE" down
+    ip link set mtu 1500 dev "$IFACE" 2>/dev/null || true
+    iw dev "$IFACE" set type managed 2>/dev/null || true
+    set_nm_managed "$IFACE" "yes"
+    ip link set "$IFACE" up
+
+    echo "Mesh stopped. $IFACE restored."
+}
+
+status_mesh() {
+    echo "=== Mesh Status ==="
+    if ip link show "$BAT_IFACE" &>/dev/null; then
+        echo "  $BAT_IFACE : ACTIVE"
+        ip -br addr show dev "$BAT_IFACE"
+        if command -v batctl &>/dev/null; then
+            echo "  Originators:"
+            batctl -m "$BAT_IFACE" o
+        else
+            echo "  batctl not installed — cannot show originators."
+        fi
+    else
+        echo "  $BAT_IFACE : NOT active"
+    fi
+
+    echo "  $IFACE mode: $(iw dev "$IFACE" info 2>/dev/null | awk '/type/{print $2}' || echo 'unknown')"
+
+    local iface_type
+    iface_type=$(iw dev "$IFACE" info 2>/dev/null | awk '/type/{print $2}')
+    echo "  Neighbors:"
+    if [[ "$iface_type" == "IBSS" ]]; then
+        iw dev "$IFACE" scan 2>/dev/null | awk '/^BSS |SSID:/' | head -n 20
+    else
+        iw dev "$IFACE" mpath dump 2>/dev/null || echo "  No mesh path data."
+    fi
+}
+
+# --- Argument parsing ---
+# Usage: $0 <command> [interface] [mode] [ip]
+CMD="${1:-}"
+[[ -z "$CMD" ]] && usage
+
+IFACE=$(get_iface "${2:-}")
+
+check_base_deps
+
+case "$CMD" in
+    start) start_mesh "${4:-}" "${3:-$DEFAULT_MODE}" ;;
+    stop) stop_mesh ;;
+    restart)
+        stop_mesh
+        sleep 2
+        start_mesh "${4:-}" "${3:-$DEFAULT_MODE}"
+        ;;
+    status) status_mesh ;;
+    *) usage ;;
+esac
