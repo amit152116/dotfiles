@@ -34,6 +34,7 @@ return {
       disabled = { -- disable formatting capabilities for the listed language servers
         -- disable lua_ls formatting capability if you want to use StyLua to format your lua code
         -- "lua_ls",
+        "lemminx", -- use prettier for XML formatting via conform
       },
       timeout_ms = 3200, -- default format timeout
       -- filter = function(client) -- fully override the default formatting function
@@ -42,7 +43,6 @@ return {
     },
     -- enable servers that you already have installed without mason
     servers = {
-      "lemminx", -- XML Language Server
       -- "pyright",
     },
     -- customize language server configuration options passed to `lspconfig`
@@ -140,6 +140,10 @@ return {
       bashls = {
         filetypes = { "sh", "bash", "zsh" },
       },
+      neocmake = {
+        -- newer versions use a subcommand instead of --stdio flag
+        cmd = { "neocmakelsp", "stdio" },
+      },
     },
     -- customize how language servers are attached
     handlers = {
@@ -188,7 +192,11 @@ return {
         ["<Leader>lR"] = false, -- original references
         ["<Leader>lD"] = false,
         ["<Leader>ld"] = {
-          function() Snacks.picker.diagnostics() end,
+          function()
+            Snacks.picker.diagnostics {
+              focus = "list",
+            }
+          end,
           desc = "Search Diagnostics",
         },
         ["gd"] = {
@@ -218,10 +226,11 @@ return {
           desc = "Workspace Symbols",
         },
         -- Disable original mappings
-        -- ["<Leader>lr"] = {
-        --   function() Snacks.picker.lsp_references() end,
-        --   desc = "Search References",
-        -- },
+        ["grr"] = {
+          function() Snacks.picker.lsp_references() end,
+          desc = "Search References",
+        },
+
         ["<Leader>ln"] = {
           function() vim.lsp.buf.rename() end,
           desc = "Rename symbol",

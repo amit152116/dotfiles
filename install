@@ -102,7 +102,7 @@ install_packages() {
 
     # --- Required packages ---
     PACKAGES=(
-        xclip ripgrep fd-find curl git wget unzip python3-pip btop python3-pygments bat
+        direnv xclip ripgrep fd-find curl git wget unzip python3-pip btop python3-pygments bat
     )
 
     # --- Update system ---

@@ -16,18 +16,6 @@ return {
   dependencies = {
     "nvim-treesitter/nvim-treesitter",
     {
-      "AstroNvim/astrocore",
-      opts = function(_, opts)
-        local maps = opts.mappings
-        maps.n["]d"] =
-          { "<Cmd>Lspsaga diagnostic_jump_next<CR>", desc = "Next diagnostic" }
-        maps.n["[d"] = {
-          "<Cmd>Lspsaga diagnostic_jump_prev<CR>",
-          desc = "Previous diagnostic",
-        }
-      end,
-    },
-    {
       "AstroNvim/astrolsp",
       opts = function(_, opts)
         local maps = opts.mappings
@@ -37,6 +25,12 @@ return {
           cond = "textDocument/hover",
         }
 
+        maps.n["]d"] =
+          { "<Cmd>Lspsaga diagnostic_jump_next<CR>", desc = "Next diagnostic" }
+        maps.n["[d"] = {
+          "<Cmd>Lspsaga diagnostic_jump_prev<CR>",
+          desc = "Previous diagnostic",
+        }
         -- call hierarchy
         maps.n["<Leader>lc"] = {
           "<Cmd>Lspsaga incoming_calls<CR>",

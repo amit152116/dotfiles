@@ -527,17 +527,24 @@ run_fuzzy_finder() {
     fi
 '
 
-        find_dirs | fzf \
-            --cycle \
-            --tiebreak=index \
-            --preview "$fzf_preview_script" \
-            --prompt='❯ ' \
-            --pointer='➤ ' \
-            --marker='✓ ' \
-            --color='marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75' \
-            --bind 'ctrl-v:toggle-preview' \
-            --header '↵:open  ctrl-v:toggle preview' \
-            >"$_TS_RESULT_FILE" || true
+        # 1. Define your specific options in an array
+        local my_fzf_options=(
+            --cycle
+            --tiebreak=index
+            --preview "$fzf_preview_script"
+            --prompt='❯ '
+            --pointer='➤'
+            --bind 'ctrl-v:toggle-preview'
+            --header ' :Open | ctrl-v:Preview'
+            # Theme colors
+            --color='bg:-1, bg+:#202020, fg:#abb2bf, fg+:#98c979' # -1 uses terminal's default transparency
+            --color='hl:#206a75, hl+:#e06c75, prompt:#61afef, pointer:#e1a51c'
+            --color='header:#6ab6bd,info:#c6a642'
+        )
+
+        # 2. Execute fzf, clearing the global default opts for just this command
+        find_dirs | FZF_DEFAULT_OPTS='' fzf "${my_fzf_options[@]}" >"$_TS_RESULT_FILE" || true
+
         return
     fi
 

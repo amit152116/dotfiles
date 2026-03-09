@@ -5,6 +5,11 @@ local null_ls = require "null-ls"
 null_ls.setup {
   sources = {
 
+    -- CMake linter
+    null_ls.builtins.diagnostics.cmake_lint.with {
+      filetypes = { "cmake" },
+    },
+
     -- Dockerfile linter
     null_ls.builtins.diagnostics.hadolint.with {
       filetypes = { "dockerfile" },
@@ -156,7 +161,9 @@ return {
         sql = { "pgformatter", "postgres-language-server" },
         qss = { "prettier" },
         typescript = { "prettier", "ts-standard" },
-        txt = { "cmakelang" },
+        cmake = { "cmake_format" },
+        xml = { "xmlformat" },
+        urdf = { "xmlformat" },
       },
 
       -- 🎯 Custom formatter setup
@@ -167,6 +174,11 @@ return {
         },
         shfmt = {
           command = "shfmt",
+        },
+        xmlformat = {
+          command = "xmlformat",
+          args = { "--indent", "2", "--selfclose", "-" },
+          stdin = true,
         },
       },
     },

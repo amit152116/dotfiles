@@ -148,20 +148,11 @@ find_dirs() {
         "run"  # System runtime data
 
         # --- Heavy System & OS Directories ---
-        "var" # Contains logs, databases, and heavy Docker layers (/var/lib/docker)
-        "usr" # System binaries, headers, and libraries (massive)
         "lib" # System libraries
         "lib32"
         "lib64"
         "libx32"
-        "boot"       # Kernel images and bootloader
-        "tmp"        # Temporary files
         "lost+found" # Filesystem recovery folder
-
-        # --- Package Managers & Mounts ---
-        "snap"    # Snap packages (creates many virtual loop mounts)
-        "flatpak" # Flatpak system files
-        ".var"    # Flatpak user data
     )
 
     # Expand tilde (~ -> /home/user)
@@ -239,35 +230,39 @@ main() {
     if [[ -n "${_PS_FZF_ONLY:-}" ]]; then
         log "Running fzf in popup mode with search path: $search_path"
         # Define preview script separately - no escaping needed
-
-        find_dirs "$search_path" | fzf \
-            --cycle \
-            --height=90% \
-            --layout=reverse \
-            --tiebreak=index \
-            --prompt="${custom_prompt:-> }" \
-            --pointer='>' \
-            --marker='+' \
-            --color='marker:#50fa7b,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75' \
-            --bind 'ctrl-v:toggle-preview' \
-        --bind "alt-f:transform:
-            selected={}
-            expanded=\"\${selected/#\~/$HOME}\"
-            if [[ -d \"\$expanded\" ]]; then
-                echo \"reload(PS_RESULT_FILE='$PS_RESULT_FILE' bash '$0' --_fzf-only -d '\$expanded')+change-prompt(\$selected > )\"
-            fi
-        " \
-        --preview '
+        # 1. Define the options in a variable to keep the main command clean
+        local fzf_cmd_opts=(
+            --cycle
+            --tiebreak=index
+            --prompt="${custom_prompt:-> }"
+            --pointer='>'
+            --marker='+'
+            --header 'ctrl-v:Preview | alt-f:Drill dir'
+            # Theme colors
+            --color='bg:-1, bg+:#262626, fg:#abb2bf, fg+:#98c979' # -1 uses terminal's default transparency
+            --color='hl:#206a75, hl+:#e06c75, prompt:#61afef, pointer:#98d979'
+            --color='header:#6ab6bd,info:#c6a642'
+            --bind 'ctrl-v:toggle-preview'
+            # Use single quotes for the bind body so $HOME and {} aren't expanded early
+            --bind "alt-f:transform:
+        selected={}
+        expanded=\${selected/#\~/$HOME}
+        if [[ -d \"\$expanded\" ]]; then
+            echo \"reload(PS_RESULT_FILE=$PS_RESULT_FILE bash $0 --_fzf-only -d \$expanded)+change-prompt(\$selected > )\"
+        fi"
+            --preview "
         expanded={}
-        expanded="${expanded/#\~/$HOME}"
-        if [[ -d "$expanded" ]]; then
-            eza -1 --icons --color=always --group-directories-first "$expanded" 2>/dev/null || echo "(empty or unreadable)"
+        expanded=\${expanded/#\~/$HOME}
+        if [[ -d \"\$expanded\" ]]; then
+            eza -1 --icons --color=always --group-directories-first \"\$expanded\" 2>/dev/null || echo '(empty)'
         else
-            echo "Not a directory"
-        fi
-    ' \
-            --header 'ctrl-v:toggle preview  alt-f:drill into dir' \
-            >"$PS_RESULT_FILE" || true
+            echo 'Not a directory'
+        fi"
+        )
+
+        # 2. Run fzf while overriding the global default opts with an empty string
+        # and passing your local array
+        find_dirs "$search_path" | FZF_DEFAULT_OPTS='' fzf "${fzf_cmd_opts[@]}" >"$PS_RESULT_FILE" || true
         exit 0
     fi
 

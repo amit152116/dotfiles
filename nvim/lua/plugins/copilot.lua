@@ -19,11 +19,12 @@ return {
         opts = {
           autocmds = {
             -- Add a atuocmd when AstroLargeBuf is triggered it should  stop the supermaven for that
-            ai_large_buf = {
+            large_buf_settings = {
               {
                 event = "User",
+                desc = "Disable certain functionality on very large files",
                 pattern = "AstroLargeBuf",
-                callback = "<cmd>SupermavenStop<CR>",
+                callback = function() vim.cmd "SupermavenStop" end,
               },
             },
           },

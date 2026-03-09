@@ -40,10 +40,15 @@ ros() {
 
 # Function to load ROS environment
 _load_ros() {
+
+    # Logging function
+    log() {
+        echo "[ROS] $1"
+    }
+
     if [[ "$_ros_loaded" == "true" ]]; then
         return 0
     fi
-    echo "Loading ROS environment..."
 
     # ROS settings
     export GZ_VERSION=harmonic
@@ -81,7 +86,7 @@ _load_ros() {
     # ROS2 functions
     rospkg() {
         if [[ $# -lt 2 ]]; then
-            echo "Usage: rospkg <py|cpp> <package_name> [dependencies...]"
+            log "Usage: rospkg <py|cpp> <package_name> [dependencies...]"
             return 1
         fi
 
@@ -93,7 +98,7 @@ _load_ros() {
 
         # Check if src folder exists in the detected workspace
         if [[ ! -d "$ws_root/src" ]]; then
-            echo "Error: Could not find a ROS 2 workspace (src/ folder missing)."
+            log "Error: Could not find a ROS 2 workspace (src/ folder missing)."
             return 1
         fi
 
@@ -113,7 +118,7 @@ _load_ros() {
                 ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only
                 ;;
             *)
-                echo "Invalid language. Use 'py' for Python or 'cpp' for C++."
+                log "Invalid language. Use 'py' for Python or 'cpp' for C++."
                 return 1
                 ;;
         esac
@@ -132,25 +137,29 @@ _load_ros() {
 # Fuzzy search and run a node
 rosrun() {
     package=$(ros2 pkg list | fzf --prompt="Select a package: ")
-    [ -z "$package" ] && echo "No package selected. Exiting..." && return 1
+    [ -z "$package" ] && log "No package selected. Exiting..." && return 1
 
     node=$(ros2 pkg executables "$package" | awk '{print $2}' | fzf --prompt="Select a node: ")
-    [ -z "$node" ] && echo "No node selected. Exiting..." && return 1
+    [ -z "$node" ] && log "No node selected. Exiting..." && return 1
 
-    echo "Running: ros2 run $package $node"
+    log "Running: ros2 run $package $node"
     ros2 run "$package" "$node"
 }
 
 # Auto-load when entering ROS workspace
 chpwd_ros() {
+    local current_dir="$PWD"
     local workspace_dir=""
 
-    # Check if we're in a ROS workspace (current or parent directory)
-    if [[ -f "$(pwd)/install/setup.zsh" ]]; then
-        workspace_dir="$(pwd)"
-    elif [[ -f "$(pwd)/../install/setup.zsh" ]]; then
-        workspace_dir="$(pwd)/.."
-    fi
+    # 1. Traverse upward to find the ROS workspace root
+    while [[ -n "$current_dir" && "$current_dir" != "/" ]]; do
+        if [[ -f "$current_dir/install/setup.zsh" ]]; then
+            workspace_dir="$current_dir"
+            break
+        fi
+        # Strip the last folder from the path (pure Zsh, extremely fast)
+        current_dir="${current_dir%/*}"
+    done
 
     # If we found a ROS workspace
     if [[ -n "$workspace_dir" ]]; then

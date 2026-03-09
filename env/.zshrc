@@ -38,16 +38,4 @@ source ~/.zsh/keybindings.zsh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 
-# Source env.sh or .env if present in current directory
-_source_local_env() {
-    if [[ -f "$PWD/env.sh" ]]; then
-        source "$PWD/env.sh"
-    fi
-    if [[ -f "$PWD/.env" ]]; then
-        source "$PWD/.env"
-    fi
-}
-
-autoload -U add-zsh-hook
-add-zsh-hook chpwd _source_local_env
-_source_local_env
+eval "$(direnv hook zsh)"
