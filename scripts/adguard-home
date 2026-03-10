@@ -1,6 +1,10 @@
 #!/bin/bash
 
-set -e
+# Auto-request sudo if not running as root
+if [ "$EUID" -ne 0 ]; then
+    exec sudo -E "$0" "$@"
+fi
+set -euo pipefail
 
 # --- CONFIG ---
 # Get the directory where this script is located
@@ -11,22 +15,16 @@ ADGUARD_CONFIG="$SCRIPT_DIR/$ADGUARD_FILENAME"
 ADGUARD_DIR="/opt/AdGuardHome"
 DOWNLOAD_URL="https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh"
 
-# Ensure the script is run as root
-if [[ $EUID -ne 0 ]]; then
-	echo "❌ Please run this script as root (use sudo)"
-	exit 1
-fi
-
 # Check if AdGuardHome directory exists
 if [ ! -d "$ADGUARD_DIR" ]; then
-	echo "🔽 Downloading and installing AdGuard Home..."
-	curl -sSL "$DOWNLOAD_URL" | sh -s -- -v
+    echo "🔽 Downloading and installing AdGuard Home..."
+    curl -sSL "$DOWNLOAD_URL" | sh -s -- -v
 fi
 
 echo "🔧 Ensuring dotfiles config exists..."
 if [ ! -f "$ADGUARD_CONFIG" ]; then
-	echo "❌ ERROR: $ADGUARD_CONFIG not found!"
-	exit 1
+    echo "❌ ERROR: $ADGUARD_CONFIG not found!"
+    exit 1
 fi
 
 cp $ADGUARD_CONFIG "$ADGUARD_DIR/$ADGUARD_FILENAME"
