@@ -1,0 +1,640 @@
+#!/bin/bash
+# Internet Connection Sharing Manager
+# Share internet connection between network interfaces
+
+# Auto-request sudo if not running as root
+if [ "$EUID" -ne 0 ]; then
+    exec sudo -E "$0" "$@"
+fi
+
+set -euo pipefail
+
+# --- Configuration ---
+IPTABLES_BACKUP="/tmp/iptables-backup-$(date +%s).rules"
+STATE_FILE="/tmp/inet-share-state"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# --- Logging Functions ---
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_step() {
+    echo -e "${CYAN}[STEP $1/$2]${NC} $3"
+}
+
+# --- Header ---
+print_header() {
+    echo "=========================================="
+    echo " 🌐 Internet Connection Sharing Manager"
+    echo "=========================================="
+}
+
+# --- Dependency Checks ---
+check_dependencies() {
+    local missing=()
+
+    for dep in ip iptables sysctl ping; do
+        command -v "$dep" &>/dev/null || missing+=("$dep")
+    done
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        log_error "Missing required tools: ${missing[*]}"
+        log_info "Install with: sudo apt install iproute2 iptables"
+        exit 1
+    fi
+}
+
+# --- Interface Detection ---
+detect_interfaces() {
+    local interface_type="$1" # "wireless" or "wired"
+    local interfaces=()
+
+    case "$interface_type" in
+        wireless)
+            # Detect wireless interfaces
+            while IFS= read -r iface; do
+                [[ -n "$iface" ]] && interfaces+=("$iface")
+            done < <(ip -o link show | awk -F': ' '$2 ~ /^wl/{print $2}')
+            ;;
+        wired)
+            # Detect wired interfaces
+            while IFS= read -r iface; do
+                [[ -n "$iface" ]] && interfaces+=("$iface")
+            done < <(ip -o link show | awk -F': ' '$2 ~ /^e/{print $2}')
+            ;;
+        all)
+            # Detect all interfaces (excluding loopback)
+            while IFS= read -r iface; do
+                [[ -n "$iface" ]] && [[ "$iface" != "lo" ]] && interfaces+=("$iface")
+            done < <(ip -o link show | awk -F': ' '{print $2}' | grep -v '^lo$')
+            ;;
+    esac
+
+    if [[ ${#interfaces[@]} -eq 0 ]]; then
+        return 1
+    fi
+
+    printf '%s\n' "${interfaces[@]}"
+}
+
+get_interface_info() {
+    local iface="$1"
+
+    # Check if interface exists
+    if ! ip link show "$iface" &>/dev/null; then
+        return 1
+    fi
+
+    # Get interface details
+    local ip_addr=$(ip -4 addr show "$iface" 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n1)
+    local status=$(ip link show "$iface" | grep -oP '(?<=state )\w+')
+    local mac=$(ip link show "$iface" | grep -oP '(?<=link/ether )[0-9a-f:]+')
+
+    echo "IP: ${ip_addr:-N/A} | Status: ${status:-UNKNOWN} | MAC: ${mac:-N/A}"
+}
+
+# --- Connectivity Testing ---
+test_connectivity() {
+    local iface="$1"
+
+    if ping -c 1 -W 2 -I "$iface" 8.8.8.8 &>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# --- State Management ---
+save_sharing_state() {
+    local source="$1"
+    local target="$2"
+
+    cat >"$STATE_FILE" <<EOF
+SOURCE_INTERFACE=$source
+TARGET_INTERFACE=$target
+TIMESTAMP=$(date +%s)
+EOF
+    log_info "Sharing state saved"
+}
+
+load_sharing_state() {
+    if [[ -f "$STATE_FILE" ]]; then
+        source "$STATE_FILE"
+        echo "$SOURCE_INTERFACE $TARGET_INTERFACE"
+        return 0
+    fi
+    return 1
+}
+
+clear_sharing_state() {
+    rm -f "$STATE_FILE"
+}
+
+# --- Internet Sharing Functions ---
+enable_sharing() {
+    local source_iface="$1"
+    local target_iface="$2"
+
+    print_header
+    echo " Mode: Enable Internet Sharing"
+    echo "=========================================="
+    echo ""
+
+    log_info "Source (Internet): $source_iface"
+    log_info "Target (Share to): $target_iface"
+
+    # Get interface details
+    local source_info=$(get_interface_info "$source_iface")
+    local target_info=$(get_interface_info "$target_iface")
+
+    echo "  Source: $source_info"
+    echo "  Target: $target_info"
+    echo ""
+
+    # Validate interfaces
+    if ! ip link show "$source_iface" &>/dev/null; then
+        log_error "Source interface '$source_iface' does not exist"
+        return 1
+    fi
+
+    if ! ip link show "$target_iface" &>/dev/null; then
+        log_error "Target interface '$target_iface' does not exist"
+        return 1
+    fi
+
+    # Check source connectivity
+    log_step 1 4 "Testing source interface connectivity..."
+    if test_connectivity "$source_iface"; then
+        log_success "Source interface has internet connectivity"
+    else
+        log_warning "Source interface may not have internet connectivity"
+        echo -n "Continue anyway? [y/N]: "
+        read -r continue_choice
+        if [[ ! "$continue_choice" =~ ^[Yy]$ ]]; then
+            log_info "Aborted by user"
+            return 1
+        fi
+    fi
+
+    # Check target interface IP
+    local target_ip=$(ip -4 addr show "$target_iface" 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n1)
+
+    if [[ -z "$target_ip" ]]; then
+        log_warning "Target interface has no IP address"
+        echo -n "Assign IP 192.168.100.1/24? [y/N]: "
+        read -r assign_ip
+
+        if [[ "$assign_ip" =~ ^[Yy]$ ]]; then
+            log_info "Assigning IP address to $target_iface..."
+            ip addr add 192.168.100.1/24 dev "$target_iface" 2>/dev/null || true
+            ip link set "$target_iface" up
+            target_ip="192.168.100.1"
+            log_success "IP assigned: $target_ip"
+        else
+            log_error "Target interface needs an IP address"
+            return 1
+        fi
+    fi
+
+    echo ""
+
+    # Backup current iptables rules
+    log_step 2 4 "Backing up current iptables rules..."
+    iptables-save >"$IPTABLES_BACKUP" 2>/dev/null || true
+    log_success "Backup saved to $IPTABLES_BACKUP"
+
+    # Enable IP forwarding
+    log_step 3 4 "Enabling IP forwarding..."
+    if sysctl -w net.ipv4.ip_forward=1 &>/dev/null; then
+        log_success "IP forwarding enabled"
+    else
+        log_error "Failed to enable IP forwarding"
+        return 1
+    fi
+
+    # Set up NAT and forwarding rules
+    log_step 4 4 "Configuring NAT and forwarding rules..."
+
+    # NAT masquerading
+    if iptables -t nat -A POSTROUTING -o "$source_iface" -j MASQUERADE 2>/dev/null; then
+        log_success "NAT masquerading configured"
+    else
+        log_error "Failed to configure NAT masquerading"
+        return 1
+    fi
+
+    # Forward rules
+    iptables -A FORWARD -i "$source_iface" -o "$target_iface" -m state --state RELATED,ESTABLISHED -j ACCEPT 2>/dev/null
+    iptables -A FORWARD -i "$target_iface" -o "$source_iface" -j ACCEPT 2>/dev/null
+    log_success "Forwarding rules configured"
+
+    # Save state
+    save_sharing_state "$source_iface" "$target_iface"
+
+    echo ""
+    echo "=========================================="
+    log_success "Internet sharing enabled!"
+    echo "=========================================="
+    echo ""
+    echo "Configuration for devices on $target_iface:"
+    echo ""
+    echo "  Gateway: $target_ip"
+    echo "  DNS: 8.8.8.8, 8.8.4.4"
+    echo ""
+    echo "Commands for connected devices:"
+    echo "  sudo route add default gw $target_ip"
+    echo "  echo 'nameserver 8.8.8.8' | sudo tee /etc/resolv.conf"
+    echo ""
+    echo "=========================================="
+}
+
+disable_sharing() {
+    local source_iface="${1:-}"
+    local target_iface="${2:-}"
+
+    print_header
+    echo " Mode: Disable Internet Sharing"
+    echo "=========================================="
+    echo ""
+
+    # Try to load from state if not provided
+    if [[ -z "$source_iface" ]] || [[ -z "$target_iface" ]]; then
+        if load_sharing_state &>/dev/null; then
+            source "$STATE_FILE"
+            source_iface="$SOURCE_INTERFACE"
+            target_iface="$TARGET_INTERFACE"
+            log_info "Loaded configuration from previous session"
+        else
+            log_error "No interfaces specified and no saved state found"
+            log_info "Usage: Provide source and target interfaces"
+            return 1
+        fi
+    fi
+
+    log_info "Source interface: $source_iface"
+    log_info "Target interface: $target_iface"
+    echo ""
+
+    # Disable IP forwarding
+    log_step 1 3 "Disabling IP forwarding..."
+    if sysctl -w net.ipv4.ip_forward=0 &>/dev/null; then
+        log_success "IP forwarding disabled"
+    else
+        log_warning "Failed to disable IP forwarding"
+    fi
+
+    # Remove iptables rules
+    log_step 2 3 "Removing iptables rules..."
+
+    local removed=0
+
+    if iptables -t nat -D POSTROUTING -o "$source_iface" -j MASQUERADE 2>/dev/null; then
+        ((removed++))
+    fi
+
+    if iptables -D FORWARD -i "$source_iface" -o "$target_iface" -m state --state RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; then
+        ((removed++))
+    fi
+
+    if iptables -D FORWARD -i "$target_iface" -o "$source_iface" -j ACCEPT 2>/dev/null; then
+        ((removed++))
+    fi
+
+    if [[ "$removed" -gt 0 ]]; then
+        log_success "Removed $removed iptables rules"
+    else
+        log_warning "No matching iptables rules found (may have already been removed)"
+    fi
+
+    # Clear state
+    log_step 3 3 "Cleaning up..."
+    clear_sharing_state
+
+    echo ""
+    echo "=========================================="
+    log_success "Internet sharing disabled"
+    echo "=========================================="
+}
+
+show_status() {
+    print_header
+    echo " Mode: Status"
+    echo "=========================================="
+    echo ""
+
+    # Check if sharing is active
+    if [[ -f "$STATE_FILE" ]]; then
+        source "$STATE_FILE"
+
+        local age=$(($(date +%s) - TIMESTAMP))
+        local age_str=$(printf '%dd %dh %dm' $((age / 86400)) $((age % 86400 / 3600)) $((age % 3600 / 60)))
+
+        echo -e "${CYAN}Internet Sharing:${NC} ${GREEN}ACTIVE${NC}"
+        echo "  Source: $SOURCE_INTERFACE"
+        echo "  Target: $TARGET_INTERFACE"
+        echo "  Running for: $age_str"
+        echo ""
+
+        # Show interface details
+        echo -e "${CYAN}Interface Details:${NC}"
+        echo "  Source: $(get_interface_info "$SOURCE_INTERFACE")"
+        echo "  Target: $(get_interface_info "$TARGET_INTERFACE")"
+        echo ""
+
+        # Check connectivity
+        echo -e "${CYAN}Connectivity:${NC}"
+        if test_connectivity "$SOURCE_INTERFACE"; then
+            echo -e "  Source: ${GREEN}ONLINE${NC}"
+        else
+            echo -e "  Source: ${RED}OFFLINE${NC}"
+        fi
+    else
+        echo -e "${CYAN}Internet Sharing:${NC} ${RED}INACTIVE${NC}"
+        echo ""
+    fi
+
+    # Show IP forwarding status
+    local ip_forward=$(sysctl -n net.ipv4.ip_forward 2>/dev/null || echo "0")
+    echo -e "${CYAN}IP Forwarding:${NC} $([ "$ip_forward" = "1" ] && echo -e "${GREEN}ENABLED${NC}" || echo -e "${RED}DISABLED${NC}")"
+
+    # Show active NAT rules
+    echo ""
+    echo -e "${CYAN}Active NAT Rules:${NC}"
+    local nat_count=$(iptables -t nat -L POSTROUTING -n 2>/dev/null | grep -c MASQUERADE || echo "0")
+    echo "  Masquerading rules: $nat_count"
+
+    # Show forward rules
+    local fwd_count=$(iptables -L FORWARD -n 2>/dev/null | grep -c ACCEPT || echo "0")
+    echo "  Forward rules: $fwd_count"
+
+    echo "=========================================="
+}
+
+# --- Interactive Interface Selection ---
+select_interface() {
+    local prompt="$1"
+    local prefer_type="${2:-all}" # wireless, wired, or all
+
+    echo -e "${CYAN}$prompt${NC}"
+
+    local interfaces
+    mapfile -t interfaces < <(detect_interfaces "$prefer_type")
+
+    if [[ ${#interfaces[@]} -eq 0 ]]; then
+        log_error "No suitable interfaces found"
+        return 1
+    fi
+
+    local i=1
+    for iface in "${interfaces[@]}"; do
+        local info=$(get_interface_info "$iface")
+        echo "  $i) $iface - $info"
+        ((i++))
+    done
+
+    echo ""
+    echo -n "Select interface [1-${#interfaces[@]}]: "
+    read -r choice
+
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le ${#interfaces[@]} ]]; then
+        echo "${interfaces[$((choice - 1))]}"
+        return 0
+    else
+        log_error "Invalid choice"
+        return 1
+    fi
+}
+
+# --- Interactive Menu ---
+show_menu() {
+    print_header
+    echo ""
+    echo "Select operation:"
+    echo "  1) Enable internet sharing"
+    echo "  2) Disable internet sharing"
+    echo "  3) Show status"
+    echo "  4) Quick share (auto-detect)"
+    echo "  5) Exit"
+    echo ""
+}
+
+interactive_enable() {
+    echo ""
+    local source_iface target_iface
+
+    source_iface=$(select_interface "Select SOURCE interface (with internet):") || return 1
+    echo ""
+    target_iface=$(select_interface "Select TARGET interface (to share internet):") || return 1
+    echo ""
+
+    enable_sharing "$source_iface" "$target_iface"
+}
+
+interactive_disable() {
+    echo ""
+
+    if [[ -f "$STATE_FILE" ]]; then
+        source "$STATE_FILE"
+        echo "Current sharing configuration:"
+        echo "  Source: $SOURCE_INTERFACE"
+        echo "  Target: $TARGET_INTERFACE"
+        echo ""
+        echo -n "Disable this configuration? [y/N]: "
+        read -r confirm
+
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            disable_sharing "$SOURCE_INTERFACE" "$TARGET_INTERFACE"
+        else
+            log_info "Cancelled"
+        fi
+    else
+        log_warning "No active sharing configuration found"
+        echo ""
+        echo -n "Manually specify interfaces? [y/N]: "
+        read -r manual
+
+        if [[ "$manual" =~ ^[Yy]$ ]]; then
+            local source_iface target_iface
+            source_iface=$(select_interface "Select SOURCE interface:") || return 1
+            echo ""
+            target_iface=$(select_interface "Select TARGET interface:") || return 1
+            echo ""
+            disable_sharing "$source_iface" "$target_iface"
+        fi
+    fi
+}
+
+quick_share() {
+    echo ""
+    log_info "Auto-detecting interfaces..."
+
+    # Try to find wireless interface with internet
+    local wireless
+    mapfile -t wireless < <(detect_interfaces "wireless")
+
+    local source_iface=""
+    for iface in "${wireless[@]}"; do
+        if test_connectivity "$iface" 2>/dev/null; then
+            source_iface="$iface"
+            break
+        fi
+    done
+
+    if [[ -z "$source_iface" ]]; then
+        log_error "No wireless interface with internet found"
+        return 1
+    fi
+
+    # Find wired interface
+    local wired
+    mapfile -t wired < <(detect_interfaces "wired")
+
+    if [[ ${#wired[@]} -eq 0 ]]; then
+        log_error "No wired interface found to share to"
+        return 1
+    fi
+
+    local target_iface="${wired[0]}"
+
+    log_success "Auto-detected configuration:"
+    echo "  Source: $source_iface (wireless with internet)"
+    echo "  Target: $target_iface (wired)"
+    echo ""
+    echo -n "Proceed with this configuration? [Y/n]: "
+    read -r proceed
+
+    if [[ ! "$proceed" =~ ^[Nn]$ ]]; then
+        enable_sharing "$source_iface" "$target_iface"
+    else
+        log_info "Cancelled"
+    fi
+}
+
+interactive_menu() {
+    while true; do
+        show_menu
+        echo -n "Enter choice [1-5]: "
+        read -r choice
+
+        case $choice in
+            1)
+                interactive_enable
+                break
+                ;;
+            2)
+                interactive_disable
+                break
+                ;;
+            3)
+                echo ""
+                show_status
+                break
+                ;;
+            4)
+                quick_share
+                break
+                ;;
+            5)
+                log_info "Exiting..."
+                exit 0
+                ;;
+            *)
+                log_error "Invalid choice. Please select 1-5."
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+# --- Usage ---
+usage() {
+    cat <<EOF
+Usage: $0 [COMMAND] [OPTIONS]
+
+Commands:
+  enable <source> <target>   Enable internet sharing
+  disable [source] [target]  Disable internet sharing (auto-detects if omitted)
+  status                     Show sharing status
+  quick                      Auto-detect and share (wireless → wired)
+  (no command)               Interactive menu
+
+Options:
+  source    Source interface with internet (e.g., wlan0)
+  target    Target interface to share to (e.g., eth0)
+
+Examples:
+  $0                         # Interactive menu
+  $0 enable wlan0 eth0       # Share from wlan0 to eth0
+  $0 disable                 # Disable using saved state
+  $0 disable wlan0 eth0      # Disable specific configuration
+  $0 status                  # Show current status
+  $0 quick                   # Auto-detect and share
+
+Note: Must be run as root (sudo)
+EOF
+    exit 0
+}
+
+# --- Main ---
+main() {
+    check_dependencies
+
+    local cmd="${1:-}"
+
+    # Interactive mode if no arguments
+    if [[ -z "$cmd" ]]; then
+        interactive_menu
+        return 0
+    fi
+
+    # Command-line mode
+    case "$cmd" in
+        enable)
+            if [[ -z "${2:-}" ]] || [[ -z "${3:-}" ]]; then
+                log_error "Both source and target interfaces required"
+                log_info "Example: $0 enable wlan0 eth0"
+                exit 1
+            fi
+            enable_sharing "$2" "$3"
+            ;;
+        disable)
+            disable_sharing "${2:-}" "${3:-}"
+            ;;
+        status)
+            show_status
+            ;;
+        quick)
+            quick_share
+            ;;
+        -h | --help | help)
+            usage
+            ;;
+        *)
+            log_error "Unknown command: $cmd"
+            usage
+            ;;
+    esac
+}
+
+# Run main
+main "$@"
