@@ -162,6 +162,7 @@ run_env() {
     # Map of source files/dirs to target locations
     declare -A FILES_TO_LINK=(
         ["$DOTFILES_DIR/alacritty"]="$HOME/.config/alacritty"
+        ["$DOTFILES_DIR/yazi"]="$HOME/.config/yazi"
         ["$DOTFILES_DIR/btop"]="$HOME/.config/btop"
         ["$DOTFILES_DIR/nvim"]="$HOME/.config/nvim"
         ["$DOTFILES_DIR/env/.gitconfig"]="$HOME/.gitconfig"

@@ -21,10 +21,10 @@ return {
               end,
               desc = "Flash Line",
             },
-            ["<CR>"] = {
-              function() require("flash").treesitter() end,
-              desc = "Flash Treesitter",
-            },
+            -- ["<CR>"] = {
+            --   function() require("flash").treesitter() end,
+            --   desc = "Flash Treesitter",
+            -- },
           },
           x = {
             ["s"] = {

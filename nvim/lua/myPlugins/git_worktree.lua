@@ -176,6 +176,29 @@ local function get_branches()
   return branches
 end
 
+--- Get list of all tags
+---@return table[]
+local function get_tags()
+  local output, code = git_job { "tag", "-l" }
+  if code ~= 0 then return {} end
+
+  local tags = {}
+  for _, tag_name in ipairs(output) do
+    tag_name = vim.trim(tag_name)
+    if tag_name ~= "" then
+      table.insert(tags, {
+        ref = tag_name,
+        name = tag_name,
+        display_name = tag_name,
+        is_tag = true,
+        has_worktree = false,
+      })
+    end
+  end
+
+  return tags
+end
+
 --- Check git status of a specific worktree path
 ---@param path string
 ---@return boolean has_changes
@@ -199,20 +222,33 @@ local function check_worktree_status(path)
   return false, "Clean"
 end
 
---- Create a new worktree from a branch
+--- Create a new worktree from a branch or tag
 ---@param branch_data table
+---@param new_branch_name string|nil Required when creating from a tag
 ---@return boolean success
 ---@return string message_or_path
-local function create_worktree(branch_data)
+local function create_worktree(branch_data, new_branch_name)
   local git_root = get_bare_repo_path()
   if not git_root then return false, "Not in a git repository" end
 
-  local branch_name = branch_data.branch_name
+  local is_tag = branch_data.is_tag
   local is_remote = branch_data.is_remote
   local full_ref = branch_data.ref
 
-  -- Create directory name (migration/px4 -> migration-px4)
-  local dir_name = branch_name:gsub("/", "-")
+  -- Determine branch name and directory name
+  local branch_name, dir_name
+
+  if is_tag then
+    -- For tags, we must create a new branch
+    if not new_branch_name or new_branch_name == "" then
+      return false, "New branch name required for tag-based worktree"
+    end
+    branch_name = new_branch_name
+    dir_name = new_branch_name:gsub("/", "-")
+  else
+    branch_name = branch_data.branch_name
+    dir_name = branch_name:gsub("/", "-")
+  end
 
   -- Logic for Bare Repo: Place worktree as a sibling to the bare repo
   local worktree_path = git_root .. "/" .. dir_name
@@ -224,8 +260,8 @@ local function create_worktree(branch_data)
   -- Build arguments for Plenary Job
   local args = { "worktree", "add" }
 
-  if is_remote then
-    -- git worktree add -b <branch> <path> <upstream>
+  if is_tag or is_remote then
+    -- git worktree add -b <branch> <path> <ref>
     table.insert(args, "-b")
     table.insert(args, branch_name)
     table.insert(args, worktree_path)
@@ -382,13 +418,42 @@ local function delete_worktree(worktree_path, force)
 end
 
 --- Helper to ensure worktree exists before performing an action
----@param branch table The branch object
+---@param branch table The branch/tag object
 ---@param on_ready function(path) Callback to run with the valid worktree path
 local function ensure_worktree(branch, on_ready)
   if branch.has_worktree then
     on_ready(branch.worktree_path)
   else
-    -- Prompt for creation
+    -- For tags, prompt for new branch name
+    if branch.is_tag then
+      vim.ui.input({
+        prompt = "Create branch from tag [" .. branch.name .. "]: ",
+        default = "hotfix-" .. branch.name,
+      }, function(new_branch_name)
+        if not new_branch_name or new_branch_name == "" then
+          snacks.notify.info(
+            "Worktree creation cancelled",
+            { title = "Git Worktree" }
+          )
+          return
+        end
+
+        -- Attempt creation with new branch name
+        local success, result_path = create_worktree(branch, new_branch_name)
+        if success then
+          snacks.notify.info(
+            "Worktree created: " .. result_path,
+            { title = "Git Worktree" }
+          )
+          on_ready(result_path)
+        else
+          snacks.notify.error(result_path, { title = "Git Worktree" })
+        end
+      end)
+      return
+    end
+
+    -- For branches, just confirm creation
     if
       vim.fn.confirm(
         "Create new worktree for [" .. branch.branch_name .. "]?",
@@ -420,23 +485,35 @@ end
 --- Picker for switching/creating git worktrees
 function M.switch_worktree()
   local branches = get_branches()
+  local tags = get_tags()
 
-  if #branches == 0 then
-    snacks.notify.notify("No git branches found", {
+  if #branches == 0 and #tags == 0 then
+    snacks.notify.notify("No git branches or tags found", {
       title = "Git Worktree",
       level = "warn",
     })
     return
   end
 
-  -- Transform branches into picker items
+  -- Transform branches and tags into picker items
   local items = {}
+
+  -- Add branches
   for _, branch in ipairs(branches) do
     local idx = branch.is_current and 1000 or branch.is_remote and 1 or 100
     table.insert(items, {
       text = branch.display_name,
       score = idx,
       data = branch,
+    })
+  end
+
+  -- Add tags (lower priority than branches)
+  for _, tag in ipairs(tags) do
+    table.insert(items, {
+      text = tag.display_name,
+      score = 0, -- Tags appear after branches
+      data = tag,
     })
   end
 
@@ -447,20 +524,24 @@ function M.switch_worktree()
     format = function(item, _)
       if not item or not item.data then return { { "" } } end
 
-      local branch = item.data
+      local entry = item.data
       local icon = "  "
       local hl = "Normal"
       local prefix = ""
 
-      if branch.is_current then
+      if entry.is_tag then
+        icon = "  "
+        hl = "DiagnosticWarn"
+        prefix = "[tag] "
+      elseif entry.is_current then
         icon = "  "
         hl = "DiagnosticOk"
         prefix = "󱐋 [current] "
-      elseif branch.is_remote then
+      elseif entry.is_remote then
         icon = "  "
         hl = "DiagnosticError"
         prefix = "[remote] "
-      elseif branch.has_worktree then
+      elseif entry.has_worktree then
         icon = "  "
         hl = "DiagnosticInfo"
         prefix = "[worktree] "
@@ -473,7 +554,7 @@ function M.switch_worktree()
       return {
         { icon, hl },
         { prefix, hl },
-        { branch.display_name, hl },
+        { entry.display_name, hl },
       }
     end,
     sort = { fields = { "score:desc" } },
@@ -481,51 +562,74 @@ function M.switch_worktree()
       local item = ctx.item
       if not item or not item.data then return true end
 
-      local branch = item.data
+      local entry = item.data
       local lines = {}
 
       -- Header Section
-      table.insert(lines, "# Branch Details")
-      table.insert(lines, "")
-      table.insert(lines, "  󱓞 **Name**:       " .. branch.branch_name)
-      table.insert(lines, "  󱔗 **Reference**: " .. branch.ref)
+      if entry.is_tag then
+        table.insert(lines, "# Tag Details")
+        table.insert(lines, "")
+        table.insert(lines, "  󰓹 **Name**:       " .. entry.name)
+        table.insert(lines, "  󱔗 **Reference**: " .. entry.ref)
+        table.insert(lines, "  󰓹 **Type**:       󰓹 Tag")
+        table.insert(lines, "")
+        table.insert(lines, "---")
+        table.insert(lines, "")
+        table.insert(lines, "## 󰚰 Create Worktree from Tag")
+        table.insert(
+          lines,
+          "  Select to create a new branch and worktree from this tag."
+        )
+        table.insert(lines, "  You will be prompted for a branch name.")
+        table.insert(lines, "")
+        table.insert(lines, "  > [!TIP]")
+        table.insert(
+          lines,
+          "  > Recommended for hotfixes based on release tags."
+        )
+      else
+        table.insert(lines, "# Branch Details")
+        table.insert(lines, "")
+        table.insert(lines, "  󱓞 **Name**:       " .. entry.branch_name)
+        table.insert(lines, "  󱔗 **Reference**: " .. entry.ref)
 
-      -- Type Badge Logic
-      local b_type = branch.is_remote and "󰓅 Remote" or "󰙅 Local"
-      if branch.is_current then b_type = "󱐋 Current" end
-      table.insert(lines, "  󰓹 **Type**:       " .. b_type)
+        -- Type Badge Logic
+        local b_type = entry.is_remote and "󰓅 Remote" or "󰙅 Local"
+        if entry.is_current then b_type = "󱐋 Current" end
+        table.insert(lines, "  󰓹 **Type**:       " .. b_type)
 
-      if branch.upstream and branch.upstream ~= "" then
-        table.insert(lines, "  󰅟 **Upstream**:  " .. branch.upstream)
-      end
+        if entry.upstream and entry.upstream ~= "" then
+          table.insert(lines, "  󰅟 **Upstream**:  " .. entry.upstream)
+        end
 
-      table.insert(lines, "")
-      table.insert(lines, "---")
-      table.insert(lines, "")
-
-      -- Worktree Status Section
-      if branch.has_worktree then
-        table.insert(lines, "## 󰙅 Worktree Active")
-        table.insert(lines, "  󰝰 **Path**: " .. branch.worktree_path)
+        table.insert(lines, "")
+        table.insert(lines, "---")
         table.insert(lines, "")
 
-        -- Status Check
-        local has_changes, status_msg =
-          check_worktree_status(branch.worktree_path)
-        if has_changes then
-          table.insert(lines, "  > [!CAUTION]")
-          table.insert(lines, "  > 󱈸 **Uncommitted Changes Detected**")
-          table.insert(lines, "  > " .. status_msg)
+        -- Worktree Status Section
+        if entry.has_worktree then
+          table.insert(lines, "## 󰙅 Worktree Active")
+          table.insert(lines, "  󰝰 **Path**: " .. entry.worktree_path)
+          table.insert(lines, "")
+
+          -- Status Check
+          local has_changes, status_msg =
+            check_worktree_status(entry.worktree_path)
+          if has_changes then
+            table.insert(lines, "  > [!CAUTION]")
+            table.insert(lines, "  > 󱈸 **Uncommitted Changes Detected**")
+            table.insert(lines, "  > " .. status_msg)
+          else
+            table.insert(lines, "  > [!NOTE]")
+            table.insert(lines, "  > 󰄬 **Working Directory Clean**")
+          end
         else
-          table.insert(lines, "  > [!NOTE]")
-          table.insert(lines, "  > 󰄬 **Working Directory Clean**")
+          table.insert(lines, "## 󰚰 No Active Worktree")
+          local action_msg = entry.is_remote
+              and "Select to create a new folder from this remote."
+            or "Select to check this out into a new worktree folder."
+          table.insert(lines, "  " .. action_msg)
         end
-      else
-        table.insert(lines, "## 󰚰 No Active Worktree")
-        local action_msg = branch.is_remote
-            and "Select to create a new folder from this remote."
-          or "Select to check this out into a new worktree folder."
-        table.insert(lines, "  " .. action_msg)
       end
 
       -- Render to buffer
@@ -533,32 +637,34 @@ function M.switch_worktree()
       ctx.preview:highlight { ft = "markdown" }
 
       -- Set the title with a nice icon
-      local title_icon = branch.has_worktree and "󰙅 " or "󰓅 "
-      ctx.preview:set_title(title_icon .. branch.display_name)
+      local title_icon = entry.is_tag and "󰓹 "
+        or entry.has_worktree and "󰙅 "
+        or "󰓅 "
+      ctx.preview:set_title(title_icon .. entry.display_name)
 
       return true
     end,
     actions = {
       -- Action: Switch inside Neovim
       switch_nvim = function(self, item)
-        local branch = item.data
+        local entry = item.data
         self:close()
 
         vim.schedule(function()
           ensure_worktree(
-            branch,
-            function(path) switch_to_worktree(path, branch) end
+            entry,
+            function(path) switch_to_worktree(path, entry) end
           )
         end)
       end,
 
       -- Action: Switch Tmux Session
       switch_tmux = function(self, item)
-        local branch = item.data
+        local entry = item.data
         self:close()
 
         vim.schedule(function()
-          ensure_worktree(branch, function(path)
+          ensure_worktree(entry, function(path)
             -- Execute external tmux script safely
             local output = vim.fn.system { "tmux-sessionizer", path }
 
@@ -569,26 +675,38 @@ function M.switch_worktree()
         end)
       end,
 
-      -- Action: Cherry Pick (Unchanged)
+      -- Action: Cherry Pick (Only for branches, not tags)
       cherry_pick = function(self, item)
-        local branch = item.data
+        local entry = item.data
+
+        if entry.is_tag then
+          snacks.notify.warn "Cherry-pick is not supported for tags"
+          return
+        end
+
         self:close()
-        vim.schedule(function() cherry_pick_from_branch(branch.branch_name) end)
+        vim.schedule(function() cherry_pick_from_branch(entry.branch_name) end)
       end,
 
       -- Action: Delete Worktree
       delete_worktree = function(self, item)
         self:close()
-        local branch = item.data
-        if not branch.has_worktree then
+        local entry = item.data
+
+        if entry.is_tag then
+          snacks.notify.warn "Tags cannot have worktrees to delete"
+          return
+        end
+
+        if not entry.has_worktree then
           snacks.notify.warn "Selected item is not a worktree"
           return
         end
 
-        local path = branch.worktree_path
+        local path = entry.worktree_path
         local has_changes, status_msg = check_worktree_status(path)
 
-        local prompt = "Delete worktree for [" .. branch.branch_name .. "]?"
+        local prompt = "Delete worktree for [" .. entry.branch_name .. "]?"
         local force = false
 
         if has_changes then
@@ -604,7 +722,7 @@ function M.switch_worktree()
             self:close()
             local success, err = delete_worktree(path, force)
             if success then
-              snacks.notify.info("Worktree deleted: " .. branch.branch_name)
+              snacks.notify.info("Worktree deleted: " .. entry.branch_name)
             else
               snacks.notify.error("Failed to delete: " .. err)
             end
@@ -684,13 +802,26 @@ M.on(M.Events.SWITCH_POST, function(data)
   if vim.fn.exists ":LspRestart" == 2 then vim.cmd "LspRestart" end
 end)
 
+--- Check if the current repository uses worktrees
+--- (either is a bare repo or is inside a worktree)
+---@return boolean
+local function is_worktree_repo()
+  -- Check if multiple worktrees exist
+  -- Normal repos show 1 worktree (itself), bare repos show 2+ (bare + worktrees)
+  local worktrees = get_worktrees()
+  return #worktrees > 1
+end
+
 --  Setup keymaps (optional - call this in your config)
 function M.setup()
-  vim.keymap.set(
-    "n",
-    "<leader>gw",
-    M.switch_worktree,
-    { desc = "Git Worktree: Switch/Create" }
-  )
+  -- Only register keybinding if we're in a worktree-based repository
+  if is_worktree_repo() then
+    vim.keymap.set(
+      "n",
+      "<leader>gw",
+      M.switch_worktree,
+      { desc = "Git Worktree: Switch/Create" }
+    )
+  end
 end
 return M
