@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Improved tmux shell-or-program detection
+# 
+# Detects whether the current tmux pane is running a shell or a program.
+# This handles the common case where programs (nvim, less, etc.) are launched
+# from within a shell, causing pane_current_command to still report "zsh".
+#
+# Detection Strategy:
+# 1. Check if pane_current_command is a shell (zsh, bash, fish, etc.)
+#    - If NOT a shell → definitely in a program (exit 1)
+# 2. If it IS a shell, check for foreground child processes
+#    - Look for child processes with '+' in STAT column (foreground process group)
+#    - If foreground child exists → in a program (exit 1)
+#    - If no foreground child → in a shell (exit 0)
+#
+# Exit Codes:
+#   0 - In a shell (no foreground program running)
+#   1 - In a program (nvim, less, etc.)
+#
+# Usage in tmux.conf:
+#   bind-key -T root M-y if-shell "tmux-is-shell" \
+#       "send-keys M-y" \
+#       "new-window 'tmux-sessionizer -c yazi'"
+
+set -euo pipefail
+
+# Get current pane info
+PANE_CMD=$(tmux display -p '#{pane_current_command}')
+PANE_PID=$(tmux display -p '#{pane_pid}')
+
+# Shell pattern: common shells and login shells (prefixed with '-')
+SHELL_PATTERN='^(-|)(zsh|bash|sh|fish|dash|ksh|tcsh|csh|su|login)$'
+
+# If pane_current_command is not a shell, we're definitely in a program
+if ! echo "$PANE_CMD" | grep -qE "$SHELL_PATTERN"; then
+    exit 1  # In a program
+fi
+
+# pane_current_command is a shell, but check if there's a foreground child process
+# Look for child processes with '+' in STAT (foreground process group)
+CHILDREN_STATS=$(ps -o stat= --ppid "$PANE_PID" 2>/dev/null || echo "")
+
+# If there are children and any have '+' (foreground), we're in a program
+if [[ -n "$CHILDREN_STATS" ]] && echo "$CHILDREN_STATS" | grep -q '+'; then
+    exit 1  # Shell has foreground child - we're in a program
+fi
+
+# We're in a shell with no foreground program
+exit 0

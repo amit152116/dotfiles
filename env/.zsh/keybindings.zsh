@@ -46,6 +46,19 @@ __exit_zsh() {
 }
 zle -N __exit_zsh
 
+# FZF submodule selector — delegates to scripts/fzf-submodule, then cd's
+__fzf_repo_cd() {
+    local selected
+    selected=$(fzf-submodule)
+    if [[ -n "$selected" ]]; then
+        cd "$selected"
+        zle reset-prompt
+    fi
+}
+zle -N __fzf_repo_cd
+bindkey '^F' __fzf_repo_cd
+
+
 # TMUX BINDINGS
 if [[ -n "$TMUX" ]]; then
 
@@ -66,6 +79,39 @@ if [[ -n "$TMUX" ]]; then
     zle -N __tmux_kill_pane
 
     bindkey '\eq' __tmux_kill_pane   # Alt+Q
+
+
+    # Open lazygit in current directory via tmux-sessionizer
+    __tmux_lazygit(){
+        local current_dir="${PWD}"
+        BUFFER=""
+        zle reset-prompt
+        tmux neww "cd '$current_dir' && tmux-sessionizer -c lazygit -- -w ./" &>/dev/null
+    }
+    zle -N __tmux_lazygit
+
+    bindkey '\eg' __tmux_lazygit   # Alt+G
+
+    # Open yazi in current directory via tmux-sessionizer
+    __tmux_yazi(){
+        local current_dir="${PWD}"
+        BUFFER=""
+        zle reset-prompt
+        tmux neww "cd '$current_dir' && tmux-sessionizer -c yazi" &>/dev/null
+    }
+    zle -N __tmux_yazi
+    bindkey '\ey' __tmux_yazi   # Alt+Y
+
+    # Open glow in current directory via tmux-sessionizer
+    __tmux_glow(){
+        local current_dir="${PWD}"
+        BUFFER=""
+        zle reset-prompt
+        tmux neww "cd '$current_dir' && tmux-sessionizer -c glow" &>/dev/null
+    }
+    zle -N __tmux_glow
+    bindkey '\ed' __tmux_glow   # Alt+D
+
 else
     # Not in tmux, just exit the shell
     bindkey '\eq' __exit_zsh         # Alt+Q

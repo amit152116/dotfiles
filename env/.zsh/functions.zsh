@@ -1,4 +1,3 @@
-
 # C++ DEBUGGING VARIABLES
 enable_sanitizers() {
     export ASAN_OPTIONS="new_delete_type_mismatch=0:detect_leaks=1:strict_init_order=1:check_initialization_order=1:symbolize=1:verbosity=1"
@@ -12,7 +11,7 @@ disable_sanitizers() {
     echo "C++ sanitizers disabled ❌"
 }
 
-idf(){
+idf() {
     # Add esp-idf if installed
     if [[ -d "$HOME/esp-idf" ]]; then
         source $HOME/esp-idf/export.sh
@@ -23,7 +22,7 @@ idf(){
 
 # Configuration reload
 reload() {
-    source  ~/.zshrc
+    source ~/.zshrc
 
     # Reload tmux configuration if available
     if command -v tmux &>/dev/null && [[ -f ~/.tmux.conf ]]; then
@@ -34,7 +33,6 @@ reload() {
         echo "Reloaded ~/.zshrc"
     fi
 }
-
 
 # Function to load tmux resurrect sessions
 tmux-resurrect() {
@@ -60,13 +58,16 @@ tmux-resurrect() {
 # Function to link the latest non-empty tmux session file
 __link_tmux_session() {
     local dir="$HOME/.tmux/resurrect"
-    [[ -d "$dir" ]] || { echo "Resurrect dir not found: $dir"; return 1 }
+    [[ -d "$dir" ]] || {
+        echo "Resurrect dir not found: $dir"
+        return 1
+    }
 
     # Find the latest non-empty resurrect file
     local target
-    target=$(find "$dir" -type f -name 'tmux_resurrect_*.txt' -size +0c -printf "%T@ %p\n" \
-            | sort -nr \
-        | awk 'NR==1 {print $2}')
+    target=$(find "$dir" -type f -name 'tmux_resurrect_*.txt' -size +0c -printf "%T@ %p\n" |
+        sort -nr |
+    awk 'NR==1 {print $2}')
 
     if [[ -z "$target" ]]; then
         echo "No non-empty tmux_resurrect files found."
@@ -139,7 +140,7 @@ env() {
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 
-conda(){
+conda() {
     unset -f conda
     if command -v conda >/dev/null 2>&1; then
         __conda_setup="$("$(command -v conda)" shell.zsh hook 2>/dev/null)"
@@ -164,6 +165,8 @@ conda(){
     conda "$@"
 }
 
-function cd() {
-    __zoxide_z "$@"
-}
+if command -v zoxide >/dev/null 2>&1; then
+    function cd() {
+        __zoxide_z "$@"
+    }
+fi
