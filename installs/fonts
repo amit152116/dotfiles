@@ -37,15 +37,14 @@ while IFS= read -r font || [[ -n "$font" ]]; do
     # Skip empty lines or comments
     [[ -z "$font" || "$font" =~ ^# ]] && continue
 
-    # Check if font is already installed
-    font_pattern="${font// /_}*" # Convert spaces to _ for matching
-    if find "$FONT_DIR" -name "$font_pattern" -o -name "${font}*.ttf" -o -name "${font}*.otf" 2>/dev/null | grep -q .; then
-        log "$font Nerd Font already installed. Skipping..."
+    # Check if font is already installed (case-insensitive substring match)
+    if fc-list | grep -iq "$font"; then
+        log "$font already installed. Skipping..."
         continue
     fi
 
     # Ask per-font installation
-    read -r -p "Install $font Nerd Font? (y/n): " choice
+    read -r -p "Install $font Nerd Font? (y/n): " choice </dev/tty
     [[ "$choice" != "y" && "$choice" != "Y" ]] && {
         log "Skipping $font."
         continue

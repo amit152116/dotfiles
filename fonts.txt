@@ -1,4 +1,12 @@
+AdwaitaMono
 CascadiaCode
+DroidSansMono
 FiraCode
+Go-Mono
+Hack
 JetBrainsMono
+Meslo
+RobotoMono
+SourceCodePro
 UbuntuMono
+VictorMono
