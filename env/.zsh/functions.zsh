@@ -170,3 +170,8 @@ if command -v zoxide >/dev/null 2>&1; then
         __zoxide_z "$@"
     }
 fi
+
+# Add to ~/.zshrc on both machines
+send_to_laptop() {
+    rsync -avzP "$1" amit152116@10.61.49.67:"${2:-~}"
+}

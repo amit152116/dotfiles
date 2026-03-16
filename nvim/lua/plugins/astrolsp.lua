@@ -65,6 +65,7 @@ return {
           "--log=error", -- Only log errors
         },
       },
+      codebook = {},
       ruff = {
         on_attach = function(client)
           client.server_capabilities.hoverProvider = false
@@ -78,16 +79,17 @@ return {
         end,
         settings = {
           basedpyright = {
+            disableOrganizeImports = true,
             analysis = {
               autoimportCompletions = true,
               autoFormatStrings = true,
               autoSearchPaths = true,
               diagnosticMode = "workspace",
               diagnosticSeverityOverrides = {
-                reportUnusedImport = "information",
-                reportUnusedFunction = "information",
-                reportUnusedVariable = "information",
-                reportGeneralTypeIssues = "none",
+                reportUnusedImport = "none",
+                reportUnusedFunction = "none",
+                reportUnusedVariable = "none",
+                reportGeneralTypeIssues = "hint",
                 reportOptionalMemberAccess = "none",
                 reportOptionalSubscript = "none",
                 reportPrivateImportUsage = "none",

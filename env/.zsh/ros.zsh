@@ -1,14 +1,12 @@
-# Check Humble (Ubuntu 22.04)
-if [[ -f "/opt/ros/humble/setup.zsh" ]]; then
-    ROS_DISTRO="humble"
-    # Check Iron (Ubuntu 22.04)
-elif [[ -f "/opt/ros/iron/setup.zsh" ]]; then
-    ROS_DISTRO="iron"
-    # Check Jazzy (Ubuntu 20.04)
-elif [[ -f "/opt/ros/foxy/setup.zsh" ]]; then
-    ROS_DISTRO="jazzy"
-    # User-defined ROS location
-elif [[ -n "$ROS_INSTALL_PATH" && -f "$ROS_INSTALL_PATH/setup.zsh" ]]; then
+# Auto-detect ROS distribution from /opt/ros/*/setup.zsh
+for ros_setup in /opt/ros/*/setup.zsh; do
+    if [[ -f "$ros_setup" ]]; then
+        ROS_DISTRO=$(basename "$(dirname "$ros_setup")")
+        break
+    fi
+done
+# Fallback to ROS_INSTALL_PATH if set
+if [[ -z "$ROS_DISTRO" && -n "$ROS_INSTALL_PATH" && -f "$ROS_INSTALL_PATH/setup.zsh" ]]; then
     ROS_DISTRO=$(basename "$ROS_INSTALL_PATH")
 fi
 
@@ -60,9 +58,6 @@ _load_ros() {
     export RCL_LOG_COLORIZE=1
     # export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}] [({file_name}:{line_number})]: {message}"
     export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message}"
-
-    # Check for ROS2 installations in common locations
-    local ROS_WS="$HOME/Documents/aim_ros2/"
 
     # Source completion scripts if they exist
     if [[ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.zsh ]]; then

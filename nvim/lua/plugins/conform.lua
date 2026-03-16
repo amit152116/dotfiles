@@ -137,7 +137,7 @@ return {
       -- Format on save
       format_on_save = function(bufnr)
         if vim.F.if_nil(vim.b[bufnr].autoformat, vim.g.autoformat, true) then
-          return { timeout_ms = 500, lsp_format = "fallback" }
+          return { timeout_ms = 2500, lsp_format = "fallback" }
         end
       end,
 
@@ -147,21 +147,22 @@ return {
         sh = { "shfmt", "beautysh" },
         bash = { "shfmt", "beautysh" },
         zsh = { "shfmt", "beautysh" },
-        c = { "clang_format" },
-        proto = { "buf_ls" },
-        cpp = { "clang_format" },
+        c = { "clang-format" },
+        proto = { "buf" },
+        cpp = { "clang-format" },
         go = { "goimports", "gofumpt", "golines" },
-        python = { "ruff_organize_imports", "ruff_format", "isort", "black" },
-        json = { "prettier" }, -- if you install prettier later
+        python = { "ruff_fix", "ruff_format", "ruff_organize_imports" },
+        json = { "prettier" },
         yaml = { "prettier" },
-        markdown = { "markdownlint" },
+        markdown = { "prettier" },
         toml = { "taplo" },
         java = { "google-java-format" },
         kotlin = { "ktlint" },
-        sql = { "pgformatter", "postgres-language-server" },
+        sql = { "sql-formatter" },
         qss = { "prettier" },
-        typescript = { "prettier", "ts-standard" },
+        typescript = { "prettier" },
         cmake = { "cmake_format" },
+        make = { "mbake" },
         xml = { "xmlformat" },
         urdf = { "xmlformat" },
       },
@@ -172,12 +173,24 @@ return {
           command = "clang-format",
           args = { "--style=file" },
         },
+
+        mbake = {
+          inherit = false,
+          command = "mbake",
+          args = { "format", "$FILENAME" },
+          stdin = false,
+        },
         shfmt = {
           command = "shfmt",
         },
-        xmlformat = {
-          command = "xmlformat",
-          args = { "--indent", "2", "--selfclose", "-" },
+        ["sql-formatter"] = {
+          command = "sql-formatter",
+          args = { "-" },
+          stdin = true,
+        },
+        xmlformatter = {
+          command = "xmlformatter",
+          args = { "-" },
           stdin = true,
         },
       },

@@ -530,25 +530,25 @@ function M.switch_worktree()
       local prefix = ""
 
       if entry.is_tag then
-        icon = "  "
+        icon = " "
         hl = "DiagnosticWarn"
-        prefix = "[tag] "
+        prefix = ""
       elseif entry.is_current then
-        icon = "  "
+        icon = "󱐋 "
         hl = "DiagnosticOk"
-        prefix = "󱐋 [current] "
+        prefix = "[current] "
       elseif entry.is_remote then
-        icon = "  "
+        icon = "  "
         hl = "DiagnosticError"
-        prefix = "[remote] "
+        prefix = ""
       elseif entry.has_worktree then
-        icon = "  "
+        icon = " "
         hl = "DiagnosticInfo"
-        prefix = "[worktree] "
+        prefix = ""
       else
-        icon = "  "
+        icon = " "
         hl = "Normal"
-        prefix = "[local] "
+        prefix = ""
       end
 
       return {
