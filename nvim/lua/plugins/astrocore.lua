@@ -203,6 +203,85 @@ return {
         },
         ["[c"] = { "%" },
 
+        -- Remote Sync mappings
+        ["<Leader>s"] = { desc = "󰒮 Remote Sync" },
+        ["<Leader>ss"] = {
+          function() require("remote_sync").send() end,
+          desc = "Send file to remote",
+        },
+        ["<Leader>sr"] = {
+          function() require("remote_sync").receive() end,
+          desc = "Receive file from remote",
+        },
+        ["<Leader>sd"] = {
+          function() require("remote_sync").diff() end,
+          desc = "Diff with remote",
+        },
+        ["<Leader>sD"] = {
+          function() require("remote_sync").sync_dir "send" end,
+          desc = "Sync directory to remote",
+        },
+        ["<Leader>sc"] = {
+          "<cmd>RemoteSyncConfigure<cr>",
+          desc = "Configure remote",
+        },
+        ["<Leader>se"] = {
+          function()
+            local project = require "remote_sync.project"
+            if project.config_exists() then
+              vim.cmd("edit " .. project.get_config_path())
+            else
+              vim.notify(
+                "No config file. Run :RemoteSyncConfigure first",
+                vim.log.levels.WARN
+              )
+            end
+          end,
+          desc = "Edit remote config",
+        },
+        ["<Leader>si"] = {
+          "<cmd>RemoteSyncStatus<cr>",
+          desc = "Show sync status",
+        },
+        ["<Leader>sR"] = {
+          function() require("remote_sync").sync_dir "receive" end,
+          desc = "Sync directory from remote",
+        },
+        ["<Leader>sx"] = {
+          "<cmd>RemoteSyncCancel<cr>",
+          desc = "Cancel sync",
+        },
+        ["<Leader>st"] = {
+          "<cmd>RemoteSyncTestConnection<cr>",
+          desc = "Test SSH connection",
+        },
+        ["<Leader>sS"] = {
+          "<cmd>RemoteSyncSetupSSH<cr>",
+          desc = "SSH setup wizard",
+        },
+        ["<Leader>so"] = {
+          "<cmd>RemoteSyncOnSave<cr>",
+          desc = "Toggle sync on save",
+        },
+        ["<Leader>sl"] = {
+          function()
+            local log_path = require("remote_sync.logger").get_log_path()
+            if vim.fn.filereadable(log_path) == 1 then
+              vim.cmd("edit " .. log_path)
+            else
+              vim.notify(
+                "No log file found. Enable log_sync_ops in setup().",
+                vim.log.levels.WARN
+              )
+            end
+          end,
+          desc = "Open sync log",
+        },
+        ["<Leader>sC"] = {
+          "<cmd>RemoteSyncConfig reload<cr>",
+          desc = "Reload project config",
+        },
+
         ["<Leader>uD"] = {
           function() require("astrocore.toggles").diagnostics() end,
           desc = "Toggle diagnostics",
