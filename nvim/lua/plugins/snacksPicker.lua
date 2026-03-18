@@ -237,11 +237,6 @@ return {
               desc = "Toggle Scratch Buffer",
             },
 
-            ["<Leader>s"] = {
-              function() Snacks.scratch.select() end,
-              desc = "Select Scratch Buffer",
-            },
-
             ["<Leader>ud"] = {
               function() Snacks.notifier.hide() end,
               desc = "Dismiss notifications",

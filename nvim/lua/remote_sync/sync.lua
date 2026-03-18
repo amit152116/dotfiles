@@ -127,11 +127,6 @@ local function build_rsync_opts(proj_config, project_root, direction)
       table.insert(opts, "--backup-dir=" .. escaped_backup_dir)
     end
     table.insert(opts, "--suffix=.bak")
-  else
-    -- On send the destination is remote; --backup-dir would need to be a remote
-    -- path, so just use a fixed suffix and let rsync place the backup next to
-    -- the original file on the remote.
-    table.insert(opts, "--suffix=.bak")
   end
 
   return table.concat(opts, " ")
@@ -513,7 +508,6 @@ function M.receive_file(callback)
           if callback then callback(success) end
         end)
       else
-        utils.info "Receive cancelled"
         if callback then callback(false) end
       end
     end)
@@ -525,16 +519,58 @@ function M.receive_file(callback)
   end
 end
 
+-- Extract diff view logic to separate function
+local function show_diff_view(local_path, remote_path, remote_content, callback)
+  -- Create remote buffer
+  local temp_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(
+    temp_buf,
+    0,
+    -1,
+    false,
+    vim.split(remote_content, "\n")
+  )
+  vim.api.nvim_buf_set_name(temp_buf, "remote://" .. remote_path)
+
+  -- Set filetype
+  local ft = vim.filetype.match { filename = local_path }
+  if ft then
+    vim.api.nvim_set_option_value("filetype", ft, { buf = temp_buf })
+  end
+
+  -- Open split diff
+  local local_win = vim.api.nvim_get_current_win()
+  vim.cmd "vsplit"
+  local remote_win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(0, temp_buf)
+  vim.cmd "diffthis"
+  vim.api.nvim_set_current_win(local_win)
+  vim.cmd "diffthis"
+  vim.api.nvim_set_current_win(remote_win)
+
+  utils.info "Showing diff. Close this window (:q) to continue."
+
+  -- Prompt on close
+  vim.api.nvim_create_autocmd("BufWinLeave", {
+    buffer = temp_buf,
+    once = true,
+    callback = function()
+      vim.schedule(function()
+        utils.cleanup_diff_mode(local_win)
+        utils.prompt_receive(callback)
+      end)
+    end,
+  })
+end
+
 --- Show diff between local and remote file
 ---@param callback fun(confirmed: boolean)|nil Called after user decision
 function M.show_diff(callback)
   local proj_config, local_path = require_config_and_file(callback)
   if not proj_config then return end
 
-  -- Build address list
   local addresses = build_address_list(proj_config)
 
-  -- Try to get remote file content
   local function try_get_remote(index)
     if index > #addresses then
       utils.error "Could not fetch remote file from any address"
@@ -551,75 +587,26 @@ function M.show_diff(callback)
 
     local host, remote_file = utils.parse_remote_path(remote_path)
 
-    ssh.get_remote_file(
+    -- Fetch remote content and check if files differ
+    ssh.get_remote_file_with_comparison(
       host,
       remote_file,
+      local_path,
       proj_config.ssh_key,
-      function(content)
-        if content then
-          -- Create temp buffer with remote content
-          local temp_buf = vim.api.nvim_create_buf(false, true)
-          vim.api.nvim_buf_set_lines(
-            temp_buf,
-            0,
-            -1,
-            false,
-            vim.split(content, "\n")
-          )
-          vim.api.nvim_buf_set_name(temp_buf, "remote://" .. remote_path)
-
-          -- Set filetype for syntax highlighting
-          local ft = vim.filetype.match { filename = local_path }
-          if ft then
-            vim.api.nvim_set_option_value("filetype", ft, { buf = temp_buf })
-          end
-
-          -- Open diff view
-          local local_win = vim.api.nvim_get_current_win()
-          vim.cmd "vsplit"
-          local remote_win = vim.api.nvim_get_current_win()
-          vim.api.nvim_win_set_buf(0, temp_buf)
-          vim.cmd "diffthis"
-          vim.api.nvim_set_current_win(local_win)
-          vim.cmd "diffthis"
-          -- Leave cursor in the remote window. The BufWinLeave autocmd on
-          -- temp_buf only fires when that window is closed. If the cursor
-          -- were left in the local window and the user pressed :q, they
-          -- would close the local window instead and the autocmd would
-          -- never fire, so the receive prompt would never appear.
-          vim.api.nvim_set_current_win(remote_win)
-
-          utils.info "Showing diff. Close this window (:q) to continue."
-
-          -- Set up autocmd to handle closing
-          vim.api.nvim_create_autocmd("BufWinLeave", {
-            buffer = temp_buf,
-            once = true,
-            callback = function()
-              -- Clean up diff mode in the local window
-              vim.schedule(function()
-                if vim.api.nvim_win_is_valid(local_win) then
-                  vim.api.nvim_set_current_win(local_win)
-                  vim.cmd "diffoff"
-                end
-
-                -- Ask user
-                vim.ui.select(
-                  { "Yes, receive remote version", "No, keep local version" },
-                  { prompt = "Receive file from remote?" },
-                  function(choice)
-                    if callback then
-                      callback(choice and choice:match "^Yes")
-                    end
-                  end
-                )
-              end)
-            end,
-          })
-        else
-          -- Try next address
+      function(content, is_same)
+        if not content then
           try_get_remote(index + 1)
+          return
         end
+
+        if is_same then
+          utils.info "File is up to date with remote"
+          if callback then callback(false) end
+          return
+        end
+
+        -- Files differ: show diff and prompt
+        show_diff_view(local_path, remote_path, content, callback)
       end
     )
   end
@@ -671,7 +658,7 @@ function M.sync_directory(direction, callback)
   state.current = direction == "send" and M.State.SYNCING_UP
     or M.State.SYNCING_DOWN
 
-  utils.info(
+  utils.debug(
     string.format(
       "%s directory %s %s...",
       direction == "send" and "Sending" or "Receiving",

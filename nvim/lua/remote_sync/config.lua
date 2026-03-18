@@ -19,6 +19,7 @@ local M = {}
 ---@field backup_dir string|nil Directory to store local backup files created during receive (default: stdpath("data")/remote_sync_backups)
 ---@field log_sync_ops boolean|nil Write sync events to a log file (stdpath("data")/remote_sync.log)
 ---@field log_level "DEBUG"|"INFO"|"WARN"|"ERROR" Minimum level to write: "DEBUG"|"INFO"|"WARN"|"ERROR" (default "INFO")
+---@field diff_size_threshold number|nil File size in bytes above which chunked (1 MB) comparison is used instead of full in-memory compare (default: 5 MB)
 ---@field on_sync_start fun(direction: string, file: string)|nil Callback when sync starts
 ---@field on_sync_complete fun(direction: string, file: string, success: boolean)|nil Callback when sync completes
 
@@ -45,6 +46,12 @@ local defaults = {
   -- Timeout settings
   rsync_io_timeout = 30, -- Kill rsync if no data flows for 30s (handles mid-transfer hangs)
   rsync_timeout = 300, -- Hard ceiling: kill rsync after 5 minutes regardless
+
+  -- Diff comparison settings
+  -- Files at or below this size use a fast full-string comparison.
+  -- Files above this threshold are compared in ~1 MB chunks to avoid
+  -- loading the entire file into memory simultaneously.
+  diff_size_threshold = 5 * 1024 * 1024, -- 5 MB
 
   -- Backup settings
   -- Local directory where backup copies of overwritten files are stored during receive.

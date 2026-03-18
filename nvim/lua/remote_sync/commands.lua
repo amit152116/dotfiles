@@ -22,7 +22,7 @@ local function validate_address_format(address)
   if address:match "^[^@]+@" then return true, nil end
 
   -- Check if it's a configured SSH host (has User in ~/.ssh/config)
-  local config_user = ssh.get_config_user(address)
+  local config_user = ssh.get_config_host(address)
   if config_user then return true, nil end
 
   -- Looks like bare hostname/IP without user
@@ -40,88 +40,92 @@ end
 local function prompt_for_addresses(callback)
   local history = project.get_hostname_history()
 
-  -- Build prompt message
-  local prompt = "Remote address (user@host or IP)"
+  -- Show history as a notification before the input dialog so that
+  -- vim.ui.input receives a plain single-line prompt (noice.nvim renders
+  -- \n as ^@ control characters inside the input widget).
   if #history > 0 then
-    prompt = prompt .. "\nHistory: " .. table.concat(history, ", ")
+    utils.info("Recent addresses: " .. table.concat(history, ", "))
   end
 
   -- First address
-  vim.ui.input({ prompt = prompt .. "\nPrimary address: " }, function(addr1)
-    if not addr1 or addr1 == "" then
-      callback(nil)
-      return
-    end
-
-    addr1 = vim.trim(addr1)
-
-    -- Validate address format
-    local valid, warning = validate_address_format(addr1)
-    if not valid then
-      utils.warn(warning)
-      callback(nil)
-      return
-    end
-
-    -- Validate SSH connection
-    utils.info("Testing SSH connection to " .. addr1 .. "...")
-
-    ssh.validate_connection(addr1, nil, function(success, message)
-      if not success then
-        utils.error(message)
+  vim.ui.input(
+    { prompt = "Primary address (Host OR user@host/IP): " },
+    function(addr1)
+      if not addr1 or addr1 == "" then
         callback(nil)
         return
       end
 
-      utils.info("Connected to " .. addr1)
+      addr1 = vim.trim(addr1)
 
-      -- Ask for additional addresses
-      vim.ui.input({
-        prompt = "Additional fallback addresses (user@host, comma-separated, or empty): ",
-      }, function(additional)
-        local addresses = { addr1 }
+      -- Validate address format
+      local valid, warning = validate_address_format(addr1)
+      if not valid then
+        utils.warn(warning)
+        callback(nil)
+        return
+      end
 
-        if additional and additional ~= "" then
-          for addr in additional:gmatch "[^,]+" do
-            addr = vim.trim(addr)
-            if addr ~= "" and addr ~= addr1 then
-              -- Validate format for additional addresses
-              local addr_valid, addr_warning = validate_address_format(addr)
-              if not addr_valid then
-                utils.warn(addr_warning)
-              else
-                table.insert(addresses, addr)
-              end
-            end
-          end
+      -- Validate SSH connection
+      utils.info("Testing SSH connection to " .. addr1 .. "...")
 
-          -- Validate additional addresses (SSH connection test)
-          if #addresses > 1 then
-            local remaining = #addresses - 1
-            local validated = 1
-
-            for i = 2, #addresses do
-              ssh.validate_connection(addresses[i], nil, function(ok, _)
-                validated = validated + 1
-                if not ok then
-                  utils.warn(
-                    "Could not connect to "
-                      .. addresses[i]
-                      .. " (will keep as fallback)"
-                  )
-                end
-
-                if validated > remaining then callback(addresses) end
-              end)
-            end
-            return
-          end
+      ssh.validate_connection(addr1, nil, function(success, message)
+        if not success then
+          utils.error(message)
+          callback(nil)
+          return
         end
 
-        callback(addresses)
+        utils.info("Connected to " .. addr1)
+
+        -- Ask for additional addresses
+        vim.ui.input({
+          prompt = "Additional fallback addresses (user@host, comma-separated, or empty): ",
+        }, function(additional)
+          local addresses = { addr1 }
+
+          if additional and additional ~= "" then
+            for addr in additional:gmatch "[^,]+" do
+              addr = vim.trim(addr)
+              if addr ~= "" and addr ~= addr1 then
+                -- Validate format for additional addresses
+                local addr_valid, addr_warning = validate_address_format(addr)
+                if not addr_valid then
+                  utils.warn(addr_warning)
+                else
+                  table.insert(addresses, addr)
+                end
+              end
+            end
+
+            -- Validate additional addresses (SSH connection test)
+            if #addresses > 1 then
+              local remaining = #addresses - 1
+              local validated = 1
+
+              for i = 2, #addresses do
+                ssh.validate_connection(addresses[i], nil, function(ok, _)
+                  validated = validated + 1
+                  if not ok then
+                    utils.warn(
+                      "Could not connect to "
+                        .. addresses[i]
+                        .. " (will keep as fallback)"
+                    )
+                  end
+
+                  if validated > remaining then callback(addresses) end
+                end)
+              end
+              return
+            end
+          end
+
+          callback(addresses)
+        end)
       end)
-    end)
-  end)
+    end
+  )
 end
 
 --- Prompt user to configure remote sync
@@ -320,13 +324,6 @@ function M.setup_commands()
     utils.info(status)
   end, { desc = "Show remote sync status" })
 
-  -- SSH Setup wizard
-  vim.api.nvim_create_user_command(
-    "RemoteSyncSetupSSH",
-    function() M.setup_ssh_wizard() end,
-    { desc = "SSH setup wizard for remote sync" }
-  )
-
   -- Test connection command
   vim.api.nvim_create_user_command("RemoteSyncTestConnection", function(opts)
     local hostname = opts.fargs[1]
@@ -378,139 +375,6 @@ function M.test_connection(hostname, ssh_key)
     else
       utils.error(message)
     end
-  end)
-end
-
---- SSH Setup wizard - guides user through SSH key setup
-function M.setup_ssh_wizard()
-  -- Check ssh-agent status asynchronously, then find available keys
-  ssh.check_agent_status(function(agent_running, loaded_keys)
-    ssh.find_available_keys(function(available_keys)
-      local lines = { "SSH Setup Wizard", string.rep("=", 50), "" }
-
-      -- Section 1: SSH Agent Status
-      table.insert(lines, "1. SSH Agent Status:")
-      if agent_running then
-        table.insert(lines, "   ✓ ssh-agent is running")
-        if #loaded_keys > 0 then
-          table.insert(lines, "   ✓ " .. #loaded_keys .. " key(s) loaded:")
-          for _, key in ipairs(loaded_keys) do
-            table.insert(lines, "     - " .. key)
-          end
-        else
-          table.insert(lines, "   ⚠ No keys loaded in agent")
-          table.insert(lines, "   → Run: ssh-add ~/.ssh/your_key")
-        end
-      else
-        table.insert(lines, "   ✗ ssh-agent is NOT running")
-        table.insert(lines, "   → Run: eval $(ssh-agent -s)")
-      end
-
-      table.insert(lines, "")
-
-      -- Section 2: Available SSH Keys
-      table.insert(lines, "2. Available SSH Keys:")
-      if #available_keys > 0 then
-        for _, key in ipairs(available_keys) do
-          local in_agent = false
-          for _, loaded in ipairs(loaded_keys) do
-            if loaded == key then
-              in_agent = true
-              break
-            end
-          end
-          local status = in_agent and "✓ in agent" or "  not in agent"
-          table.insert(lines, string.format("   [%s] %s", status, key))
-        end
-      else
-        table.insert(lines, "   ✗ No SSH keys found in ~/.ssh/")
-        table.insert(
-          lines,
-          "   → Generate one: ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519"
-        )
-      end
-
-      table.insert(lines, "")
-
-      -- Section 3: Project Configuration
-      local proj_config = project.load()
-      table.insert(lines, "3. Project Configuration:")
-      if proj_config then
-        table.insert(lines, "   ✓ Project configured")
-        table.insert(
-          lines,
-          "   Addresses: " .. table.concat(proj_config.remote_addresses, ", ")
-        )
-
-        if proj_config.ssh_key then
-          local expanded = vim.fn.expand(proj_config.ssh_key)
-          local exists = utils.file_exists(expanded)
-          table.insert(
-            lines,
-            string.format(
-              "   SSH key: %s %s",
-              proj_config.ssh_key,
-              exists and "✓" or "✗ (not found)"
-            )
-          )
-        else
-          local host = proj_config.remote_addresses[1]
-          local config_key = ssh.get_config_identity(host)
-          if config_key then
-            table.insert(
-              lines,
-              "   SSH key: " .. config_key .. " (from ~/.ssh/config)"
-            )
-          else
-            table.insert(lines, "   SSH key: Using default selection")
-          end
-        end
-      else
-        table.insert(lines, "   ✗ No project configuration")
-        table.insert(lines, "   → Run :RemoteSyncConfigure to set up")
-      end
-
-      table.insert(lines, "")
-      table.insert(lines, string.rep("=", 50))
-      table.insert(lines, "")
-
-      -- Recommendations
-      table.insert(lines, "Recommendations:")
-
-      local has_issues = false
-
-      if not agent_running then
-        has_issues = true
-        table.insert(lines, "• Start ssh-agent: eval $(ssh-agent -s)")
-      end
-
-      if agent_running and #loaded_keys == 0 and #available_keys > 0 then
-        has_issues = true
-        table.insert(
-          lines,
-          "• Add a key to agent: ssh-add " .. available_keys[1]
-        )
-      end
-
-      if #available_keys == 0 then
-        has_issues = true
-        table.insert(lines, "• Generate SSH key: ssh-keygen -t ed25519")
-      end
-
-      if not proj_config then
-        has_issues = true
-        table.insert(lines, "• Configure project: :RemoteSyncConfigure")
-      end
-
-      if not has_issues then
-        table.insert(lines, "✓ Everything looks good!")
-        if proj_config then
-          table.insert(lines, "• Test connection: :RemoteSyncTestConnection")
-        end
-      end
-
-      utils.info(table.concat(lines, "\n"))
-    end)
   end)
 end
 

@@ -4,7 +4,9 @@
 ---
 
 local M = {}
-local Snacks = require "snacks"
+
+-- Chunk size used by the large-file comparison path.
+local LARGE_FILE_CHUNK_SIZE = 1024 * 1024 -- 1 MB
 
 --- Shell escape a string for safe command execution
 --- Uses Lua pattern to wrap in single quotes and escape existing quotes
@@ -64,7 +66,7 @@ end
 
 --- Extract host and file from remote path (host:path format)
 ---@param remote_path string The full remote path (e.g., "user@host:/path/to/file")
----@return string|nil host The host portion
+---@return string host The host portion
 ---@return string|nil file The file path portion
 function M.parse_remote_path(remote_path)
   local host = remote_path:match "^([^:]+):"
@@ -149,4 +151,123 @@ function M.file_exists(path) return vim.fn.filereadable(path) == 1 end
 ---@return boolean
 function M.dir_exists(path) return vim.fn.isdirectory(path) == 1 end
 
+--- Fast, full-memory comparison for files at or below the size threshold.
+--- Reads the local file as a single raw binary string and compares it with
+--- the remote content string.  Handles the trailing-newline edge-case that
+--- arises because the SSH capture layer strips the final newline from stdout.
+---@param local_path string
+---@param remote_content string Remote file content as returned by get_remote_file
+---@return boolean
+function M.compare_files_small(local_path, remote_content)
+  local local_content = ""
+  local f = io.open(local_path, "rb")
+  if f then
+    local_content = f:read "*a"
+    f:close()
+  end
+
+  -- Fast path: exact match.
+  if local_content == remote_content then return true end
+
+  -- SSH capture strips the trailing newline from the remote content.
+  -- Treat a single trailing-newline difference as identical.
+  local c_len, l_len = #remote_content, #local_content
+  if c_len == l_len + 1 and remote_content:byte(-1) == 10 then
+    return remote_content:sub(1, -2) == local_content
+  elseif l_len == c_len + 1 and local_content:byte(-1) == 10 then
+    return local_content:sub(1, -2) == remote_content
+  end
+
+  return false
+end
+
+--- Memory-efficient comparison for files above the size threshold.
+--- Reads the local file in ~1 MB chunks and compares each chunk against the
+--- corresponding segment of the (already-fetched) remote content string.
+--- Peak memory usage: remote_content + one chunk buffer (~1 MB).
+---
+--- The same trailing-newline normalisation as compare_files_small is applied:
+--- remote_content has its trailing newline stripped upfront, and the local
+--- file's final chunk has its trailing newline stripped when local_size is
+--- exactly one byte larger than the normalised remote length.
+---@param local_path string
+---@param remote_content string Remote file content as returned by get_remote_file
+---@param local_size number Actual local file size in bytes (from vim.loop.fs_stat)
+---@return boolean
+function M.compare_files_large(local_path, remote_content, local_size)
+  -- Normalise remote: strip trailing newline stripped by SSH capture.
+  local norm_remote = remote_content
+  if #remote_content > 0 and remote_content:byte(-1) == 10 then
+    norm_remote = remote_content:sub(1, -2)
+  end
+  local remote_len = #norm_remote
+
+  -- If local has exactly one more byte than normalised remote, that extra byte
+  -- must be a trailing newline for the files to be equal.
+  local strip_local_trailing = (local_size == remote_len + 1)
+
+  -- Any other size mismatch means the files are definitely different.
+  -- (Defensive: the pre-check in show_diff should have caught this already.)
+  if local_size ~= remote_len and not strip_local_trailing then return false end
+
+  local f = io.open(local_path, "rb")
+  if not f then return false end
+
+  local offset = 1 -- 1-based index into norm_remote
+  local bytes_read = 0
+
+  while true do
+    local chunk = f:read(LARGE_FILE_CHUNK_SIZE)
+    if not chunk then break end
+
+    bytes_read = bytes_read + #chunk
+
+    -- On the final chunk, strip the trailing newline when expected.
+    local effective_chunk = chunk
+    if strip_local_trailing and bytes_read == local_size then
+      if chunk:byte(-1) == 10 then
+        effective_chunk = chunk:sub(1, -2)
+      else
+        -- Expected a trailing newline but found a different byte; they differ.
+        f:close()
+        return false
+      end
+    end
+
+    local eff_len = #effective_chunk
+    if eff_len == 0 then break end -- last chunk was a bare newline, already consumed
+
+    local remote_seg = norm_remote:sub(offset, offset + eff_len - 1)
+    if effective_chunk ~= remote_seg then
+      f:close()
+      return false
+    end
+
+    offset = offset + eff_len
+  end
+
+  f:close()
+
+  -- All local bytes matched; verify we also consumed all of norm_remote.
+  return (offset - 1) == remote_len
+end
+
+function M.cleanup_diff_mode(local_win)
+  if vim.api.nvim_win_is_valid(local_win) then
+    vim.api.nvim_set_current_win(local_win)
+    vim.cmd "diffoff"
+  end
+end
+
+function M.prompt_receive(callback)
+  vim.ui.select(
+    { "Yes, receive remote version", "No, keep local version" },
+    { prompt = "Receive file from remote?" },
+    function(choice)
+      local confirmed = choice and choice:match "^Yes"
+      if not confirmed then M.info "Receive cancelled" end
+      if callback then callback(confirmed) end
+    end
+  )
+end
 return M

@@ -40,15 +40,14 @@ The plugin is included in this AstroNvim configuration. It's automatically loade
 
 ## Quick Start
 
-1. Run `:RemoteSyncSetupSSH` to check your SSH configuration
-2. Open a file in your project
-3. Press `<Leader>sc` or run `:RemoteSyncConfigure`
-4. Enter remote address in one of these formats:
+1. Open a file in your project
+2. Press `<Leader>sc` or run `:RemoteSyncConfigure`
+3. Enter remote address in one of these formats:
    - **SSH config host**: `hp-elitebook` (must be defined in `~/.ssh/config` with `User`)
    - **user@hostname**: `amit152116@hp-elitebook.local`
    - **user@ip**: `amit152116@192.168.0.100`
-5. Optionally add fallback addresses (e.g., `amit152116@10.70.66.233`)
-6. Enter remote base path (e.g., `~/projects/myapp`)
+4. Optionally add fallback addresses (e.g., `amit152116@10.70.66.233`)
+5. Enter remote base path (e.g., `~/projects/myapp`)
 
 This creates `.nvim/remote_sync.toml` in your project root.
 
@@ -102,16 +101,6 @@ remote_base_path = "~/projects/myapp"
 # Explicit SSH key for this project
 ssh_key = "~/.ssh/id_ed25519_work"
 ```
-
-### SSH Setup Wizard
-
-Run `:RemoteSyncSetupSSH` to:
-
-- Check if ssh-agent is running
-- List available SSH keys
-- Show which keys are loaded in agent
-- Verify project configuration
-- Get recommendations for fixing issues
 
 ### Test Connection
 
@@ -227,8 +216,6 @@ The plugin provides detailed error messages. Common issues:
    chmod 600 ~/.ssh/id_ed25519
    ```
 
-Run `:RemoteSyncSetupSSH` for guided diagnostics.
-
 ### "File is outside project root"
 
 The file isn't under `local_base_path`. Either:
@@ -322,7 +309,6 @@ remote_sync.status()         -- Show configuration
 | `:RemoteSyncStatus`                           | Show sync status                   |
 | `:RemoteSyncConfig [show\|reload\|global]`    | Show/reload configuration          |
 | `:RemoteSyncOnSave [enable\|disable\|toggle]` | Toggle sync on save                |
-| `:RemoteSyncSetupSSH`                         | SSH setup wizard                   |
 | `:RemoteSyncTestConnection [host]`            | Test SSH connection                |
 
 ## License

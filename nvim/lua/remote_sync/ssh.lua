@@ -11,12 +11,6 @@ local M = {}
 
 -- Constants
 local SSH_BATCH_MODE = "BatchMode=yes"
-local DEFAULT_KEY_NAMES = {
-  "id_ed25519",
-  "id_ecdsa",
-  "id_rsa",
-  "id_dsa",
-}
 
 ---@class SSHExecOpts
 ---@field ssh_key string|nil Optional SSH key path
@@ -233,51 +227,6 @@ function M.check_agent_status(callback)
   })
 end
 
---- Find available SSH keys in ~/.ssh/
----@param callback fun(keys: string[])
-function M.find_available_keys(callback)
-  local ssh_dir = vim.fn.expand "~/.ssh"
-  local keys = {}
-
-  logger.debug("finding available SSH keys", { dir = ssh_dir })
-
-  -- Check default key names synchronously (just stat calls, not subprocess)
-  for _, name in ipairs(DEFAULT_KEY_NAMES) do
-    local path = ssh_dir .. "/" .. name
-    if utils.file_exists(path) then table.insert(keys, path) end
-  end
-
-  -- Find custom-named id_* keys asynchronously
-  local lines = {}
-  vim.fn.jobstart(
-    { "sh", "-c", string.format("ls -1 %s/id_* 2>/dev/null", ssh_dir) },
-    {
-      stdout_buffered = true,
-      on_stdout = function(_, data)
-        if data then vim.list_extend(lines, data) end
-      end,
-      on_exit = vim.schedule_wrap(function()
-        for _, path in ipairs(lines) do
-          path = vim.trim(path)
-          -- Skip public keys and empty lines
-          if path ~= "" and not path:match "%.pub$" then
-            local found = false
-            for _, existing in ipairs(keys) do
-              if existing == path then
-                found = true
-                break
-              end
-            end
-            if not found then table.insert(keys, path) end
-          end
-        end
-        logger.debug("available SSH keys found", { count = #keys, keys = keys })
-        callback(keys)
-      end),
-    }
-  )
-end
-
 --- Parse ~/.ssh/config to find a directive value for a host
 ---@param hostname string The hostname to look up
 ---@param directive string The directive to find (e.g., "IdentityFile", "User")
@@ -336,11 +285,11 @@ function M.get_config_identity(hostname)
   return get_config_directive(hostname, "IdentityFile")
 end
 
---- Parse ~/.ssh/config to find User for a host
+--- Parse ~/.ssh/config to find Host
 ---@param hostname string The hostname to look up
 ---@return string|nil user Username if found
-function M.get_config_user(hostname)
-  return get_config_directive(hostname, "User")
+function M.get_config_host(hostname)
+  return get_config_directive(hostname, "Host")
 end
 
 --- Build detailed error message for connection failure
@@ -508,6 +457,36 @@ function M.create_remote_dir(host, remote_dir, ssh_key, callback)
   end)
 end
 
+--- Get the size of a file on the remote host in bytes.
+--- Uses `stat -c %s` (GNU/Linux). Returns nil on failure so callers
+--- can fall back to a content-based comparison strategy.
+---@param host string Remote host
+---@param remote_path string Path on remote
+---@param ssh_key string|nil Optional explicit SSH key
+---@param callback fun(size: number|nil)
+function M.get_remote_file_size(host, remote_path, ssh_key, callback)
+  logger.debug("getting remote file size", { host = host, path = remote_path })
+  exec_ssh(host, { "stat", "-c", "%s", remote_path }, {
+    ssh_key = ssh_key,
+    capture_stdout = true,
+  }, function(success, stdout)
+    if success and stdout and stdout ~= "" then
+      local size = tonumber(vim.trim(stdout))
+      logger.debug(
+        "remote file size",
+        { host = host, path = remote_path, size = size }
+      )
+      callback(size)
+    else
+      logger.debug(
+        "remote file size unavailable",
+        { host = host, path = remote_path }
+      )
+      callback(nil)
+    end
+  end)
+end
+
 --- Get file content from remote (for diff)
 ---@param host string Remote host
 ---@param remote_path string Path on remote
@@ -526,6 +505,61 @@ function M.get_remote_file(host, remote_path, ssh_key, callback)
       )
     end
     callback(success and stdout or nil)
+  end)
+end
+
+--- Get remote file and compare with local
+---@param host string Remote host
+---@param remote_path string|nil Path on remote
+---@param local_path string Local file to compare
+---@param ssh_key string|nil Optional explicit SSH key
+---@param callback fun(content: string|nil, is_same: boolean)
+function M.get_remote_file_with_comparison(
+  host,
+  remote_path,
+  local_path,
+  ssh_key,
+  callback
+)
+  local threshold = config.get_value "diff_size_threshold"
+
+  -- Get local size
+  local local_stat = vim.loop.fs_stat(local_path)
+  local local_size = local_stat and local_stat.size or nil
+
+  -- Get remote size first
+  M.get_remote_file_size(host, remote_path, ssh_key, function(remote_size)
+    -- Quick size check
+    local skip_compare = false
+    local use_large = false
+
+    if local_size and remote_size then
+      if local_size ~= remote_size then
+        skip_compare = true
+      elseif local_size > threshold then
+        use_large = true
+      end
+    end
+
+    -- Fetch content
+    M.get_remote_file(host, remote_path, ssh_key, function(content)
+      if not content then
+        callback(nil, false)
+        return
+      end
+
+      -- Compare if sizes matched
+      local is_same = false
+      if not skip_compare then
+        if use_large then
+          is_same = utils.compare_files_large(local_path, content, local_size)
+        else
+          is_same = utils.compare_files_small(local_path, content)
+        end
+      end
+
+      callback(content, is_same)
+    end)
   end)
 end
 

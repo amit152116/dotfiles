@@ -14,7 +14,7 @@ return {
     },
     -- Configure core features of AstroNvim
     features = {
-      large_buf = { size = 1.5 * 1024 * 1024, lines = 10000 }, -- set global limits for large files for disabling features like treesitter
+      large_buf = { size = 2 * 1024 * 1024, lines = 10000 }, -- set global limits for large files for disabling features like treesitter
       autopairs = true, -- enable autopairs at start
       cmp = true, -- enable completion at start
       diagnostics = { virtual_text = true, virtual_lines = false }, -- diagnostic settings on startup
@@ -254,10 +254,6 @@ return {
         ["<Leader>st"] = {
           "<cmd>RemoteSyncTestConnection<cr>",
           desc = "Test SSH connection",
-        },
-        ["<Leader>sS"] = {
-          "<cmd>RemoteSyncSetupSSH<cr>",
-          desc = "SSH setup wizard",
         },
         ["<Leader>so"] = {
           "<cmd>RemoteSyncOnSave<cr>",
