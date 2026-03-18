@@ -344,21 +344,15 @@ return {
               desc = "Find pickers",
             },
 
-            ["<Leader>gb"] = {
-              function() Snacks.picker.git_branches { focus = "list" } end,
-              desc = "Git branches",
-            },
-
-            -- Attach some git mapping when buffer is attached via gitsigns on_attach
+            -- All <Leader>g* mappings are buffer-local via gitsigns on_attach
+            ["<Leader>gb"] = false,
             ["<Leader>gc"] = false,
             ["<Leader>gC"] = false,
             ["<Leader>go"] = false,
             ["<Leader>gg"] = false,
-            ["<Leader>gl"] = {
-              function() Snacks.picker.git_log { focus = "list" } end,
-              desc = "Git Logs",
-            },
-
+            ["<Leader>gl"] = false,
+            ["<Leader>gt"] = false,
+            ["<Leader>gT"] = false,
             -- Find all Neovim plugins files
             ["<Leader>pf"] = {
               function()

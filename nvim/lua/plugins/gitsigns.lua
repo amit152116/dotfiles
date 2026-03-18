@@ -7,13 +7,11 @@ return {
     opts.on_attach = function(bufnr)
       if old_attach then old_attach(bufnr) end -- keep defaults
 
-      -- ❌ remove the blame mapping
-      vim.keymap.del("n", "<Leader>gl", { buffer = bufnr })
-      vim.keymap.del("n", "<Leader>gL", { buffer = bufnr })
       local map = function(lhs, rhs, desc)
         vim.keymap.set("n", lhs, rhs, { buffer = bufnr, desc = desc })
       end
 
+      -- Blame
       map(
         "<Leader>gy",
         function() Snacks.git.blame_line() end,
@@ -25,6 +23,7 @@ return {
         "View full Git blame"
       )
 
+      -- Browse / logs
       map("<Leader>go", function() Snacks.gitbrowse() end, "Git Browse (open)")
       map(
         "<Leader>gf",
@@ -34,8 +33,53 @@ return {
       map(
         "<Leader>gL",
         function() Snacks.picker.git_log_line { focus = "list" } end,
-        "Git Logs (current Line)"
+        "Git Logs (current line)"
       )
+      map(
+        "<Leader>gl",
+        function() Snacks.picker.git_log { focus = "list" } end,
+        "Git Logs"
+      )
+
+      -- Branches / status / stash
+      map(
+        "<Leader>gb",
+        function() Snacks.picker.git_branches { focus = "list" } end,
+        "Git branches"
+      )
+      map("<Leader>gt", function() Snacks.picker.git_status() end, "Git status")
+      map("<Leader>gT", function() Snacks.picker.git_stash() end, "Git stash")
+
+      -- Gitignore
+      map("<Leader>gi", function()
+        local bufdir =
+          vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":h")
+        local root = vim.trim(
+          vim.fn.system(
+            "git -C "
+              .. vim.fn.shellescape(bufdir)
+              .. " rev-parse --show-toplevel"
+          )
+        )
+        vim.cmd("edit " .. root .. "/.gitignore")
+      end, "Open .gitignore")
+
+      -- Backup
+      map(
+        "<Leader>gB",
+        function() require("git_flow.backup").show_backups() end,
+        "View Git Backup"
+      )
+
+      -- Worktree (only if this repo uses worktrees)
+      local worktree = require "git_flow.worktree"
+      if worktree.is_worktree_repo() then
+        map(
+          "<Leader>gw",
+          function() worktree.switch_worktree() end,
+          "Git Worktree: Switch/Create"
+        )
+      end
     end
     return opts
   end,

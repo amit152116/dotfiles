@@ -1,16 +1,24 @@
----@meta
-
---- This file provides snacks.nvim pickers for managing git worktrees.
--- It supports switching between worktrees, creating new ones from remote branches,
--- and deleting worktrees with safety checks for uncommitted/unpushed changes.
+---
+--- git-flow.nvim - worktree.lua
+--- Snacks.nvim pickers for managing git worktrees.
+--- Supports switching, creating from remote branches/tags, cherry-pick,
+--- and deleting worktrees with safety checks.
+---
+--- Uses plenary.job (async) for all git operations (picker performance).
+--- Path resolution delegated to git_flow.common where possible.
+---
 
 local M = {}
 
 local snacks = require "snacks"
 local Job = require "plenary.job"
 local Path = require "plenary.path"
+local common = require "git_flow.common"
 
--- 1. Define Hook Events
+-- ---------------------------------------------------------------------------
+-- 1. Hook events
+-- ---------------------------------------------------------------------------
+
 M.Events = {
   SWITCH_PRE = "switch_pre", -- Before switching (optional)
   SWITCH_POST = "switch_post", -- After switching (for LSP, buffer restore)
@@ -43,6 +51,10 @@ local function emit(event, data)
   end
 end
 
+-- ---------------------------------------------------------------------------
+-- Internal: plenary-based git runner (async-safe, used throughout pickers)
+-- ---------------------------------------------------------------------------
+
 --- Helper wrapper for plenary.job
 ---@param args table List of git arguments
 ---@return table|nil output List of stdout lines
@@ -52,29 +64,15 @@ local function git_job(args)
     command = "git",
     args = args,
     cwd = vim.loop.cwd(),
-    -- Determine what to do with stderr.
-    -- For now, we capture it to potentially debug, but usually we just check code.
     on_stderr = function(_, _) end,
   }
 
   return job:sync()
 end
 
---- Get the git root directory
----@return string|nil
-local function get_git_root()
-  local output, code = git_job { "rev-parse", "--show-toplevel" }
-  if code ~= 0 or not output or #output == 0 then return nil end
-  return vim.trim(output[1])
-end
-
---- Get the git root directory
----@return string|nil
-local function get_bare_repo_path()
-  local output, code = git_job { "rev-parse", "--git-common-dir" }
-  if code ~= 0 or not output or #output == 0 then return nil end
-  return vim.trim(output[1])
-end
+-- ---------------------------------------------------------------------------
+-- Internal: data helpers
+-- ---------------------------------------------------------------------------
 
 --- Get list of all worktrees
 ---@return table[]
@@ -204,11 +202,10 @@ end
 ---@return boolean has_changes
 ---@return string status_message
 local function check_worktree_status(path)
-  -- We run git status in the specific directory
   local job = Job:new {
     command = "git",
     args = { "status", "--porcelain" },
-    cwd = path, -- Run command inside the worktree
+    cwd = path,
   }
 
   local output, code = job:sync()
@@ -228,7 +225,7 @@ end
 ---@return boolean success
 ---@return string message_or_path
 local function create_worktree(branch_data, new_branch_name)
-  local git_root = get_bare_repo_path()
+  local git_root = common.get_git_common_dir()
   if not git_root then return false, "Not in a git repository" end
 
   local is_tag = branch_data.is_tag
@@ -275,7 +272,6 @@ local function create_worktree(branch_data, new_branch_name)
   local output, code = git_job(args)
 
   if code ~= 0 then
-    -- Concatenate output lines to form the error message
     local error_msg = table.concat(output or {}, "\n")
     return false, "Failed: " .. error_msg
   end
@@ -318,8 +314,6 @@ end
 --- Open a picker to cherry-pick commits from a specific branch
 ---@param branch_name string
 local function cherry_pick_from_branch(branch_name)
-  -- 1. Get git log for the target branch
-  -- Format: hash|date|author|subject
   local args = {
     "log",
     branch_name,
@@ -349,7 +343,6 @@ local function cherry_pick_from_branch(branch_name)
     end
   end
 
-  -- 2. Open Picker
   snacks.picker.pick {
     title = "Cherry Pick from " .. branch_name,
     finder = function() return items end,
@@ -367,7 +360,7 @@ local function cherry_pick_from_branch(branch_name)
     preview = function(ctx)
       local item = ctx.item
       local cmd = string.format("git show %s --stat -p", item.hash)
-      local show_output = vim.fn.system(cmd) -- Using system here for simple text output preview
+      local show_output = vim.fn.system(cmd)
       ctx.preview:set_lines(vim.split(show_output, "\n"))
       ctx.preview:highlight { ft = "git" }
     end,
@@ -409,7 +402,6 @@ local function delete_worktree(worktree_path, force)
   local output, code = git_job(args)
 
   if code ~= 0 then
-    -- Concatenate output lines to capture the specific git error (e.g., "contains modified or untracked files")
     local error_msg = table.concat(output or {}, "\n")
     return false, "Failed to delete worktree: " .. error_msg
   end
@@ -438,7 +430,6 @@ local function ensure_worktree(branch, on_ready)
           return
         end
 
-        -- Attempt creation with new branch name
         local success, result_path = create_worktree(branch, new_branch_name)
         if success then
           snacks.notify.info(
@@ -468,7 +459,6 @@ local function ensure_worktree(branch, on_ready)
       return
     end
 
-    -- Attempt creation
     local success, result_path = create_worktree(branch)
     if success then
       snacks.notify.info(
@@ -481,6 +471,10 @@ local function ensure_worktree(branch, on_ready)
     end
   end
 end
+
+-- ---------------------------------------------------------------------------
+-- Public API
+-- ---------------------------------------------------------------------------
 
 --- Picker for switching/creating git worktrees
 function M.switch_worktree()
@@ -495,7 +489,6 @@ function M.switch_worktree()
     return
   end
 
-  -- Transform branches and tags into picker items
   local items = {}
 
   -- Add branches
@@ -512,7 +505,7 @@ function M.switch_worktree()
   for _, tag in ipairs(tags) do
     table.insert(items, {
       text = tag.display_name,
-      score = 0, -- Tags appear after branches
+      score = 0,
       data = tag,
     })
   end
@@ -530,7 +523,7 @@ function M.switch_worktree()
       local prefix = ""
 
       if entry.is_tag then
-        icon = " "
+        icon = " "
         hl = "DiagnosticWarn"
         prefix = ""
       elseif entry.is_current then
@@ -538,15 +531,15 @@ function M.switch_worktree()
         hl = "DiagnosticOk"
         prefix = "[current] "
       elseif entry.is_remote then
-        icon = "  "
+        icon = "  "
         hl = "DiagnosticError"
         prefix = ""
       elseif entry.has_worktree then
-        icon = " "
+        icon = " "
         hl = "DiagnosticInfo"
         prefix = ""
       else
-        icon = " "
+        icon = " "
         hl = "Normal"
         prefix = ""
       end
@@ -593,7 +586,6 @@ function M.switch_worktree()
         table.insert(lines, "  󱓞 **Name**:       " .. entry.branch_name)
         table.insert(lines, "  󱔗 **Reference**: " .. entry.ref)
 
-        -- Type Badge Logic
         local b_type = entry.is_remote and "󰓅 Remote" or "󰙅 Local"
         if entry.is_current then b_type = "󱐋 Current" end
         table.insert(lines, "  󰓹 **Type**:       " .. b_type)
@@ -606,13 +598,11 @@ function M.switch_worktree()
         table.insert(lines, "---")
         table.insert(lines, "")
 
-        -- Worktree Status Section
         if entry.has_worktree then
           table.insert(lines, "## 󰙅 Worktree Active")
           table.insert(lines, "  󰝰 **Path**: " .. entry.worktree_path)
           table.insert(lines, "")
 
-          -- Status Check
           local has_changes, status_msg =
             check_worktree_status(entry.worktree_path)
           if has_changes then
@@ -632,11 +622,9 @@ function M.switch_worktree()
         end
       end
 
-      -- Render to buffer
       ctx.preview:set_lines(lines)
       ctx.preview:highlight { ft = "markdown" }
 
-      -- Set the title with a nice icon
       local title_icon = entry.is_tag and "󰓹 "
         or entry.has_worktree and "󰙅 "
         or "󰓅 "
@@ -665,7 +653,6 @@ function M.switch_worktree()
 
         vim.schedule(function()
           ensure_worktree(entry, function(path)
-            -- Execute external tmux script safely
             local output = vim.fn.system { "tmux-sessionizer", path }
 
             if vim.v.shell_error ~= 0 then
@@ -735,7 +722,7 @@ function M.switch_worktree()
         keys = {
           ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
           ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
-          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
+          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } },
           ["<c-d>"] = { "delete_worktree", mode = { "n", "i" } },
         },
       },
@@ -743,7 +730,7 @@ function M.switch_worktree()
         keys = {
           ["<CR>"] = { "switch_tmux", mode = { "n", "i" } },
           ["<c-y>"] = { "switch_nvim", mode = { "n", "i" } },
-          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } }, -- Bind Ctrl+P to Cherry Pick
+          ["<c-p>"] = { "cherry_pick", mode = { "n", "i" } },
           ["<c-d>"] = { "delete_worktree", mode = { "n", "i" } },
         },
       },
@@ -761,18 +748,20 @@ local function get_current_buffer_context(git_root)
   local buf_path = Path:new(current_buf)
   local root_path = Path:new(git_root)
 
-  -- Only proceed if the file is actually inside the current git root
   if buf_path:absolute():find(root_path:absolute(), 1, true) then
     return buf_path:make_relative(root_path:absolute())
   end
   return nil
 end
 
+-- ---------------------------------------------------------------------------
+-- Built-in hooks
+-- ---------------------------------------------------------------------------
+
 -- HOOK 1: PRE-SWITCH
 -- Purpose: Capture the current file path relative to the OLD worktree root
 M.on(M.Events.SWITCH_PRE, function(data)
-  -- 'data.context' is shared with SWITCH_POST
-  local git_root = get_git_root()
+  local git_root = common.get_git_root()
   if git_root then data.context.file = get_current_buffer_context(git_root) end
 end)
 
@@ -782,19 +771,17 @@ M.on(M.Events.SWITCH_POST, function(data)
   local file_rel = data.context.file
 
   if file_rel then
-    -- Construct the full path in the new worktree
     local new_file_path = Path:new(data.path):joinpath(file_rel)
 
     if new_file_path:exists() then
       vim.cmd("e " .. vim.fn.fnameescape(new_file_path:absolute()))
     else
-      -- Fallback: If file doesn't exist in new branch (e.g. deleted), open root
       vim.cmd "e ."
     end
   end
 end)
 
-M.on(M.Events.SWITCH_POST, function(data)
+M.on(M.Events.SWITCH_POST, function(_)
   -- Reload file to ensure treesitter attaches to the new root
   vim.cmd "checktime"
 
@@ -805,23 +792,9 @@ end)
 --- Check if the current repository uses worktrees
 --- (either is a bare repo or is inside a worktree)
 ---@return boolean
-local function is_worktree_repo()
-  -- Check if multiple worktrees exist
-  -- Normal repos show 1 worktree (itself), bare repos show 2+ (bare + worktrees)
+function M.is_worktree_repo()
   local worktrees = get_worktrees()
   return #worktrees > 1
 end
 
---  Setup keymaps (optional - call this in your config)
-function M.setup()
-  -- Only register keybinding if we're in a worktree-based repository
-  if is_worktree_repo() then
-    vim.keymap.set(
-      "n",
-      "<leader>gw",
-      M.switch_worktree,
-      { desc = "Git Worktree: Switch/Create" }
-    )
-  end
-end
 return M
