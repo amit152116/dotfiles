@@ -4,6 +4,7 @@ return {
   "lewis6991/gitsigns.nvim",
   opts = function(_, opts)
     local old_attach = opts.on_attach
+    opts.attach_to_untracked = true -- show signs in untracked files (e.g. new files in git status)
     opts.on_attach = function(bufnr)
       if old_attach then old_attach(bufnr) end -- keep defaults
 

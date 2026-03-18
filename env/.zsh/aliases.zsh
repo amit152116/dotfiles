@@ -5,6 +5,7 @@ alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --
 
 alias cat='batcat --style=plain'
 alias pop='popd'
+alias vim='nvim'
 
 alias home='builtin cd ~'
 if command -v eza &>/dev/null; then

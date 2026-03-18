@@ -10,8 +10,6 @@ return {
 
   { "tpope/vim-fugitive" },
 
-  { "nvim-treesitter/playground" },
-
   { "max397574/better-escape.nvim" },
 
   { "wakatime/vim-wakatime", event = "User AstroFile" },

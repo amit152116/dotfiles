@@ -77,6 +77,7 @@ _load_ros() {
     alias rqt_console='ros2 run rqt_console rqt_console'
     alias rqt_gui='ros2 run rqt_gui rqt_gui'
     alias roslaunch='ros2 launch'
+    alias rosdep_install='rosdep install --from-paths src --ignore-src -r -y'
 
     # ROS2 functions
     rospkg() {

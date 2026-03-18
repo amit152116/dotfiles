@@ -105,3 +105,6 @@ zsdoc/data
 cron_logs
 logs/
 *.json
+
+# Laptop sync configuration (machine-specific)
+.nvim/remote_sync.toml
