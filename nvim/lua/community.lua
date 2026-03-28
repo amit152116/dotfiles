@@ -17,7 +17,6 @@ return {
   { import = "astrocommunity.pack.toml" },
   { import = "astrocommunity.pack.yaml" },
 
-  { import = "astrocommunity.editing-support.todo-comments-nvim" },
   { import = "astrocommunity.editing-support.bigfile-nvim" },
   -- { import = "astrocommunity.editing-support.wildfire-nvim" },
   { import = "astrocommunity.editing-support.stickybuf-nvim" },
