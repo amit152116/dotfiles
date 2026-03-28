@@ -1,7 +1,15 @@
 return {
   "folke/sidekick.nvim",
-  opts = {},
-  -- stylua: ignore
+  opts = {
+    -- add any options here
+    cli = {
+      mux = {
+        backend = "tmux",
+        enabled = true,
+      },
+    },
+    picker = "snacks",
+  },
   keys = {
     -- nes is also useful in normal mode
     -- { "<tab>", LazyVim.cmp.map({ "ai_nes" }, "<tab>"), mode = { "n" }, expr = true },
@@ -12,6 +20,12 @@ return {
         nes.enable(not nes.enabled)
       end,
       desc = "Toggle Sidekick NES",
+    },
+    {
+      "<c-.>",
+      function() require("sidekick.cli").toggle() end,
+      desc = "Sidekick Toggle",
+      mode = { "n", "t", "i", "x" },
     },
     {
       "<Leader>az",
@@ -26,9 +40,9 @@ return {
     },
     {
       "<Leader>as",
-      function() require("sidekick.cli").select() end,
-      -- Or to select only installed tools:
-      -- require("sidekick.cli").select({ filter = { installed = true } })
+      function()
+        require("sidekick.cli").select { filter = { installed = true } }
+      end,
       desc = "Select CLI",
     },
     {
@@ -38,18 +52,18 @@ return {
     },
     {
       "<Leader>at",
-      function() require("sidekick.cli").send({ msg = "{this}" }) end,
+      function() require("sidekick.cli").send { msg = "{this}" } end,
       mode = { "x", "n" },
       desc = "Send This",
     },
     {
       "<Leader>af",
-      function() require("sidekick.cli").send({ msg = "{file}" }) end,
+      function() require("sidekick.cli").send { msg = "{file}" } end,
       desc = "Send File",
     },
     {
       "<Leader>av",
-      function() require("sidekick.cli").send({ msg = "{selection}" }) end,
+      function() require("sidekick.cli").send { msg = "{selection}" } end,
       mode = { "x" },
       desc = "Send Visual Selection",
     },

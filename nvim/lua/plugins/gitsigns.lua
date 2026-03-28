@@ -15,7 +15,7 @@ return {
       -- Blame
       map(
         "<Leader>gy",
-        function() Snacks.git.blame_line() end,
+        function() require("gitsigns").blame_line() end,
         "View Git Blame"
       )
       map(

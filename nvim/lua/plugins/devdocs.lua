@@ -60,7 +60,7 @@ end
 return {
   {
     "maskudo/devdocs.nvim",
-    lazy = false,
+    enabled = true,
     dependencies = {
       "folke/snacks.nvim",
     },

@@ -73,7 +73,7 @@ return {
         help = false,
       },
       nes = {
-        enabled = true,
+        enabled = false,
         keymap = {
           accept_and_goto = "<Tab>",
           accept = false,

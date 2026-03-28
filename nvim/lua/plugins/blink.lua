@@ -105,18 +105,11 @@ return {
         },
       },
       keymap = {
-        -- ["<Tab>"] = {
-        --   "snippet_forward",
-        --   function()
-        --     if vim.g.ai_accept then return vim.g.ai_accept() end
-        --   end,
-        --   "fallback",
-        -- },
 
         -- Or use Alt+Space instead
-        -- ["<A-Space>"] = { "show", "show_documentation", "hide_documentation" },
+        ["<A-Space>"] = { "show", "show_documentation", "hide_documentation" },
         -- Or use Ctrl+N for a more vim-like approach
-        -- ["<C-n>"] = { "show", "show_documentation", "hide_documentation" },
+        ["<C-n>"] = { "show", "show_documentation", "hide_documentation" },
       },
     },
   },

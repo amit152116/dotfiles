@@ -94,7 +94,7 @@ ta() {
 }
 
 # Universal env manager
-env() {
+python-env() {
     # If no arguments → prompt with fzf to select env
     if [[ -z "$1" ]]; then
         local selection venvs conda_envs
