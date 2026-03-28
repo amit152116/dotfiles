@@ -10,13 +10,62 @@ local utils = require "remote_sync.utils"
 local M = {}
 
 -- Constants
-local SSH_BATCH_MODE = "BatchMode=yes"
+local SSH_BATCH_MODE = "BatchMode=no"
 
 ---@class SSHExecOpts
 ---@field ssh_key string|nil Optional SSH key path
 ---@field use_test_opts boolean|nil Use test opts (BatchMode) instead of control opts
 ---@field capture_stdout boolean|nil Capture stdout output
 ---@field capture_stderr boolean|nil Capture stderr output
+
+--- Create a temporary askpass script that prompts via the live Neovim instance.
+--- SSH calls this script with the prompt string as $1 when it needs credentials.
+--- The script writes the prompt to a temp file and evaluates inputsecret() in
+--- the running Neovim via --remote-expr, printing the result to stdout so SSH
+--- can read it as the password/passphrase.
+---@return string|nil script_path Path to the executable script, or nil on error
+---@return string|nil tmpdir Path to the temp directory to clean up, or nil
+local function make_askpass_script()
+  local tmpdir = vim.fn.tempname()
+  if vim.fn.mkdir(tmpdir, "p") ~= 1 then
+    logger.error("askpass: failed to create tmpdir", { path = tmpdir })
+    return nil, nil
+  end
+
+  local script_path = tmpdir .. "/askpass.sh"
+  local prompt_file = tmpdir .. "/prompt.txt"
+  local server = vim.v.servername
+
+  -- Write the askpass script.  printf is used (not echo) so no trailing
+  -- newline is appended.  readfile() + get() gives a safe fallback label.
+  local script_lines = {
+    "#!/usr/bin/env bash",
+    string.format("printf '%%s' \"$1\" > '%s'", prompt_file),
+    string.format(
+      "exec nvim --server '%s' --remote-expr"
+        .. " \"inputsecret(get(readfile('%s'), 0, 'Password: '))\"",
+      server,
+      prompt_file
+    ),
+  }
+  local fh = io.open(script_path, "w")
+  if not fh then
+    logger.error("askpass: failed to write script", { path = script_path })
+    return nil, tmpdir
+  end
+  fh:write(table.concat(script_lines, "\n") .. "\n")
+  fh:close()
+
+  -- Make the script executable.
+  if
+    vim.fn.system { "chmod", "+x", script_path } and vim.v.shell_error ~= 0
+  then
+    logger.error("askpass: chmod failed", { path = script_path })
+    return nil, tmpdir
+  end
+
+  return script_path, tmpdir
+end
 
 --- Execute SSH command on remote host (internal helper)
 ---@param host string Remote host (user@host or configured hostname)
@@ -36,54 +85,57 @@ local function exec_ssh(host, remote_cmd, opts, callback)
   table.insert(cmd, host)
   vim.list_extend(cmd, remote_cmd)
 
-  -- Capture buffers
+  logger.debug("ssh exec", { host = host, cmd = table.concat(remote_cmd, " ") })
+
+  -- Create a per-invocation askpass script so SSH can request credentials
+  -- interactively via a Neovim inputsecret() prompt without needing a PTY.
+  -- SSH_ASKPASS_REQUIRE=force (OpenSSH ≥8.4) makes SSH always use the askpass
+  -- program regardless of whether a terminal is attached.
+  local askpass_script, askpass_tmpdir = make_askpass_script()
+
+  local job_env = {
+    DISPLAY = os.getenv "DISPLAY" or ":1",
+  }
+  if askpass_script then
+    job_env.SSH_ASKPASS = askpass_script
+    job_env.SSH_ASKPASS_REQUIRE = "force"
+  end
+
   local stdout_lines = {}
   local stderr_lines = {}
-
-  logger.debug("ssh exec", { host = host, cmd = table.concat(remote_cmd, " ") })
 
   vim.fn.jobstart(cmd, {
     stdout_buffered = true,
     stderr_buffered = true,
+    env = job_env,
     on_stdout = function(_, data)
-      if data and opts.capture_stdout then
-        vim.list_extend(stdout_lines, data)
-      end
+      if data and opts.capture_stdout then stdout_lines = data end
     end,
     on_stderr = function(_, data)
-      if data and opts.capture_stderr then
-        vim.list_extend(stderr_lines, data)
-      end
+      if data and opts.capture_stderr then stderr_lines = data end
     end,
     on_exit = vim.schedule_wrap(function(_, code)
+      -- Clean up the temp askpass directory.
+      if askpass_tmpdir then vim.fn.delete(askpass_tmpdir, "rf") end
+
       local stdout = nil
       if opts.capture_stdout then
-        -- jobstart appends a trailing empty string to signal EOF.
-        -- Strip only those trailing empty strings so that genuine leading
-        -- whitespace and blank lines in file content are preserved.
-        -- (vim.trim would strip leading whitespace too, breaking diffs for
-        -- files that start with blank lines.)
+        -- jobstart with stdout_buffered delivers a trailing empty string as
+        -- an EOF sentinel; strip it so callers get clean content.
         while #stdout_lines > 0 and stdout_lines[#stdout_lines] == "" do
           table.remove(stdout_lines)
         end
         stdout = table.concat(stdout_lines, "\n")
       end
-      local stderr = opts.capture_stderr
-          and vim.trim(table.concat(stderr_lines, "\n"))
-        or nil
-      if code == 0 then
-        logger.debug(
-          "ssh exec success",
-          { host = host, cmd = table.concat(remote_cmd, " ") }
-        )
-      else
-        logger.warn("ssh exec failed", {
-          host = host,
-          cmd = table.concat(remote_cmd, " "),
-          code = code,
-          stderr = stderr,
-        })
+
+      local stderr = nil
+      if opts.capture_stderr then
+        while #stderr_lines > 0 and stderr_lines[#stderr_lines] == "" do
+          table.remove(stderr_lines)
+        end
+        stderr = vim.trim(table.concat(stderr_lines, "\n"))
       end
+
       callback(code == 0, stdout, stderr)
     end),
   })
@@ -298,105 +350,17 @@ end
 ---@param ssh_error string|nil The actual SSH error message from stderr
 ---@param callback fun(message: string)
 function M.build_connection_error(hostname, ssh_key, ssh_error, callback)
-  -- Check ssh-agent status asynchronously, then build message
-  M.check_agent_status(function(agent_running, loaded_keys)
-    local lines = {
-      string.format("Failed to connect to %s", hostname),
-    }
+  local lines = {
+    string.format("Failed to connect to %s", hostname),
+  }
 
-    -- Include actual SSH error if provided
-    if ssh_error and ssh_error ~= "" then
-      table.insert(lines, "")
-      table.insert(lines, "SSH error: " .. ssh_error)
-    end
-
+  -- Include actual SSH error if provided
+  if ssh_error and ssh_error ~= "" then
     table.insert(lines, "")
-    table.insert(lines, "Possible causes:")
+    table.insert(lines, "SSH error: " .. ssh_error)
+  end
 
-    -- Determine which key should be used
-    local expected_key = ssh_key
-    if not expected_key then expected_key = M.get_config_identity(hostname) end
-
-    if expected_key then
-      local expanded_key = vim.fn.expand(expected_key)
-
-      -- Check if key exists
-      if not utils.file_exists(expanded_key) then
-        table.insert(
-          lines,
-          string.format("1. SSH key not found: %s", expanded_key)
-        )
-        table.insert(lines, "   → Generate a new key:")
-        table.insert(
-          lines,
-          string.format("     ssh-keygen -t ed25519 -f %s", expanded_key)
-        )
-      else
-        -- Key exists, check if it's in agent
-        local key_in_agent = false
-        for _, loaded in ipairs(loaded_keys) do
-          if loaded == expanded_key then
-            key_in_agent = true
-            break
-          end
-        end
-
-        if not agent_running then
-          table.insert(lines, "1. ssh-agent is not running")
-          table.insert(lines, "   → Start ssh-agent:")
-          table.insert(lines, "     eval $(ssh-agent -s)")
-          table.insert(lines, string.format("     ssh-add %s", expanded_key))
-        elseif not key_in_agent then
-          table.insert(
-            lines,
-            string.format("1. SSH key not loaded in agent: %s", expanded_key)
-          )
-          table.insert(lines, "   → Add key to agent:")
-          table.insert(lines, string.format("     ssh-add %s", expanded_key))
-        else
-          table.insert(lines, "1. SSH key is loaded but connection still fails")
-          table.insert(
-            lines,
-            "   → Check if public key is authorized on remote:"
-          )
-          table.insert(
-            lines,
-            string.format("     ssh-copy-id -i %s %s", expanded_key, hostname)
-          )
-        end
-      end
-    else
-      -- No specific key configured
-      if not agent_running then
-        table.insert(lines, "1. ssh-agent is not running and no key specified")
-        table.insert(lines, "   → Start ssh-agent and add your key:")
-        table.insert(lines, "     eval $(ssh-agent -s)")
-        table.insert(lines, "     ssh-add ~/.ssh/id_ed25519")
-      elseif #loaded_keys == 0 then
-        table.insert(lines, "1. ssh-agent is running but no keys loaded")
-        table.insert(lines, "   → Add your SSH key:")
-        table.insert(lines, "     ssh-add ~/.ssh/id_ed25519")
-      else
-        table.insert(lines, "1. SSH key may not be authorized on remote")
-        table.insert(lines, "   → Copy your public key to remote:")
-        table.insert(lines, string.format("     ssh-copy-id %s", hostname))
-      end
-    end
-
-    table.insert(lines, "")
-    table.insert(
-      lines,
-      "2. Host may be unreachable (wrong hostname/IP, firewall, offline)"
-    )
-    table.insert(lines, string.format("   → Test with: ping %s", hostname))
-    table.insert(lines, "")
-    table.insert(lines, "3. SSH key permissions may be wrong")
-    table.insert(lines, "   → Fix permissions: chmod 600 ~/.ssh/id_*")
-    table.insert(lines, "")
-    table.insert(lines, "Run :checkhealth remote_sync for detailed diagnostics")
-
-    callback(table.concat(lines, "\n"))
-  end)
+  callback(table.concat(lines, "\n"))
 end
 
 --- Validate SSH connection to a host
