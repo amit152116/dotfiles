@@ -44,6 +44,7 @@ return {
     -- enable servers that you already have installed without mason
     servers = {
       -- "pyright",
+      "codebook", -- Codebook LSP (installed via Mason, has official lspconfig support)
     },
     -- customize language server configuration options passed to `lspconfig`
     ---@diagnostic disable: missing-fields
@@ -65,7 +66,40 @@ return {
           "--log=error", -- Only log errors
         },
       },
-      codebook = {},
+      codebook = {
+        enabled = false,
+        cmd = { vim.fn.stdpath "data" .. "/mason/bin/codebook-lsp", "serve" },
+        filetypes = {
+          "c",
+          "go",
+          "java",
+          "javascript",
+          "lua",
+          "markdown",
+          "odin",
+          "plaintext",
+          "python",
+          "ruby",
+          "rust",
+          "toml",
+          "typescript",
+        },
+        init_options = {
+          logLevel = "warn",
+          checkWhileTyping = true,
+          diagnosticSeverity = "information",
+        },
+        root_dir = function(fname)
+          local lspconfig = require "lspconfig"
+          -- Use project root or fallback to file directory
+          return vim.fs.dirname(
+            vim.fs.find({ ".git", ".codebook.toml", "codebook.toml" }, {
+              upward = true,
+              path = fname,
+            })[1]
+          ) or vim.fn.getcwd()
+        end,
+      },
       ruff = {
         on_attach = function(client)
           client.server_capabilities.hoverProvider = false
