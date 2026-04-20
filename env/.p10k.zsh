@@ -97,8 +97,9 @@
     # ram                   # free RAM
     # swap                  # used swap
     todo                    # todo items (https://github.com/todotxt/todo.txt-cli)
-    timewarrior             # timewarrior tracking status (https://timewarrior.net/)
-    taskwarrior             # taskwarrior task count (https://taskwarrior.org/)
+    # timewarrior             # timewarrior tracking status (https://timewarrior.net/)
+    # taskwarrior             # taskwarrior task count (https://taskwarrior.org/)
+    tmux_task             # tmux-session-scoped task count
     per_directory_history   # Oh My Zsh per-directory-history local/global indicator
     # cpu_arch              # CPU architecture
     # time                  # current time
@@ -868,6 +869,37 @@
 
   # Custom icon.
   # typeset -g POWERLEVEL9K_TASKWARRIOR_VISUAL_IDENTIFIER_EXPANSION='⭐'
+
+
+##########[ tmux_task: tmux-session-scoped task count ]##########
+  # Task count scoped to current tmux session
+  typeset -g POWERLEVEL9K_TMUX_TASK_FOREGROUND=74
+  typeset -g POWERLEVEL9K_TMUX_TASK_OVERDUE_FOREGROUND=160 # Red for overdue tasks
+
+  # Custom segment that shows task count for current tmux session's project
+  function prompt_tmux_task() {
+    local session overdue pending
+    
+    # Get current tmux session securely
+    [[ -n "$TMUX" ]] && session=$(tmux display-message -p '#S' 2>/dev/null | tr -cd '[:alnum:]_-')
+    [[ -z "$session" ]] && return
+
+    # Get pending tasks
+    pending=$(task project:"$session" status:pending count 2>/dev/null)
+    pending=${pending:-0}
+    [[ $pending -eq 0 ]] && return
+
+    # Get overdue tasks
+    overdue=$(task project:"$session" due.before:eod count 2>/dev/null)
+    overdue=${overdue:-0}
+
+    # Render the p10k segment
+    if [[ $overdue -gt 0 ]]; then
+      p10k segment -f "$POWERLEVEL9K_TMUX_TASK_OVERDUE_FOREGROUND" -t " ${overdue}/${pending}"
+    else
+      p10k segment -f "$POWERLEVEL9K_TMUX_TASK_FOREGROUND" -t " ${pending}"
+    fi
+  }
 
   ######[ per_directory_history: Oh My Zsh per-directory-history local/global indicator ]#######
   # Color when using local/global history.

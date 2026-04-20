@@ -19,6 +19,7 @@ source "$DOTFILES_DIR/symlink.sh"
 echo "[INFO] Setting up Tmux configuration..."
 createSymlink "$DOTFILES_DIR/env/.tmux.conf" "$HOME/.tmux.conf"
 createSymlink "$DOTFILES_DIR/config/tmuxinator/" "$HOME/.config/tmuxinator"
+createSymlink "$DOTFILES_DIR/scripts/tmux-task-status/" "$HOME/.tmux/plugins/tmux/scripts/tmux-task-status.sh"
 
 # --- Install TPM (Tmux Plugin Manager) ---
 if [ ! -d "$TPM_DIR" ]; then

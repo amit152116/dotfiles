@@ -1,5 +1,6 @@
 alias cls="clear"
 alias python="python3"
+unalias t 2>/dev/null # Remove OMZ alias, use custom function from functions.zsh
 # alias pip="pip3"
 alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --show-toplevel)"'
 
@@ -9,32 +10,32 @@ alias vim='nvim'
 
 alias home='builtin cd ~'
 if command -v eza &>/dev/null; then
-	alias ls="eza -g --icons"
-	alias la="eza -gla --icons"
-	alias ll="eza -gl --icons"
+    alias ls="eza -g --icons"
+    alias la="eza -gla --icons"
+    alias ll="eza -gl --icons"
 fi
 
 if command -v docker &>/dev/null; then
-	alias docker-clean="docker container prune -f && docker image prune -f "
+    alias docker-clean="docker container prune -f && docker image prune -f "
 fi
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
-	# Debian/Ubuntu aliases
-	alias upgrade="sudo apt update && sudo apt upgrade -y"
-	alias install="sudo apt install"
-	alias remove="sudo apt purge"
-	alias clean="sudo apt autoremove -y && sudo apt clean"
-	alias search="apt search"
-	alias update="sudo apt update"
+    # Debian/Ubuntu aliases
+    alias upgrade="sudo apt update && sudo apt upgrade -y"
+    alias install="sudo apt install"
+    alias remove="sudo apt purge"
+    alias clean="sudo apt autoremove -y && sudo apt clean"
+    alias search="apt search"
+    alias update="sudo apt update"
 fi
 
 # JSON pretty print (check if appropriate tools are available)
 if command -v jq &>/dev/null; then
-	alias pjson='jq .'
+    alias pjson='jq .'
 elif command -v python3 &>/dev/null; then
-	alias pjson='python3 -m json.tool'
+    alias pjson='python3 -m json.tool'
 elif command -v pp_json &>/dev/null; then
-	alias pjson='pp_json'
+    alias pjson='pp_json'
 fi
 
 # ============================================================================
@@ -52,3 +53,10 @@ alias cmk-clangd='cp $TEMPLATES_DIR/clangd ./.clangd && cp $TEMPLATES_DIR/clang-
 
 # Makefile aliases
 alias mknew='cp $TEMPLATES_DIR/makefile ./Makefile'
+
+# ============================================================================
+# Taskwarrior + Tmux Integration
+# ============================================================================
+alias tasks='t'
+alias tlv='tview'
+alias tq='td'

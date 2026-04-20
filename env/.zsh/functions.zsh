@@ -67,7 +67,7 @@ __link_tmux_session() {
     local target
     target=$(find "$dir" -type f -name 'tmux_resurrect_*.txt' -size +0c -printf "%T@ %p\n" |
         sort -nr |
-    awk 'NR==1 {print $2}')
+        awk 'NR==1 {print $2}')
 
     if [[ -z "$target" ]]; then
         echo "No non-empty tmux_resurrect files found."
@@ -170,3 +170,88 @@ if command -v zoxide >/dev/null 2>&1; then
         __zoxide_z "$@"
     }
 fi
+
+# Taskwarrior helper to get current project
+_tmux_project() {
+    if [[ -n "$TMUX" ]]; then
+        tmux display-message -p '#S' | tr -cd '[:alnum:]_-'
+    fi
+}
+
+# Taskwarrior wrapper to automatically scope to the current tmux session
+function t() {
+    local project=$(_tmux_project)
+    if [[ -n "$project" ]]; then
+        task project:"$project" $@
+    else
+        task $@
+    fi
+
+}
+
+# Interactive task add with prompts
+function ti() {
+    local project=$(_tmux_project)
+    local desc priority due tag
+
+    printf "Description: "
+    read -r desc
+    [[ -z "$desc" ]] && return 1
+
+    printf "Priority (L/M/H) [M]: "
+    read -r priority
+    [[ -z "$priority" ]] && priority="M"
+
+    printf "Due date (e.g., today, tomorrow, fri, eom) [none]: "
+    read -r due
+
+    printf "Tags (comma-separated) [none]: "
+    read -r tag
+
+    local cmd="task add"
+    [[ -n "$project" ]] && cmd="$cmd project:$project"
+    [[ "$priority" != "M" ]] && cmd="$cmd priority:$priority"
+    [[ -n "$due" ]] && cmd="$cmd due:$due"
+    [[ -n "$tag" ]] && cmd="$cmd +$tag"
+    cmd="$cmd \"$desc\""
+
+    eval "$cmd"
+    echo "Task added to project: ${project:-default}"
+}
+
+# Quick view - show tasks for current session only
+function tview() {
+    local project=$(_tmux_project)
+    if [[ -n "$project" ]]; then
+        task project:"$project" next
+    else
+        task next
+    fi
+}
+
+# Quick done - complete first task for current session
+function td() {
+    local project=$(_tmux_project)
+    local id
+    if [[ -n "$project" ]]; then
+        id=$(task project:"$project" status:pending limit:1 uuids 2>/dev/null | head -1)
+    else
+        id=$(task status:pending limit:1 uuids 2>/dev/null | head -1)
+    fi
+
+    if [[ -n "$id" ]]; then
+        task "$id" done
+    else
+        echo "No pending tasks for project: ${project:-default}"
+    fi
+}
+
+# Weekly review - show completed tasks this week
+function treview() {
+    local project=$(_tmux_project)
+    if [[ -n "$project" ]]; then
+        task project:"$project" end.after:week-1 completed
+    else
+        task end.after:week-1 completed
+    fi
+}
