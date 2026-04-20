@@ -106,6 +106,7 @@ cron_logs
 logs/
 *.json
 !.*
+.git/
 
 # Laptop sync configuration (machine-specific)
 .nvim/remote_sync.toml

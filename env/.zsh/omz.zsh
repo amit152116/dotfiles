@@ -4,7 +4,6 @@
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_CUSTOM="$ZSH/custom"
 
-
 typeset -A custom_plugins
 custom_plugins=(
     alias-tips "https://github.com/djui/alias-tips.git"
@@ -37,13 +36,13 @@ plugins=(
     aliases
     common-aliases
     web-search
+    taskwarrior
     docker
     sudo
     vi-mode
     jsontools
     eza
 )
-
 
 ZSH_TMUX_AUTOSTART_ONCE=true
 ZSH_THEME="powerlevel10k/powerlevel10k"
