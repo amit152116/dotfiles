@@ -84,3 +84,8 @@ end = { foreground = '#6e6a86', background = '#000000' }
 # key = "C"
 # mods = "Control|Shift"
 # action = "Copy"
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"

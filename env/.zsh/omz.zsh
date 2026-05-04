@@ -41,7 +41,6 @@ plugins=(
     sudo
     vi-mode
     jsontools
-    eza
 )
 
 ZSH_TMUX_AUTOSTART_ONCE=true

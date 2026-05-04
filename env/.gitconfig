@@ -64,3 +64,5 @@
 	ui = auto
 [submodule]
 	recurse = true
+[url "git@github.com-personal"]
+	insteadOf = git@github.com:

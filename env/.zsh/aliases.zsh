@@ -8,11 +8,36 @@ alias cat='batcat --style=plain'
 alias pop='popd'
 alias vim='nvim'
 
-alias home='builtin cd ~'
+alias claude2="CLAUDE_CONFIG_DIR=~/.claude-account2 claude"
+
+alias l="ls -lFh"
+alias lart="ls -1Fcart"
+alias lr="ls -tRFh"
+alias lrt="ls -1Fcrt"
+alias lsn="ls -1"
+alias lsr="ls -lARFh"
+alias lt="ls -ltFh"
+
+alias home="builtin cd ~"
 if command -v eza &>/dev/null; then
-    alias ls="eza -g --icons"
-    alias la="eza -gla --icons"
-    alias ll="eza -gl --icons"
+    unalias l lr lrt lsr lt 2>/dev/null
+    alias l="eza -lh --icons"
+    alias lr="eza -tRh --icons"
+    alias lrt="eza -lFrh --icons"
+    alias lsr="eza -lARh --icons"
+    alias lt="eza -lh --icons --sort=modified"
+    alias la="eza -lah --icons"
+    alias lD='eza -glD'
+    alias lDD='eza -glDa'
+    alias lS='eza -gl -ssize'
+    alias lT='eza -gl -snewest'
+    alias la='eza -gla --icons'
+    alias ldot='eza -gld .*'
+    alias ll='eza -gl --icons'
+    alias ls='eza -g --icons'
+    alias lsa='ls -lah'
+    alias lsd='eza -gd'
+    alias lsdl='eza -gdl'
 fi
 
 if command -v docker &>/dev/null; then

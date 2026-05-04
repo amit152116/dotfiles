@@ -38,4 +38,9 @@ source ~/.zsh/keybindings.zsh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 
-eval "$(direnv hook zsh)"
+if command -v direnv >/dev/null 2>&1; then
+    eval "$(direnv hook zsh)"
+fi
+
+# opencode
+export PATH=/home/amit_152116/.opencode/bin:$PATH

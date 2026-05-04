@@ -1,5 +1,5 @@
 # Auto-detect ROS distribution from /opt/ros/*/setup.zsh
-for ros_setup in /opt/ros/*/setup.zsh; do
+for ros_setup in /opt/ros/*/setup.zsh(N); do
     if [[ -f "$ros_setup" ]]; then
         ROS_DISTRO=$(basename "$(dirname "$ros_setup")")
         break
