@@ -2,49 +2,6 @@
 return {
 
   {
-    "supermaven-inc/supermaven-nvim",
-    cmd = { "SupermavenUseFree", "SupermavenUsePro" },
-    event = "InsertEnter",
-    opts = {
-      disable_inline_completion = true,
-      disable_keymaps = true,
-      -- keymaps = {
-      --   accept_suggestion = "<Tab>",
-      -- },
-    },
-    specs = {
-      {
-        "AstroNvim/astrocore",
-        ---@type AstroCoreOpts
-        opts = {
-          autocmds = {
-            -- Add a atuocmd when AstroLargeBuf is triggered it should  stop the supermaven for that
-            large_buf_settings = {
-              {
-                event = "User",
-                desc = "Disable certain functionality on very large files",
-                pattern = "AstroLargeBuf",
-                callback = function() vim.cmd "SupermavenStop" end,
-              },
-            },
-          },
-          options = {
-            g = {
-              -- set the ai_accept function
-              ai_accept = function()
-                local suggestion = require "supermaven-nvim.completion_preview"
-                if suggestion.has_suggestion() then
-                  vim.schedule(function() suggestion.on_accept_suggestion() end)
-                  return true
-                end
-              end,
-            },
-          },
-        },
-      },
-    },
-  },
-  {
     "zbirenbaum/copilot.lua",
     cmd = "Copilot",
     build = ":Copilot auth",
