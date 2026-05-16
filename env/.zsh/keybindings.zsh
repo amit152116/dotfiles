@@ -116,3 +116,6 @@ else
     # Not in tmux, just exit the shell
     bindkey '\eq' __exit_zsh         # Alt+Q
 fi
+
+# Ctrl+Space → insert "tq " at prompt for fast task capture
+bindkey -s '^@' 'tq '

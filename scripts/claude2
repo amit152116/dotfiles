@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CLAUDE_CONFIG_DIR="$HOME/.claude2" claude "$@"

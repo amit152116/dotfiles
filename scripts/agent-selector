@@ -9,7 +9,8 @@ set -euo pipefail
 AGENTS=(
     "claude"
     "codex"
-    "gemini"
+    "claude2"
+    "codex2"
     "opencode"
 )
 

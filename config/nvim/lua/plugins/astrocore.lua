@@ -100,12 +100,11 @@ return {
         ["<M-g>"] = {
           function()
             local cwd = vim.fn.getcwd()
-            vim.cmd(
-              string.format(
-                "silent !tmux neww tmux-sessionizer -c lazygit -- -w '%s'",
-                cwd
-              )
-            )
+            vim.fn.jobstart({
+              "tmux",
+              "neww",
+              "tmux-sessionizer -c lazygit -- -w " .. vim.fn.shellescape(cwd),
+            }, { detach = true })
           end,
           desc = "Open Lazygit in tmux",
           silent = true,
@@ -160,7 +159,24 @@ return {
           desc = "Save File",
         },
         ["<Leader>m"] = {
-          ":!tmux neww -dt 67 'glow -p %:p'; tmux select-window -t 67<CR>",
+          function()
+            local path = vim.fn.expand "%:p"
+            vim.fn.jobstart({
+              "tmux",
+              "neww",
+              "-dt",
+              "67",
+              "glow -p " .. vim.fn.shellescape(path),
+            }, {
+              detach = true,
+              on_exit = function()
+                vim.fn.jobstart(
+                  { "tmux", "select-window", "-t", "67" },
+                  { detach = true }
+                )
+              end,
+            })
+          end,
           desc = "Open file in Glow",
           noremap = true,
         },
@@ -229,7 +245,7 @@ return {
           function()
             local project = require "remote_sync.project"
             if project.config_exists() then
-              vim.cmd("edit " .. project.get_config_path())
+              vim.cmd("edit " .. vim.fn.fnameescape(project.get_config_path()))
             else
               vim.notify(
                 "No config file. Run :RemoteSyncConfigure first",
@@ -263,7 +279,7 @@ return {
           function()
             local log_path = require("remote_sync.logger").get_log_path()
             if vim.fn.filereadable(log_path) == 1 then
-              vim.cmd("edit " .. log_path)
+              vim.cmd("edit " .. vim.fn.fnameescape(log_path))
             else
               vim.notify(
                 "No log file found. Enable log_sync_ops in setup().",

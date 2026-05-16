@@ -20,6 +20,11 @@ if command -v go &>/dev/null; then
     export PATH="$(go env GOPATH)/bin:$PATH"
 fi
 
+# opencode
+if [[ -d "$HOME/.opencode/bin" ]]; then
+    export PATH=$HOME/.opencode/bin:$PATH
+fi
+
 # Editors
 if command -v nvim &>/dev/null; then
     export EDITOR="nvim"

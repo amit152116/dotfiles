@@ -8,8 +8,6 @@ alias cat='batcat --style=plain'
 alias pop='popd'
 alias vim='nvim'
 
-alias claude2="CLAUDE_CONFIG_DIR=~/.claude-account2 claude"
-
 alias l="ls -lFh"
 alias lart="ls -1Fcart"
 alias lr="ls -tRFh"
@@ -78,10 +76,3 @@ alias cmk-clangd='cp $TEMPLATES_DIR/clangd ./.clangd && cp $TEMPLATES_DIR/clang-
 
 # Makefile aliases
 alias mknew='cp $TEMPLATES_DIR/makefile ./Makefile'
-
-# ============================================================================
-# Taskwarrior + Tmux Integration
-# ============================================================================
-alias tasks='t'
-alias tlv='tview'
-alias tq='td'
