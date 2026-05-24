@@ -119,8 +119,34 @@ end
 
 local snacks = require "snacks"
 
+--- Formats namespaced items like "/pkg/name" into "[pkg] name".
+--- Used by topics, nodes, services, actions, and params.
+---@param item snacks.picker.finder.Item
+---@return boolean keep True to keep the item, false to skip it.
+local function format_namespaced(item)
+  local pkg, name = item.text:match "^/([^/]+)/?(.*)"
+  if not pkg then return false end
+  item.display = name ~= "" and string.format("[%s] %s", pkg, name) or pkg
+  return true
+end
+
+--- Builds a formatter for interface items like "pkg/<kind>/Name".
+--- e.g. make_interface_formatter("msg") matches "std_msgs/msg/String".
+---@param kind string The interface kind: "msg", "srv", or "action".
+---@return fun(item: snacks.picker.finder.Item): boolean
+local function make_interface_formatter(kind)
+  local pattern = "(.+)/" .. kind .. "/(.+)"
+  return function(item)
+    local pkg, name = item.text:match(pattern)
+    if not (pkg and name) then return false end
+    item.display = string.format("[%s] %s", pkg, name)
+    return true
+  end
+end
+
 ---@class ros2.picker.Picker: ros2.picker.FinderOptions
 ---@field title string  -- optional title for the picker
+---@field cmd? string  -- unused; RosPicker hardcodes the "ros2" base command
 ---
 ---@param opts ros2.picker.Picker The configuration options for the finder.
 local function RosPicker(opts)
@@ -191,209 +217,78 @@ local function RosPicker(opts)
   }
 end
 
-function M.Actions()
-  RosPicker {
-    title = "Active Actions",
-    args = { "action", "list" },
-    ---@param item snacks.picker.finder.Item
-    formatter = function(item)
-      local pattern = "^/([^/]+)/?(.*)"
-      local pkg, name = item.text:match(pattern)
-
-      if pkg then
-        if name ~= "" then
-          item.display = string.format("%s [%s]", name, pkg)
-        else
-          item.display = pkg
-        end
-        return true
-      end
-      return false
-    end,
-    preview = {
-      args = "action info",
-      ft = "yaml", -- Filetype for the preview window
-    },
-  }
+--- Resolves a service's type, then shows its interface definition.
+---@param item snacks.picker.finder.Item
+---@return string command
+local function service_preview(item)
+  local service_type =
+    vim.fn.system(string.format("ros2 service type %s", item.text))
+  service_type = service_type:gsub('"', "") -- remove quotes
+  service_type = service_type:gsub("%s+$", "") -- trim trailing newline
+  item.preview_title = service_type
+  return string.format("ros2 interface show %s", service_type)
 end
-function M.Servics()
-  RosPicker {
-    title = "Active Services",
-    args = { "service", "list" },
-    ---@param item snacks.picker.finder.Item
-    formatter = function(item)
-      local pattern = "^/([^/]+)/?(.*)"
-      local pkg, name = item.text:match(pattern)
 
-      if pkg then
-        if name ~= "" then
-          item.display = string.format("%s [%s]", name, pkg)
-        else
-          item.display = pkg
-        end
-        return true
-      end
-      return false
-    end,
-    preview = {
-      args = function(item)
-        -- 1. Get the service type
-        local service_type =
-          vim.fn.system(string.format("ros2 service type %s", item.text))
-        service_type = service_type:gsub('"', "") -- remove quotes
-        service_type = service_type:gsub("%s+$", "") -- trim trailing newline
-        item.preview_title = service_type
-
-        return string.format("ros2 interface show %s", service_type)
-      end,
-      ft = "yaml", -- Filetype for the preview window
-    },
-  }
-end
--- A function to open a picker for ROS2 nodes
-function M.Nodes()
-  RosPicker {
+--- Declarative picker definitions. Each entry is fed to RosPicker.
+--- The map key becomes the public M.<Name> function.
+---@type table<string, ros2.picker.Picker>
+local pickers = {
+  Topics = {
+    title = "Active Topics",
+    args = { "topic", "list" },
+    formatter = format_namespaced,
+    preview = { args = "topic info --verbose", ft = "yaml" },
+  },
+  Nodes = {
     title = "Active Nodes",
     args = { "node", "list" },
-    ---@param item snacks.picker.finder.Item
-    formatter = function(item)
-      local pattern = "^/([^/]+)/?(.*)"
-      local pkg, name = item.text:match(pattern)
-
-      if pkg then
-        if name ~= "" then
-          item.display = string.format("%s [%s]", name, pkg)
-        else
-          item.display = pkg
-        end
-        return true
-      end
-      return false
-    end,
-    preview = {
-      args = "node info",
-      ft = "yaml",
-    },
-  }
-end
-
-function M.Params()
-  RosPicker {
+    formatter = format_namespaced,
+    preview = { args = "node info", ft = "yaml" },
+  },
+  Actions = {
+    title = "Active Actions",
+    args = { "action", "list" },
+    formatter = format_namespaced,
+    preview = { args = "action info", ft = "yaml" },
+  },
+  Servics = {
+    title = "Active Services",
+    args = { "service", "list" },
+    formatter = format_namespaced,
+    preview = { args = service_preview, ft = "yaml" },
+  },
+  Params = {
     title = "Params",
     args = { "param", "list" },
     ---@param item snacks.picker.finder.Item
     formatter = function(item)
-      item.text = item.text:gsub(":$", "") -- Remove leading slash
-      local pattern = "^/([^/]+)/?(.*)"
-      local pkg, name = item.text:match(pattern)
-
-      if pkg then
-        if name ~= "" then
-          item.display = string.format("%s [%s]", name, pkg)
-        else
-          item.display = pkg
-        end
-        return true
-      end
-      return false
+      item.text = item.text:gsub(":$", "") -- strip trailing colon from `param list`
+      return format_namespaced(item)
     end,
-    preview = {
-      ft = "yaml",
-      args = "param dump",
-    },
-  }
-end
-
-function M.InterfaceMsgs()
-  RosPicker {
+    preview = { args = "param dump", ft = "yaml" },
+  },
+  InterfaceMsgs = {
     title = "Msgs",
     args = { "interface", "list", "--only-msgs" },
-    ---@param item snacks.picker.finder.Item
-    formatter = function(item)
-      local pattern = "(.+)/msg/(.+)"
-      local pkg, name = item.text:match(pattern)
-
-      if pkg and name then
-        item.display = string.format("%s [%s]", name, pkg)
-        return true
-      end
-      return false
-    end,
-    preview = {
-      ft = "yaml",
-      args = "interface show",
-    },
-  }
-end
-
-function M.InterfaceSrvs()
-  RosPicker {
+    formatter = make_interface_formatter "msg",
+    preview = { args = "interface show", ft = "yaml" },
+  },
+  InterfaceSrvs = {
     title = "Srvs",
     args = { "interface", "list", "--only-srvs" },
-    ---@param item snacks.picker.finder.Item
-    formatter = function(item)
-      local pattern = "(.+)/srv/(.+)"
-      local pkg, name = item.text:match(pattern)
-
-      if pkg and name then
-        item.display = string.format("%s [%s]", name, pkg)
-        return true
-      end
-      return false
-    end,
-    preview = {
-      ft = "yaml",
-      args = "interface show",
-    },
-  }
-end
-
-function M.InterfaceActions()
-  RosPicker {
+    formatter = make_interface_formatter "srv",
+    preview = { args = "interface show", ft = "yaml" },
+  },
+  InterfaceActions = {
     title = "Actions",
     args = { "interface", "list", "--only-actions" },
-    ---@param item snacks.picker.finder.Item
-    formatter = function(item)
-      local pattern = "(.+)/action/(.+)"
-      local pkg, name = item.text:match(pattern)
+    formatter = make_interface_formatter "action",
+    preview = { args = "interface show", ft = "yaml" },
+  },
+}
 
-      if pkg and name then
-        item.display = string.format("%s [%s]", name, pkg)
-        return true
-      end
-      return false
-    end,
-    preview = {
-      ft = "yaml",
-      args = "interface show",
-    },
-  }
+for name, opts in pairs(pickers) do
+  M[name] = function() RosPicker(opts) end
 end
 
-function M.Topics()
-  RosPicker {
-    title = "Active Topics",
-    args = { "topic", "list" },
-    ---@param item snacks.picker.finder.Item
-    formatter = function(item)
-      local pattern = "^/([^/]+)/?(.*)"
-      local pkg, name = item.text:match(pattern)
-
-      if pkg then
-        if name ~= "" then
-          item.display = string.format("%s [%s]", name, pkg)
-        else
-          item.display = pkg
-        end
-        return true
-      end
-      return false
-    end,
-    preview = {
-      args = "topic info --verbose", -- Command to generate the preview
-      ft = "yaml", -- Filetype for the preview window
-    },
-  }
-end
--- A function to open a picker for ROS2 topics
 return M
