@@ -6,7 +6,7 @@ size = 15.0
 opacity = 0.90
 dynamic_padding = true
 decorations = "none"               # "Full" | "None" | "Transparent" | "Buttonless"
-startup_mode = "Fullscreen"
+startup_mode = "Maximized"
 dynamic_title = true
 decorations_theme_variant = "Dark"
 

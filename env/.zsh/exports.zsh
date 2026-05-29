@@ -4,15 +4,23 @@ export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$HOME/.fzf/bin:/usr/local/
 export DOTFILES_DIR=$HOME/.dotfiles
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
+export NVM_DIR="$HOME/.config/nvm"
+
+# Resolve nvm's default node and put its bin on PATH directly (fast; works in
+# tmux popups/scripts that skip .zshrc since the server inherits this PATH).
+if [ -f "$NVM_DIR/alias/default" ]; then
+    _nvm_def="$(cat "$NVM_DIR/alias/default")"
+    _nvm_bin="$(ls -d "$NVM_DIR/versions/node/v${_nvm_def#v}"*/bin 2>/dev/null | sort -V | tail -1)"
+    [ -n "$_nvm_bin" ] && export PATH="$_nvm_bin:$PATH"
+    unset _nvm_def _nvm_bin
+fi
+
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
 # Cargo [Rust Manager]
 if [[ -d "$HOME/.cargo/bin" ]]; then
     export PATH="$HOME/.cargo/bin:$PATH"
-fi
-
-# CUDA
-if [[ -d "/usr/local/cuda" ]]; then
-    export PATH="/usr/local/cuda/bin:$PATH"
-    export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 fi
 
 # GO

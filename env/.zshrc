@@ -5,7 +5,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
     source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-if  command -v zoxide >/dev/null 2>&1; then
+if command -v zoxide >/dev/null 2>&1; then
     eval "$(zoxide init zsh)"
 fi
 
@@ -21,7 +21,6 @@ source "$HOME"/.zsh/fzf.zsh
 # 3️⃣ Load completion
 source "$HOME"/.zsh/completions.zsh
 source "$HOME"/.zsh/netclient.zsh
-
 
 # 4️⃣ Load functions
 source "$HOME"/.zsh/functions.zsh
@@ -39,8 +38,6 @@ source "$HOME"/.zsh/taskwarrior.zsh
 # To customize prompt, run `p10k configure` or edit $HOME/.p10k.zsh.
 [[ ! -f $HOME/.p10k.zsh ]] || source "$HOME"/.p10k.zsh
 
-
 if command -v direnv >/dev/null 2>&1; then
     eval "$(direnv hook zsh)"
 fi
-
