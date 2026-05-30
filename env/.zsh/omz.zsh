@@ -21,27 +21,39 @@ for plugin in ${(k)custom_plugins}; do
     fi
 done
 
-# Define plugins
+# Plugins that always load (pure-shell, no external binary required)
 plugins=(
     alias-tips
     zsh-autosuggestions
     zsh-completions
     zsh-history-substring-search
     zsh-syntax-highlighting
-    fzf
     fzf-tab
-    tmux
     git
     gitignore
     aliases
     common-aliases
     web-search
-    taskwarrior
-    docker
     sudo
     vi-mode
     jsontools
 )
+
+# Plugins guarded on an external package — load only if the binary exists.
+# Maps plugin name -> required command.
+typeset -A guarded_plugins
+guarded_plugins=(
+    fzf fzf
+    tmux tmux
+    taskwarrior task
+    docker docker
+)
+
+for plugin in ${(k)guarded_plugins}; do
+    if command -v "${guarded_plugins[$plugin]}" >/dev/null 2>&1; then
+        plugins+=("$plugin")
+    fi
+done
 
 ZSH_TMUX_AUTOSTART_ONCE=true
 ZSH_THEME="powerlevel10k/powerlevel10k"
@@ -58,3 +70,9 @@ zstyle ':completion:*:*:docker:*' option-stacking yes
 zstyle ':completion:*:*:docker-*:*' option-stacking yes
 # Source Oh My Zsh
 source $ZSH/oh-my-zsh.sh
+
+# fzf-tab: enable on host, disable inside a container.
+# Detection: docker (/.dockerenv), podman (/run/.containerenv), or $container var.
+if [[ -f /.dockerenv || -f /run/.containerenv || -n "$container" ]]; then
+    (( $+functions[disable-fzf-tab] )) && disable-fzf-tab
+fi

@@ -107,16 +107,16 @@ _load_ros() {
         cd "$ws_root/src" || return 1
 
         case "$lang" in
-            py)
-                ros2 pkg create "$pkg_name" --build-type ament_python --dependencies rclpy "$dependencies" --license GPL-3.0-only
-                ;;
-            cpp)
-                ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only
-                ;;
-            *)
-                log "Invalid language. Use 'py' for Python or 'cpp' for C++."
-                return 1
-                ;;
+        py)
+            ros2 pkg create "$pkg_name" --build-type ament_python --dependencies rclpy "$dependencies" --license GPL-3.0-only
+            ;;
+        cpp)
+            ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only
+            ;;
+        *)
+            log "Invalid language. Use 'py' for Python or 'cpp' for C++."
+            return 1
+            ;;
         esac
 
         # Return to the original directory

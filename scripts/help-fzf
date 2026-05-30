@@ -65,7 +65,7 @@ if [[ $type == "[man]" ]]; then
     name=$(echo "$page" | awk '{print $1}')
     section=$(echo "$page" | awk '{print $2}' | tr -d '()')
 
-    tmux neww -n "${name}(${section})" "man ${section} ${name} | col -bx | batcat -p -l man --paging=always"
+    tmux neww -n "${name}(${section})" "man ${section} ${name} | col -bx | batcat -l man --style=plain --paging=always"
 else
     # tldr page
     tmux neww -n "${page}" "tldr --raw ${page} | glow -"

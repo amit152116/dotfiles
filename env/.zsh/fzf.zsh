@@ -42,6 +42,6 @@ export FZF_CTRL_T_OPTS="
 "
 
 export FZF_CTRL_R_OPTS="
-  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | tmux-clip)+abort'
   --color header:italic
   --header 'Press CTRL-Y to copy command into clipboard'"
