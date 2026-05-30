@@ -9,19 +9,28 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
     source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-if command -v zoxide >/dev/null 2>&1; then
-    eval "$(zoxide init zsh)"
+# Cache zoxide/direnv hook output — regenerates only when binary changes
+_zsh_cache="${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+[[ -d "$_zsh_cache" ]] || mkdir -p "$_zsh_cache"
+_zsh_bin=$(command -v zoxide 2>/dev/null)
+if [[ -n "$_zsh_bin" ]]; then
+    [[ -f "$_zsh_cache/zoxide-init.zsh" && ! "$_zsh_bin" -nt "$_zsh_cache/zoxide-init.zsh" ]] ||
+    zoxide init zsh >|"$_zsh_cache/zoxide-init.zsh"
+    source "$_zsh_cache/zoxide-init.zsh"
 fi
-
-if command -v direnv >/dev/null 2>&1; then
-    eval "$(direnv hook zsh)"
+_zsh_bin=$(command -v direnv 2>/dev/null)
+if [[ -n "$_zsh_bin" ]]; then
+    [[ -f "$_zsh_cache/direnv-hook.zsh" && ! "$_zsh_bin" -nt "$_zsh_cache/direnv-hook.zsh" ]] ||
+    direnv hook zsh >|"$_zsh_cache/direnv-hook.zsh"
+    source "$_zsh_cache/direnv-hook.zsh"
 fi
+unset _zsh_cache _zsh_bin
 
 # 0️⃣ Environment exports (PATH, etc.)
 source "$HOME"/.zsh/exports.zsh
 
-# 1️⃣ Load Oh My Zsh first
-source "$HOME"/.zsh/omz.zsh
+# 1️⃣ Load Zinit first
+source "$HOME"/.zsh/zinit.zsh
 
 # 2️⃣ Load FZF
 source "$HOME"/.zsh/fzf.zsh

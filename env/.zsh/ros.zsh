@@ -16,9 +16,6 @@ if [[ -z "$ROS_DISTRO" ]]; then
     return 0
 fi
 
-# Source ROS2 environment
-source /opt/ros/${ROS_DISTRO}/setup.zsh
-
 # Lazy loading ROS configuration
 _ros_loaded=false
 
@@ -47,6 +44,9 @@ _load_ros() {
     if [[ "$_ros_loaded" == "true" ]]; then
         return 0
     fi
+
+    # Source base ROS2 installation (deferred from startup)
+    source /opt/ros/${ROS_DISTRO}/setup.zsh
 
     # ROS settings
     export GZ_VERSION=harmonic
@@ -107,16 +107,16 @@ _load_ros() {
         cd "$ws_root/src" || return 1
 
         case "$lang" in
-        py)
-            ros2 pkg create "$pkg_name" --build-type ament_python --dependencies rclpy "$dependencies" --license GPL-3.0-only
-            ;;
-        cpp)
-            ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only
-            ;;
-        *)
-            log "Invalid language. Use 'py' for Python or 'cpp' for C++."
-            return 1
-            ;;
+            py)
+                ros2 pkg create "$pkg_name" --build-type ament_python --dependencies rclpy "$dependencies" --license GPL-3.0-only
+                ;;
+            cpp)
+                ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only
+                ;;
+            *)
+                log "Invalid language. Use 'py' for Python or 'cpp' for C++."
+                return 1
+                ;;
         esac
 
         # Return to the original directory
@@ -159,12 +159,10 @@ chpwd_ros() {
 
     # If we found a ROS workspace
     if [[ -n "$workspace_dir" ]]; then
-        # Load ROS environment if not already loaded
         if [[ "$_ros_loaded" == "false" ]]; then
-            source "$workspace_dir/install/setup.zsh"
-            _load_ros
+            _load_ros                                 # sources base /opt/ros/*/setup.zsh first
+            source "$workspace_dir/install/setup.zsh" # workspace overlay on top
         fi
-
     fi
 }
 

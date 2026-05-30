@@ -10,12 +10,11 @@ else
   compinit -i -C
 fi
 unset _zcompdump
+# Block all re-runs of compinit (ROS/colcon setup scripts call it multiple times).
+# Completion system already initialized above — no-op is safe for the session lifetime.
+function compinit() { : }
 bashcompinit
-
-# Alias completion
-for alias_name in $(alias | awk -F= '{print $1}' | awk '{print $2}'); do
-  compdef "$alias_name=$(alias "$alias_name" | sed "s/^.*='\([^']*\)'.*/\1/")"
-done
+zinit cdreplay -q
 
 # # Autocomplete for tmux_resurrect
 # __tmux_resurrect_complete() {

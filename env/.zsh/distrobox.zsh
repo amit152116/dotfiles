@@ -11,7 +11,7 @@
 
 # --- Detect whether this shell is already inside a container ----------------
 # Markers: docker (/.dockerenv), podman/distrobox (/run/.containerenv, $container),
-# toolbox (/run/.toolboxenv), distrobox ($CONTAINER_ID). Matches omz.zsh.
+# toolbox (/run/.toolboxenv), distrobox ($CONTAINER_ID). Matches zinit.zsh.
 if [[ -f /.dockerenv || -f /run/.containerenv || -f /run/.toolboxenv ||
     -n "$container" || -n "$CONTAINER_ID" ]]; then
     export IN_CONTAINER=1

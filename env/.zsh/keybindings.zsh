@@ -146,3 +146,37 @@ bindkey '\ee' __toggle_box   # Alt+E
 
 # Ctrl+Space → insert "tq " at prompt for fast task capture
 bindkey -s '^@' 'tq '
+
+# zsh-vi-mode calls zvm_init() on first precmd, wiping all keymaps above.
+# Called via ZVM_AFTER_INIT_COMMANDS after zvm_init() completes.
+_zvm_rebind_custom_keys() {
+    # Bump timeout so terminal Alt+key ESC sequences aren't swallowed by vi mode-switch
+    KEYTIMEOUT=15
+
+    bindkey -M viins '^P' history-beginning-search-backward
+    bindkey -M vicmd '^P' history-beginning-search-backward
+    bindkey -M viins '^N' history-beginning-search-forward
+    bindkey -M vicmd '^N' history-beginning-search-forward
+    bindkey -M viins '^o' __open_file_explorer
+    bindkey -M viins '^B' __silent_run
+    bindkey -M viins '^F' __fzf_repo_cd
+    bindkey -M viins -s '^@' 'tq '
+    bindkey -M viins '\ee' __toggle_box
+    bindkey -M vicmd '\ee' __toggle_box
+
+    if [[ -n "$TMUX" ]]; then
+        bindkey -M viins '\eq' __tmux_kill_pane
+        bindkey -M vicmd '\eq' __tmux_kill_pane
+        bindkey -M viins '\eg' __tmux_lazygit
+        bindkey -M vicmd '\eg' __tmux_lazygit
+        bindkey -M viins '\ey' __tmux_yazi
+        bindkey -M vicmd '\ey' __tmux_yazi
+        bindkey -M viins '\ed' __tmux_glow
+        bindkey -M vicmd '\ed' __tmux_glow
+    else
+        bindkey -M viins '\eq' __exit_zsh
+        bindkey -M vicmd '\eq' __exit_zsh
+    fi
+}
+zvm_after_init_commands+=('_zvm_rebind_custom_keys')
+zvm_after_lazy_keybindings_commands+=('_zvm_rebind_custom_keys')

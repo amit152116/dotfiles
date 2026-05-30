@@ -179,13 +179,9 @@ fi
 # keep working after a reboot/restore.
 if [[ -n "$TMUX" ]]; then
     function _refresh_tmux_env() {
-        local v
-        for v in DISPLAY WAYLAND_DISPLAY XAUTHORITY XDG_SESSION_TYPE SSH_AUTH_SOCK; do
-            eval "$(tmux show-environment "$v" 2>/dev/null | grep '^[A-Z]' | sed 's/^/export /')"
-        done
-        # Self-remove once a live Wayland socket is present, so the refresh
-        # stops costing subshells on every prompt. Keeps retrying while stale
-        # (e.g. before a reattach has reseeded the tmux session env).
+        # Single tmux call (-s = shell syntax) instead of one per variable.
+        eval "$(tmux show-environment -s 2>/dev/null | \
+            grep -E '^(export )?(DISPLAY|WAYLAND_DISPLAY|XAUTHORITY|XDG_SESSION_TYPE|SSH_AUTH_SOCK)=')"
         if [[ -n "$WAYLAND_DISPLAY" && -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]]; then
             add-zsh-hook -d precmd _refresh_tmux_env
         fi
