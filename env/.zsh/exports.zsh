@@ -1,5 +1,5 @@
 # Paths
-export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$HOME/.fzf/bin:/usr/local/bin:/usr/lib/ccache:/snap/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$HOME/.fzf/bin:/usr/local/bin:/usr/sbin:/sbin:/usr/lib/ccache:/snap/bin:$PATH"
 
 export DOTFILES_DIR=$HOME/.dotfiles
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
@@ -15,8 +15,13 @@ if [ -f "$NVM_DIR/alias/default" ]; then
     unset _nvm_def _nvm_bin
 fi
 
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+# Lazy-load nvm — node is already on PATH above; nvm() only needed if switching versions.
+nvm() {
+    unset -f nvm
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    nvm "$@"
+}
 
 # Cargo [Rust Manager]
 if [[ -d "$HOME/.cargo/bin" ]]; then
@@ -24,8 +29,8 @@ if [[ -d "$HOME/.cargo/bin" ]]; then
 fi
 
 # GO
-if command -v go &>/dev/null; then
-    export PATH="$(go env GOPATH)/bin:$PATH"
+if [[ -d "$HOME/go/bin" ]]; then
+    export PATH="$HOME/go/bin:$PATH"
 fi
 
 # opencode
@@ -61,7 +66,10 @@ if [[ -d "$HOME/ardu_ws" ]]; then
 
     export PATH=$PATH:$HOME/ardu_ws/Micro-XRCE-DDS-Gen/scripts
     export PATH=$PATH:$HOME/ardu_ws/src/ardupilot/Tools/autotest
-    source $HOME/ardu_ws/src/ardupilot/Tools/completion/completion.zsh
+    # Lazy-load ardupilot completion on first use of ardupilot commands
+    _ardu_completion="$HOME/ardu_ws/src/ardupilot/Tools/completion/completion.zsh"
+    [[ -f "$_ardu_completion" ]] && source "$_ardu_completion"
+    unset _ardu_completion
 
     # export GZ_FUEL_CACHE_ONLY=1
     # export GZ_FUEL_DOWNLOAD_MODE=none

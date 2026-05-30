@@ -7,16 +7,9 @@ alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --
 alias cat='batcat --style=plain'
 alias pop='popd'
 alias vim='nvim'
-
-alias l="ls -lFh"
-alias lart="ls -1Fcart"
-alias lr="ls -tRFh"
-alias lrt="ls -1Fcrt"
-alias lsn="ls -1"
-alias lsr="ls -lARFh"
-alias lt="ls -ltFh"
-
 alias home="builtin cd ~"
+alias distrobox="dbox"
+
 if command -v eza &>/dev/null; then
     unalias l lr lrt lsr lt 2>/dev/null
     alias l="eza -lh --icons"
@@ -36,6 +29,14 @@ if command -v eza &>/dev/null; then
     alias lsa='ls -lah'
     alias lsd='eza -gd'
     alias lsdl='eza -gdl'
+else
+    alias l="ls -lFh"
+    alias lart="ls -1Fcart"
+    alias lr="ls -tRFh"
+    alias lrt="ls -1Fcrt"
+    alias lsn="ls -1"
+    alias lsr="ls -lARFh"
+    alias lt="ls -ltFh"
 fi
 
 if command -v docker &>/dev/null; then

@@ -33,7 +33,6 @@ plugins=(
     gitignore
     aliases
     common-aliases
-    web-search
     sudo
     vi-mode
     jsontools
@@ -74,5 +73,5 @@ source $ZSH/oh-my-zsh.sh
 # fzf-tab: enable on host, disable inside a container.
 # Detection: docker (/.dockerenv), podman (/run/.containerenv), or $container var.
 if [[ -f /.dockerenv || -f /run/.containerenv || -n "$container" ]]; then
-    (( $+functions[disable-fzf-tab] )) && disable-fzf-tab
+    (($+functions[disable - fzf - tab])) && disable-fzf-tab
 fi

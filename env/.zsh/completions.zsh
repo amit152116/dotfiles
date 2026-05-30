@@ -1,12 +1,20 @@
-# autoload -U +X bashcompinit && bashcompinit
-# autoload -U +X compinit && compinit
-autoload -Uz bashcompinit; compinit
-autoload -Uz compinit; compinit
-
+# Init completion system. -i silently ignores "insecure" dirs (no prompt) —
+# distrobox/containers see the shared $HOME as group-writable via uid/gid maps.
+# -C skips security check and uses the dump cache — regenerates only if >24h old.
+autoload -Uz compinit bashcompinit
+_zcompdump="${ZDOTDIR:-$HOME}/.zcompdump"
+# Regenerate dump only if >24h old; otherwise use cache (-C skips security check).
+if [[ -n "$_zcompdump"(#qN.mh+24) ]]; then
+  compinit -i
+else
+  compinit -i -C
+fi
+unset _zcompdump
+bashcompinit
 
 # Alias completion
 for alias_name in $(alias | awk -F= '{print $1}' | awk '{print $2}'); do
-    compdef "$alias_name=$(alias "$alias_name" | sed "s/^.*='\([^']*\)'.*/\1/")"
+  compdef "$alias_name=$(alias "$alias_name" | sed "s/^.*='\([^']*\)'.*/\1/")"
 done
 
 # # Autocomplete for tmux_resurrect
@@ -21,9 +29,9 @@ done
 #   sessions=(${sessions#tmux_resurrect_})
 #   sessions=(${sessions%.txt})
 #
-# # Filter matching current input 
+# # Filter matching current input
 # local matches=()
-# for s in $sessions; do 
+# for s in $sessions; do
 #   input=$s pretty_date=$(date -d "${input:0:8}\
 #     ${input:9:2}:${input:11:2}:${input:13:2}"\
 #     "+%Y-%m-%d %H:%M:%S")
@@ -34,13 +42,13 @@ done
 
 __tmux_resurrect_complete() {
   local cur dir sessions
-  cur=${words[CURRENT]}           # what user typed so far
+  cur=${words[CURRENT]} # what user typed so far
   dir="$HOME/.tmux/resurrect"
   [[ -d $dir ]] || return
 
   # collect files -> keep full filenames (just strip path)
   sessions=(${dir}/tmux_resurrect_*.txt(N))
-  sessions=(${sessions##*/})  # remove path, keep prefix and suffix
+  sessions=(${sessions##*/}) # remove path, keep prefix and suffix
 
   # Filter matching current input
   local matches=()

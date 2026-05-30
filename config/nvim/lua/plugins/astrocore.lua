@@ -97,19 +97,6 @@ return {
           silent = true,
         },
 
-        ["<M-g>"] = {
-          function()
-            local cwd = vim.fn.getcwd()
-            vim.fn.jobstart({
-              "tmux",
-              "neww",
-              "tmux-sessionizer -c lazygit -- -w " .. vim.fn.shellescape(cwd),
-            }, { detach = true })
-          end,
-          desc = "Open Lazygit in tmux",
-          silent = true,
-        },
-
         ["<Leader>qt"] = {
           "<cmd>tabclose<cr>",
           desc = "Quit Tab",

@@ -62,19 +62,30 @@ bindkey '^F' __fzf_repo_cd
 # TMUX BINDINGS
 if [[ -n "$TMUX" ]]; then
 
+    # Resolve a usable tmux. Inside distrobox the tmux server runs on the host
+    # and the binary isn't installed in the container, so route via the host.
+    if command -v tmux >/dev/null 2>&1; then
+        __tmux() { command tmux "$@"; }
+    elif command -v distrobox-host-exec >/dev/null 2>&1; then
+        __tmux() { distrobox-host-exec tmux "$@"; }
+    else
+        __tmux() { return 1; }
+    fi
+
     __tmux_kill_pane() {
         local current_pane=$TMUX_PANE
-        local panes=$(tmux list-panes -s | wc -l)
+        local panes=$(__tmux list-panes -s | wc -l)
 
         # Only switch if there is exactly 1 pane in the session
         if [ "$panes" -eq 1 ]; then
-            if ! tmux switch-client -l 2>/dev/null; then
-                tmux switch-client -p
+            if ! __tmux switch-client -l 2>/dev/null; then
+                __tmux switch-client -p
             fi
         fi
 
-        # Exit the shell, which will naturally close the pane/popup
-        __exit_zsh
+        # Kill the pane directly so nested shells (host -> box -> onhost -> ...)
+        # all die at once instead of unwinding one `exit` per layer.
+        __tmux kill-pane
     }
     zle -N __tmux_kill_pane
 
@@ -116,6 +127,22 @@ else
     # Not in tmux, just exit the shell
     bindkey '\eq' __exit_zsh         # Alt+Q
 fi
+
+# Alt+E → toggle between host and the repo's distrobox container in this pane.
+# Host  -> runs `box` (enters the marker's container).
+# Box   -> runs `exit` (returns to the host shell underneath).
+# (Alt+C is taken by fzf's cd widget.)
+__toggle_box() {
+    zle kill-whole-line
+    if (( IN_CONTAINER )); then
+        BUFFER="exit"
+    else
+        BUFFER="box"
+    fi
+    zle accept-line
+}
+zle -N __toggle_box
+bindkey '\ee' __toggle_box   # Alt+E
 
 # Ctrl+Space → insert "tq " at prompt for fast task capture
 bindkey -s '^@' 'tq '
