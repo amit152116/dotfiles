@@ -94,6 +94,6 @@ zinit wait lucid for \
     atload"autopair-init" hlissner/zsh-autopair \
     OMZP::colored-man-pages
 
-# zsh-syntax-highlighting must be last
+# fast-syntax-highlighting must be last
 zinit ice wait lucid atinit"zicompdef"
-zinit light zsh-users/zsh-syntax-highlighting
+zinit light zdharma-continuum/fast-syntax-highlighting

@@ -5,19 +5,19 @@ for ros_setup in /opt/ros/*/setup.zsh(N); do
         break
     fi
 done
-# Fallback to ROS_INSTALL_PATH if set
 if [[ -z "$ROS_DISTRO" && -n "$ROS_INSTALL_PATH" && -f "$ROS_INSTALL_PATH/setup.zsh" ]]; then
     ROS_DISTRO=$(basename "$ROS_INSTALL_PATH")
 fi
-
-# Only load ROS configuration if found
 if [[ -z "$ROS_DISTRO" ]]; then
-    # just skip silently
     return 0
 fi
 
-# Lazy loading ROS configuration
 _ros_loaded=false
+_ros_extras_loaded=false
+_ROS_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/ros"
+_ROS_STATS_LOG="$_ROS_CACHE_DIR/stats.log"
+
+# --- Stubs: command-triggered lazy load (outside workspace) ---
 
 ros2() {
     unset -f ros2
@@ -33,22 +33,11 @@ ros() {
     ros2 "$@"
 }
 
-# Function to load ROS environment
-_load_ros() {
+# --- Fast setup: aliases, env vars, completions (no file sourcing) ---
 
-    # Logging function
-    log() {
-        echo "[ROS] $1"
-    }
+_setup_ros_extras() {
+    [[ "$_ros_extras_loaded" == "true" ]] && return 0
 
-    if [[ "$_ros_loaded" == "true" ]]; then
-        return 0
-    fi
-
-    # Source base ROS2 installation (deferred from startup)
-    source /opt/ros/${ROS_DISTRO}/setup.zsh
-
-    # ROS settings
     export GZ_VERSION=harmonic
     export ROS_DOMAIN_ID=0
     export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
@@ -56,20 +45,13 @@ _load_ros() {
     export ROS_LOCALHOST_ONLY=0
     export RCUTILS_COLORIZED_OUTPUT=1
     export RCL_LOG_COLORIZE=1
-    # export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}] [({file_name}:{line_number})]: {message}"
     export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message}"
 
-    # Source completion scripts if they exist
-    if [[ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.zsh ]]; then
-        source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.zsh
-    fi
-    if [[ -f /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh ]]; then
-        source /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh
-    fi
+    [[ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.zsh ]] &&
+    source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.zsh
+    [[ -f /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh ]] &&
+    source /opt/ros/${ROS_DISTRO}/share/ros2cli/environment/ros2-argcomplete.zsh
 
-    _ros_loaded=true
-
-    # ROS2 aliases
     alias ros='ros2'
     alias rqt_graph='ros2 run rqt_graph rqt_graph'
     alias rqt_image_view='ros2 run rqt_image_view rqt_image_view'
@@ -79,96 +61,135 @@ _load_ros() {
     alias roslaunch='ros2 launch'
     alias rosdep_install='rosdep install --from-paths src --ignore-src -r -y'
 
-    # ROS2 functions
     rospkg() {
         if [[ $# -lt 2 ]]; then
-            log "Usage: rospkg <py|cpp> <package_name> [dependencies...]"
+            echo "[ROS] Usage: rospkg <py|cpp> <package_name> [dependencies...]"
             return 1
         fi
-
-        # Locate the ROS 2 workspace (assumes running inside a workspace)
-        local ws_root="$(pwd)"
+        local ws_root
+        ws_root="$(pwd)"
         while [[ "$ws_root" != "/" && ! -d "$ws_root/src" ]]; do
             ws_root="$(dirname "$ws_root")"
         done
-
-        # Check if src folder exists in the detected workspace
         if [[ ! -d "$ws_root/src" ]]; then
-            log "Error: Could not find a ROS 2 workspace (src/ folder missing)."
+            echo "[ROS] Error: Could not find a ROS 2 workspace (src/ folder missing)."
             return 1
         fi
-
-        local lang=$1
-        local pkg_name=$2
+        local lang=$1 pkg_name=$2
         shift 2
         local dependencies="$*"
-
-        # Move to src directory
         cd "$ws_root/src" || return 1
-
         case "$lang" in
-            py)
-                ros2 pkg create "$pkg_name" --build-type ament_python --dependencies rclpy "$dependencies" --license GPL-3.0-only
-                ;;
-            cpp)
-                ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only
-                ;;
+            py) ros2 pkg create "$pkg_name" --build-type ament_python --dependencies rclpy "$dependencies" --license GPL-3.0-only ;;
+            cpp) ros2 pkg create "$pkg_name" --build-type ament_cmake --dependencies rclcpp "$dependencies" --license GPL-3.0-only ;;
             *)
-                log "Invalid language. Use 'py' for Python or 'cpp' for C++."
+                echo "[ROS] Invalid language. Use 'py' or 'cpp'."
                 return 1
                 ;;
         esac
-
-        # Return to the original directory
         cd - >/dev/null
     }
 
-    # Display ROS logs in real time with filtering
     roslog() {
         journalctl -u ros2 -f --no-tail | fzf --prompt="Filter logs: "
     }
 
+    _ros_extras_loaded=true
 }
 
-# Fuzzy search and run a node
-rosrun() {
-    package=$(ros2 pkg list | fzf --prompt="Select a package: ")
-    [ -z "$package" ] && log "No package selected. Exiting..." && return 1
+# --- Slow setup: base ROS install (command-triggered path, no workspace) ---
 
-    node=$(ros2 pkg executables "$package" | awk '{print $2}' | fzf --prompt="Select a node: ")
-    [ -z "$node" ] && log "No node selected. Exiting..." && return 1
-
-    log "Running: ros2 run $package $node"
-    ros2 run "$package" "$node"
+_load_ros() {
+    [[ "$_ros_loaded" == "true" ]] && return 0
+    source /opt/ros/${ROS_DISTRO}/setup.zsh
+    _setup_ros_extras
+    _ros_loaded=true
 }
 
-# Auto-load when entering ROS workspace
+# --- Cache helpers ---
+
+_ros_save_cache() {
+    local cache_file="$1"
+    local ros_vars=(
+        PATH AMENT_PREFIX_PATH CMAKE_PREFIX_PATH LD_LIBRARY_PATH
+        PYTHONPATH PKG_CONFIG_PATH COLCON_PREFIX_PATH
+        ROS_VERSION ROS_PYTHON_VERSION AMENT_CURRENT_PREFIX
+    )
+    {
+        for var in "${ros_vars[@]}"; do
+            [[ -n "${(P)var+x}" ]] && typeset -px "$var"
+        done
+    } >"$cache_file"
+}
+
+_ros_log_stat() {
+    mkdir -p "$_ROS_CACHE_DIR"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $1 $2" >>"$_ROS_STATS_LOG"
+}
+
+# --- Public: cache stats summary ---
+
+ros-cache-stats() {
+    if [[ ! -f "$_ROS_STATS_LOG" ]]; then
+        echo "[ROS] No stats yet — open a ROS workspace terminal first."
+        return
+    fi
+    local fresh cached total
+    fresh=$(grep -c ' FRESH ' "$_ROS_STATS_LOG" 2>/dev/null)
+    fresh=${fresh:-0}
+    cached=$(grep -c ' CACHED ' "$_ROS_STATS_LOG" 2>/dev/null)
+    cached=${cached:-0}
+    total=$((fresh + cached))
+    echo "[ROS Cache Stats]  log: $_ROS_STATS_LOG"
+    echo "  Fresh  (slow source):  $fresh"
+    echo "  Cached (fast restore): $cached"
+    echo "  Total:                 $total"
+    ((total > 0)) && printf "  Hit rate:              %d%%\n" $((cached * 100 / total))
+}
+
+# --- chpwd hook: workspace-aware load with env snapshot cache ---
+
 chpwd_ros() {
-    local current_dir="$PWD"
-    local workspace_dir=""
+    local current_dir="$PWD" workspace_dir=""
 
-    # 1. Traverse upward to find the ROS workspace root
     while [[ -n "$current_dir" && "$current_dir" != "/" ]]; do
-        if [[ -f "$current_dir/install/setup.zsh" ]]; then
-            workspace_dir="$current_dir"
-            break
-        fi
-        # Strip the last folder from the path (pure Zsh, extremely fast)
+        [[ -f "$current_dir/install/setup.zsh" ]] && workspace_dir="$current_dir" && break
         current_dir="${current_dir%/*}"
     done
 
-    # If we found a ROS workspace
-    if [[ -n "$workspace_dir" ]]; then
-        if [[ "$_ros_loaded" == "false" ]]; then
-            _load_ros                                 # sources base /opt/ros/*/setup.zsh first
-            source "$workspace_dir/install/setup.zsh" # workspace overlay on top
-        fi
+    [[ -z "$workspace_dir" || "$_ros_loaded" == "true" ]] && return 0
+
+    mkdir -p "$_ROS_CACHE_DIR"
+    local cache_file="$_ROS_CACHE_DIR/${workspace_dir//\//_}"
+
+    if [[ -f "$cache_file" && "$cache_file" -nt "$workspace_dir/install/setup.zsh" ]]; then
+        source "$cache_file"
+        _ros_log_stat "CACHED" "$workspace_dir"
+        echo "[ROS] env restored from cache (${workspace_dir:t})"
+    else
+        source /opt/ros/${ROS_DISTRO}/setup.zsh
+        source "$workspace_dir/install/setup.zsh"
+        _ros_save_cache "$cache_file"
+        _ros_log_stat "FRESH" "$workspace_dir"
+        echo "[ROS] env sourced fresh, snapshot saved (${workspace_dir:t})"
     fi
+
+    _setup_ros_extras
+    _ros_loaded=true
 }
 
-# Add the function to chpwd hooks (runs when changing directories)
 autoload -U add-zsh-hook
 add-zsh-hook chpwd chpwd_ros
-
-# Run once on shell startup (in case we start directly in a ROS workspace)
 chpwd_ros
+
+# --- Fuzzy node runner ---
+
+rosrun() {
+    local package node
+    package=$(ros2 pkg list | fzf --prompt="Select a package: ")
+    [[ -z "$package" ]] && echo "[ROS] No package selected." && return 1
+    node=$(ros2 pkg executables "$package" | awk '{print $2}' | fzf --prompt="Select a node: ")
+    [[ -z "$node" ]] && echo "[ROS] No node selected." && return 1
+    echo "[ROS] Running: ros2 run $package $node"
+    ros2 run "$package" "$node"
+}

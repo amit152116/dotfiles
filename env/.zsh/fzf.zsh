@@ -4,6 +4,13 @@ if ! command -v fzf &>/dev/null && [ ! -d "$HOME/.fzf" ]; then
     "$HOME/.fzf/install" --all
 fi
 
+# Source fzf shell integration to define fzf-history-widget, fzf-file-widget, fzf-cd-widget
+if command -v fzf &>/dev/null; then
+    source <(fzf --zsh)
+elif [[ -f "$HOME/.fzf.zsh" ]]; then
+    source "$HOME/.fzf.zsh"
+fi
+
 export FZF_DEFAULT_COMMAND="fdfind --type f --strip-cwd-prefix --hidden --follow --exclude .git"
 export FZF_COMMON_OPTS='
 --prompt="❯ "
