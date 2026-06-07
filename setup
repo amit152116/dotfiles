@@ -168,6 +168,7 @@ run_env() {
         ["$DOTFILES_DIR/config/tmuxinator"]="$HOME/.config/tmuxinator"
         ["$DOTFILES_DIR/config/timewarrior"]="$HOME/.config/timewarrior"
         ["$DOTFILES_DIR/config/yazi"]="$HOME/.config/yazi"
+        ["$DOTFILES_DIR/config/vicinae"]="$HOME/.config/vicinae"
         ["$DOTFILES_DIR/env/.gitconfig"]="$HOME/.gitconfig"
         ["$DOTFILES_DIR/env/.taskrc"]="$HOME/.taskrc"
         ["$DOTFILES_DIR/env/.gitignore"]="$HOME/.gitignore"

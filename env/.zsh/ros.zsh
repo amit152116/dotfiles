@@ -39,10 +39,8 @@ _setup_ros_extras() {
     [[ "$_ros_extras_loaded" == "true" ]] && return 0
 
     export GZ_VERSION=harmonic
-    export ROS_DOMAIN_ID=0
     export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     export MICRO_ROS_RMW_IMPLEMENTATION=rmw_microxrcedds
-    export ROS_LOCALHOST_ONLY=0
     export RCUTILS_COLORIZED_OUTPUT=1
     export RCL_LOG_COLORIZE=1
     export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message}"

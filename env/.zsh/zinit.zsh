@@ -29,6 +29,7 @@ zinit ice depth"1"
 zinit light romkatv/powerlevel10k
 
 # --- OMZ lib files (immediate) ---
+zinit snippet OMZ::lib/async_prompt.zsh
 zinit snippet OMZ::lib/git.zsh
 zinit snippet OMZ::lib/key-bindings.zsh
 zinit snippet OMZ::lib/functions.zsh
@@ -37,12 +38,17 @@ zinit snippet OMZ::lib/misc.zsh
 zinit snippet OMZ::lib/termsupport.zsh
 
 # --- OMZ built-in plugins (immediate) ---
+zinit snippet OMZP::aliases
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
 zinit snippet OMZP::gitignore
 zinit snippet OMZP::common-aliases
-zinit snippet OMZP::web-search
+zinit snippet OMZP::direnv
+zinit snippet OMZP::extract
 zinit snippet OMZP::jsontools
+zinit snippet OMZP::web-search
+zinit snippet OMZP::nmap
+zinit snippet OMZP::systemd
 
 # --- zsh-completions: blockf prevents fpath duplication ---
 zinit ice blockf
@@ -74,7 +80,9 @@ if command -v tmux &>/dev/null; then
 fi
 command -v task &>/dev/null && zinit snippet OMZP::taskwarrior
 command -v docker &>/dev/null && zinit snippet OMZP::docker
+command -v docker &>/dev/null && zinit snippet OMZP::docker-compose
 command -v podman &>/dev/null && zinit snippet OMZP::podman
+
 if command -v ssh &>/dev/null; then
     zstyle :omz:plugins:ssh-agent quiet yes
     zstyle :omz:plugins:ssh-agent lazy yes
