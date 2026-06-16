@@ -8,7 +8,7 @@ return {
     event = "InsertEnter",
     config = function()
       require("copilot").setup {
-        copilot_node_command = "/usr/bin/node",
+        copilot_node_command = "/home/amit_152116/.config/nvm/versions/node/v22.22.3/bin/node",
       }
     end,
     dependencies = {

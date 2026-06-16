@@ -3,6 +3,8 @@ local myPicker = require "myPlugins"
 local Snacks = require "snacks"
 _G.Snacks = require "snacks"
 
+local lsp_sym_nested = false
+
 return {
   "folke/snacks.nvim",
   lazy = false,
@@ -53,7 +55,152 @@ return {
 
     picker = {
       ui_select = true,
+      sources = {
+        lsp_symbols = {
+          transform = function(item)
+            if item.name and item.name:match "^%[%d+%]$" then return false end
+            if not lsp_sym_nested and item.parent and not item.parent.root then return false end
+          end,
+          win = {
+            input = {
+              keys = { ["<a-e>"] = { "lsp_sym_toggle_nested", mode = { "n", "i" } } },
+            },
+          },
+          filter = {
+            default = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "EnumMember",
+              "Field",
+              "Function",
+              "Interface",
+              "Method",
+              "Module",
+              "Package",
+              "Property",
+              "Struct",
+              "Trait",
+              "TypeParameter",
+              "Variable",
+            },
+            -- C / C++ (clangd)
+            c = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "EnumMember",
+              "Field",
+              "Function",
+              "Method",
+              "Struct",
+              "TypeParameter",
+              "Variable",
+            },
+            cpp = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "EnumMember",
+              "Field",
+              "Function",
+              "Method",
+              "Struct",
+              "TypeParameter",
+              "Variable",
+            },
+            -- Python (basedpyright / ruff)
+            python = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "EnumMember",
+              "Field",
+              "Function",
+              "Method",
+              "Module",
+              "Property",
+              "Variable",
+            },
+            -- Lua (lua_ls) — no Package (luals uses it for control flow)
+            lua = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "Field",
+              "Function",
+              "Interface",
+              "Method",
+              "Module",
+              "Namespace",
+              "Property",
+              "Struct",
+              "Trait",
+              "Variable",
+            },
+            -- Go (gopls)
+            go = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "EnumMember",
+              "Field",
+              "Function",
+              "Interface",
+              "Method",
+              "Module",
+              "Namespace",
+              "Property",
+              "Struct",
+              "TypeParameter",
+              "Variable",
+            },
+            -- Rust (rust-analyzer)
+            rust = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "EnumMember",
+              "Field",
+              "Function",
+              "Interface",
+              "Method",
+              "Module",
+              "Namespace",
+              "Property",
+              "Struct",
+              "Trait",
+              "TypeParameter",
+              "Variable",
+            },
+            -- Shell / Bash / Zsh (bashls)
+            sh = { "Function", "Variable" },
+            bash = { "Function", "Variable" },
+            zsh = { "Function", "Variable" },
+            -- Markup / docs
+            markdown = true,
+            help = true,
+            -- XML / URDF (lemminx)
+            xml = {
+              "Class",
+              "Constructor",
+              "Enum",
+              "Field",
+              "Function",
+              "Interface",
+              "Module",
+              "Namespace",
+              "Property",
+              "Struct",
+            },
+          },
+        },
+      },
       actions = {
+        lsp_sym_toggle_nested = function(picker)
+          lsp_sym_nested = not lsp_sym_nested
+          picker:refresh()
+        end,
         sidekick_send = function(...)
           return require("sidekick.cli.picker.snacks").send(...)
         end,
