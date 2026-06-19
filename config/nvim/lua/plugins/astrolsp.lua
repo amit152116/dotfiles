@@ -44,7 +44,7 @@ return {
     -- enable servers that you already have installed without mason
     servers = {
       -- "pyright",
-      "codebook", -- Codebook LSP (installed via Mason, has official lspconfig support)
+      "clangd", -- C/C++ LSP (system binary, not Mason-managed)
     },
     -- customize language server configuration options passed to `lspconfig`
     ---@diagnostic disable: missing-fields

@@ -82,3 +82,10 @@ alias cmk-clangd='cp $TEMPLATES_DIR/clangd ./.clangd && cp $TEMPLATES_DIR/clang-
 
 # Makefile aliases
 alias mknew='cp $TEMPLATES_DIR/makefile ./Makefile'
+
+# GitHub aliases (requires gh CLI)
+alias gob='gh browse'
+alias gobs='gh browse --settings'
+alias gobr='gh browse --releases'
+alias gobp='gh browse --projects'
+alias gobw='gh browse --wiki'
