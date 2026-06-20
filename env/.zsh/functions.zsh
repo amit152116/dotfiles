@@ -20,6 +20,14 @@ idf() {
     alias idf="idf.py"
 }
 
+# Lazy-load nvm — node is already on PATH above; nvm() only needed if switching versions.
+nvm() {
+    unset -f nvm
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    nvm "$@"
+}
+
 # Configuration reload
 reload() {
     source ~/.zshrc
@@ -67,7 +75,7 @@ __link_tmux_session() {
     local target
     target=$(find "$dir" -type f -name 'tmux_resurrect_*.txt' -size +0c -printf "%T@ %p\n" |
         sort -nr |
-    awk 'NR==1 {print $2}')
+        awk 'NR==1 {print $2}')
 
     if [[ -z "$target" ]]; then
         echo "No non-empty tmux_resurrect files found."
@@ -180,7 +188,7 @@ fi
 if [[ -n "$TMUX" ]]; then
     function _refresh_tmux_env() {
         # Single tmux call (-s = shell syntax) instead of one per variable.
-        eval "$(tmux show-environment -s 2>/dev/null | \
+        eval "$(tmux show-environment -s 2>/dev/null |
             grep -E '^(export )?(DISPLAY|WAYLAND_DISPLAY|XAUTHORITY|XDG_SESSION_TYPE|SSH_AUTH_SOCK)=')"
         if [[ -n "$WAYLAND_DISPLAY" && -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]]; then
             add-zsh-hook -d precmd _refresh_tmux_env

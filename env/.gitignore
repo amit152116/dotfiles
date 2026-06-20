@@ -37,3 +37,5 @@ target/
 *.bak
 *.rej
 *.orig
+
+**/.claude/settings.local.json

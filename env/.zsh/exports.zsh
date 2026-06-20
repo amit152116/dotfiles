@@ -15,13 +15,7 @@ if [ -f "$NVM_DIR/alias/default" ]; then
     unset _nvm_def _nvm_bin
 fi
 
-# Lazy-load nvm — node is already on PATH above; nvm() only needed if switching versions.
-nvm() {
-    unset -f nvm
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    nvm "$@"
-}
+[[ -f "$HOME/.env.local" ]] && source "$HOME/.env.local"
 
 # Cargo [Rust Manager]
 if [[ -d "$HOME/.cargo/bin" ]]; then
