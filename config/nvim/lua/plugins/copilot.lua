@@ -6,10 +6,10 @@ return {
     cmd = "Copilot",
     build = ":Copilot auth",
     event = "InsertEnter",
-    config = function()
-      require("copilot").setup {
+    config = function(_, opts)
+      require("copilot").setup(vim.tbl_deep_extend("force", opts, {
         copilot_node_command = "/home/amit_152116/.config/nvm/versions/node/v22.22.3/bin/node",
-      }
+      }))
     end,
     dependencies = {
       "copilotlsp-nvim/copilot-lsp", -- (optional) for NES functionality
