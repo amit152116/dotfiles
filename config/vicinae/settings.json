@@ -43,6 +43,43 @@
       "applications:alacritty_alacritty"
    ],
    "providers": {
+      "@aurelleb/store.vicinae.dbus": {
+         "entrypoints": {
+            "explore-bus": {
+               "alias": "dbus"
+            }
+         }
+      },
+      "@knoopx/store.vicinae.otp": {
+         "entrypoints": {
+            "list-codes": {
+               "alias": "otp"
+            }
+         }
+      },
+      "browser-extension": {
+         "enabled": true
+      },
+      "files": {
+         "preferences": {
+            "autoIndexing": true,
+            "excludedPaths": "/.git;/.git/*;.git*;node_modules;dist;build;.venv;.cache;venv;__pycache__;direnv;install;",
+            "paths": "/home/amit_152116",
+            "watcherPaths": ""
+         },
+         "entrypoints": {
+            "search": {
+               "alias": "search"
+            }
+         }
+      },
+      "manage-shortcuts": {
+         "entrypoints": {
+            "create": {
+               "alias": "shortcut"
+            }
+         }
+      },
       "power": {
          "entrypoints": {
             "sleep": {
@@ -52,9 +89,25 @@
       },
       "scripts": {
          "preferences": {
-            "customDirs": [
-               "/home/amit_152116/.dotfiles/scripts"
-            ]
+            "customDirs": []
+         }
+      },
+      "system": {
+         "entrypoints": {
+            "browse-apps": {
+               "alias": "apps",
+               "enabled": true,
+               "preferences": {
+                  "showHidden": true,
+                  "sortAlphabetically": true
+               }
+            },
+            "run": {
+               "enabled": true,
+               "preferences": {
+                  "default-action": "run"
+               }
+            }
          }
       }
    }

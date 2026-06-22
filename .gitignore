@@ -1,10 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/lua,vim,zsh
 # Edit at https://www.toptal.com/developers/gitignore?templates=lua,vim,zsh
 
+!.*
 ### Lua ###
 # Compiled Lua sources
 luac.out
-.envrc
 
 # luarocks build files
 *.src.rock
@@ -106,7 +106,6 @@ zsdoc/data
 cron_logs
 logs/
 *.json
-!.*
 .git/
 
 # Laptop sync configuration (machine-specific)
