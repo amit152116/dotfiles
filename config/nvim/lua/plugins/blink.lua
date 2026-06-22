@@ -49,28 +49,10 @@ return {
         cond = active == "minuet", -- stays installed, just doesn't load
         event = "InsertEnter",
         config = function()
-          -- llm_provider.lua picks which cloud backend minuet talks to
-          local llm_configs = {
-            ollama_cloud = {
-              api_key = "OLLAMA_API_KEY",
-              name = "Ollama Cloud",
-              end_point = "https://ollama.com/v1/chat/completions",
-              model = "qwen3-coder:480b-cloud",
-            },
-            openrouter = {
-              api_key = "OPENROUTER_API_KEY",
-              name = "Openrouter",
-              end_point = "https://openrouter.ai/api/v1/chat/completions",
-              model = "qwen/qwen-2.5-coder-32b-instruct:free",
-            },
-            nvidia = {
-              api_key = "NVIDIA_API_KEY",
-              name = "Nvidia NIM",
-              end_point = "https://integrate.api.nvidia.com/v1/chat/completions",
-              model = "qwen/qwen3-coder-480b-a35b-instruct",
-            },
-          }
-          local llm = llm_configs[require("ai_provider").llm]
+          -- ai_provider.lua holds endpoint/api_key/model-catalog per cloud LLM
+          local ai_provider = require "ai_provider"
+          local llm = vim.deepcopy(ai_provider.llm_configs[ai_provider.llm])
+          llm.model = llm.models[llm.model] -- resolve selected model key -> actual model id
           llm.optional = { max_tokens = 56, top_p = 0.9 }
 
           require("minuet").setup {
@@ -184,6 +166,14 @@ return {
         ["<S-Tab>"] = {
           "snippet_backward",
           "select_prev", -- cycle blink popup items backward, if menu open
+          "fallback",
+        },
+        -- dedicated ghost-text accept, independent of Tab's menu-cycle chain --
+        -- needed when blink's popup AND inline ghost text are both visible at once
+        ["<C-y>"] = {
+          function()
+            if vim.g.ai_accept then return vim.g.ai_accept() end
+          end,
           "fallback",
         },
       },

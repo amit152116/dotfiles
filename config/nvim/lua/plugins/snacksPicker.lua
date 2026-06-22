@@ -59,11 +59,15 @@ return {
         lsp_symbols = {
           transform = function(item)
             if item.name and item.name:match "^%[%d+%]$" then return false end
-            if not lsp_sym_nested and item.parent and not item.parent.root then return false end
+            if not lsp_sym_nested and item.parent and not item.parent.root then
+              return false
+            end
           end,
           win = {
             input = {
-              keys = { ["<a-e>"] = { "lsp_sym_toggle_nested", mode = { "n", "i" } } },
+              keys = {
+                ["<a-e>"] = { "lsp_sym_toggle_nested", mode = { "n", "i" } },
+              },
             },
           },
           filter = {
@@ -433,6 +437,12 @@ return {
             ["<Leader>fj"] = {
               function() Snacks.picker.jumps() end,
               desc = "Find jumps",
+            },
+            ["<Leader>fr"] = false,
+
+            ["<Leader>fy"] = {
+              function() Snacks.picker.registers() end,
+              desc = "Find yanks",
             },
 
             ["<Leader>fT"] = {
