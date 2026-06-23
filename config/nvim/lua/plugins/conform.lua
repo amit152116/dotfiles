@@ -30,9 +30,6 @@ null_ls.setup {
       filetypes = { "lua" },
     },
 
-    -- ========================
-    -- Code Actions
-    -- ========================
     null_ls.builtins.code_actions.refactoring, -- generic code refactoring
 
     -- Go-specific actions (since you work with Go)
@@ -141,7 +138,6 @@ return {
         end
       end,
 
-      -- 🎯 Configure formatters
       formatters_by_ft = {
         lua = { "stylua" },
         sh = { "shfmt", "beautysh" },
@@ -167,7 +163,6 @@ return {
         urdf = { "xmlformat" },
       },
 
-      -- 🎯 Custom formatter setup
       formatters = {
         clang_format = {
           command = "clang-format",

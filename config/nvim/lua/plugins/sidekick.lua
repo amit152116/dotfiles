@@ -1,7 +1,6 @@
 return {
   "folke/sidekick.nvim",
   opts = {
-    -- add any options here
     cli = {
       mux = {
         backend = "tmux",
@@ -11,8 +10,6 @@ return {
     picker = "snacks",
   },
   keys = {
-    -- nes is also useful in normal mode
-    -- { "<tab>", LazyVim.cmp.map({ "ai_nes" }, "<tab>"), mode = { "n" }, expr = true },
     {
       "<Leader>uN",
       function()

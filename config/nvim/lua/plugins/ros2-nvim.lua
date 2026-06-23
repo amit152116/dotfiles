@@ -1,12 +1,13 @@
 local picker = require "myPlugins"
 local Snacks = require "snacks"
+local ros_root = "/opt/ros/" .. (vim.env.ROS_DISTRO or "jazzy")
 ---@type LazySpec
 return {
   {
     dir = vim.fn.stdpath "config" .. "/lua/myPlugins",
     name = "ros2-nvim",
     dependencies = {
-      "AstroNvim/astrocore", -- if it really depends on astrocore
+      "AstroNvim/astrocore",
     },
     specs = {
       "astroNvim/astrocore",
@@ -18,11 +19,10 @@ return {
               desc = "ROS Interfaces",
             },
 
-            -- Find all ROS Distro files
             ["<Leader>rf"] = {
               function()
                 Snacks.picker.files {
-                  cwd = "/opt/ros/humble",
+                  cwd = ros_root,
                   matcher = {
                     frecency = true,
                   },
@@ -31,11 +31,10 @@ return {
               desc = "ROS files",
             },
 
-            -- Find words in ROS distro files
             ["<Leader>rw"] = {
               function()
                 picker.grep {
-                  cwd = "/opt/ros/humble",
+                  cwd = ros_root,
                   matcher = {
                     frecency = true,
                   },

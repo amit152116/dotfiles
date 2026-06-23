@@ -510,7 +510,6 @@ return {
             ["<Leader>gl"] = false,
             ["<Leader>gt"] = false,
             ["<Leader>gT"] = false,
-            -- Find all Neovim plugins files
             ["<Leader>pf"] = {
               function()
                 Snacks.picker.files {
@@ -523,7 +522,6 @@ return {
               desc = "Plugins files",
             },
 
-            -- Find words in Neovim plugins files
             ["<Leader>pw"] = {
               function()
                 myPicker.grep {

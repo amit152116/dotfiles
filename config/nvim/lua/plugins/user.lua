@@ -1,11 +1,5 @@
--- You can also add or configure plugins by creating files in this `plugins/` folder
--- PLEASE REMOVE THE EXAMPLES YOU HAVE NO INTEREST IN BEFORE ENABLING THIS FILE
--- Here are some examples:
-
 ---@type LazySpec
 return {
-
-  -- == Examples of Adding Plugins ==
   { "andweeb/presence.nvim" },
 
   { "tpope/vim-fugitive" },
@@ -40,13 +34,12 @@ return {
         "bash",
         "cpp",
         "go",
-        -- add more arguments for adding more treesitter parsers
       },
 
       incremental_selection = {
         enable = true,
         keymaps = {
-          init_selection = false, -- set to `false` to disable one of the mappings
+          init_selection = false, -- false disables the mapping rather than removing the key
           node_incremental = false,
           scope_incremental = false,
           node_decremental = false,
@@ -60,23 +53,19 @@ return {
     enabled = true,
     opts = {
       dimming = {
-        alpha = 0.25, -- amount of dimming
-        -- we try to get the foreground from the highlight groups or fallback color
-        color = { "Normal", "#ffffff" },
-        term_bg = "#000000", -- if guibg=NONE, this will be used to calculate text color
-        inactive = false, -- when true, other windows will be fully dimmed (unless they contain the same buffer)
+        alpha = 0.25,
+        color = { "Normal", "#ffffff" }, -- falls back to this if no fg color is found on the highlight group
+        term_bg = "#000000", -- used to compute dimmed text color when guibg=NONE
+        inactive = false, -- true dims every other window too, except ones showing the same buffer
       },
-      context = 20, -- amount of lines we will try to show around the current line
-      treesitter = true, -- use treesitter when available for the filetype
-      -- treesitter is used to automatically expand the visible text,
-      -- but you can further control the types of nodes that should always be fully expanded
-      expand = { -- for treesitter, we we always try to expand to the top-most ancestor with these types
+      context = 20,
+      treesitter = true,
+      -- expands the dimmed region to the top-most ancestor node of these types
+      expand = {
         "function",
         "method",
-        -- "table",
-        -- "if_statement",
       },
-      exclude = {}, -- exclude these filetypes
+      exclude = {},
     },
     specs = {
       {
@@ -99,7 +88,7 @@ return {
     dependencies = {
       "nvim-treesitter/nvim-treesitter",
       "echasnovski/mini.icons",
-    }, -- if you use the mini.nvim suite
+    },
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
     config = function()
@@ -115,11 +104,11 @@ return {
     config = function()
       require("compiler-explorer").setup {
         line_match = {
-          highlight = true, -- highlight the matching line(s) in the other buffer.
-          jump = true, -- move the cursor in the other buffer to the first matching line.
+          highlight = true,
+          jump = true,
         },
-        compiler_flags = "", -- Default flags passed to the compiler.
-        languages = { -- Language specific default compiler/flags
+        compiler_flags = "",
+        languages = {
           cpp = {
             compiler = "cg114",
             compiler_flags = "-O2 -Wall",
@@ -135,51 +124,45 @@ return {
     },
     config = function()
       require("treesitter-context").setup {
-        enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
-        multiwindow = true, -- Enable multiwindow support.
-        max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.
-        min_window_height = 0, -- Minimum editor window height to enable context. Values <= 0 mean no limit.
+        enable = true, -- can also be toggled later via :TSContextToggle
+        multiwindow = true,
+        max_lines = 0, -- <= 0 means no limit
+        min_window_height = 0, -- <= 0 means no limit
         line_numbers = true,
-        multiline_threshold = 20, -- Maximum number of lines to show for a single context
-        trim_scope = "outer", -- Which context lines to discard if `max_lines` is exceeded. Choices: 'inner', 'outer'
-        mode = "cursor", -- Line used to calculate context. Choices: 'cursor', 'topline'
-        -- Separator between context and content. Should be a single character string, like '-'.
-        -- When separator is set, the context will only show up when there are at least 2 lines above cursorline.
-        separator = "─",
-        zindex = 1, -- The Z-index of the context window
-        on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
+        multiline_threshold = 20,
+        trim_scope = "outer", -- "inner" or "outer" -- which lines to drop once max_lines is exceeded
+        mode = "cursor", -- "cursor" or "topline" -- which line context is computed from
+        separator = "─", -- only shows once there are >= 2 lines above cursorline
+        zindex = 1,
+        on_attach = nil, -- fun(buf): boolean -- return false to skip attaching
       }
     end,
   },
   {
     "folke/noice.nvim",
     event = "VeryLazy",
-    opts = {
-      -- add any options here
-    },
+    opts = {},
+    -- lazy-loaded deps need an explicit module="..." entry or noice won't trigger their load
     dependencies = {
-      -- if you lazy-load any plugin below, make sure to add proper `module="..."` entries
       "MunifTanjim/nui.nvim",
-      -- { "echasnovski/mini.notify", version = false },
     },
 
     config = function()
       require("noice").setup {
         lsp = {
-          -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
+          -- routes markdown rendering through Treesitter instead of each plugin's own renderer
           override = {
             ["vim.lsp.util.convert_input_to_markdown_lines"] = true,
             ["vim.lsp.util.stylize_markdown"] = true,
             ["cmp.entry.get_documentation"] = true, -- requires hrsh7th/nvim-cmp
           },
         },
-        -- you can enable a preset for easier configuration
         presets = {
-          bottom_search = false, -- use a classic bottom cmdline for search
-          command_palette = true, -- position the cmdline and popupmenu together
-          long_message_to_split = true, -- long messages will be sent to a split
-          inc_rename = false, -- enables an input dialog for inc-rename.nvim
-          lsp_doc_border = true, -- add a border to hover docs and signature help
+          bottom_search = false, -- classic bottom cmdline for search instead of noice's popup
+          command_palette = true, -- cmdline + popupmenu share one position
+          long_message_to_split = true,
+          inc_rename = false, -- input dialog for inc-rename.nvim
+          lsp_doc_border = true,
         },
       }
     end,

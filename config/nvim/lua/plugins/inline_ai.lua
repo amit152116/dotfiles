@@ -3,8 +3,7 @@
 local active = require("ai_provider").backend
 
 return {
-  -- pack.cpp pulls this in for nvim-dap, but it assumes nvim-cmp, which this
-  -- config doesn't use (blink.cmp instead) -- breaks startup otherwise.
+  -- pack.cpp's nvim-dap pulls this in but it assumes nvim-cmp, not blink.cmp -- breaks startup otherwise.
   -- { "rcarriga/cmp-dap", enabled = false },
 
   -- NeoCodeium: https://github.com/monkoose/neocodeium
@@ -25,7 +24,7 @@ return {
         debounce = true, -- wait for typing pause before requesting; cuts request spam
         max_lines = 5000, -- ROS repos have huge files; cap context scan for latency
         single_line = {
-          enabled = true, -- collapse multi-line suggestions so they don't fight blink's popup for screen space
+          enabled = false, -- collapse multi-line suggestions so they don't fight blink's popup for screen space
           label = "...",
         },
         filter = function() return not require("blink.cmp").is_visible() end,

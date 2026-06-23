@@ -1,10 +1,6 @@
--- Remote Sync plugin configuration
--- Synchronize files between remote machines via rsync/SSH
-
 ---@type LazySpec
 return {
-  -- This is a local plugin (in lua/remote_sync/)
-  -- We use dir to point to the nvim config directory
+  -- local plugin, dir points straight at the nvim config tree (lua/remote_sync/)
   {
     dir = vim.fn.stdpath "config",
     name = "remote_sync",

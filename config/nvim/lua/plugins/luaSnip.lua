@@ -1,21 +1,17 @@
 return {
   {
-    -- You can also easily customize additional setup of plugins that is outside of the plugin's setup call
     "L3MON4D3/LuaSnip",
     config = function(plugin, opts)
-      require "astronvim.plugins.configs.luasnip"(plugin, opts) -- include the default astronvim config that calls the setup call
-      -- add more custom luasnip configuration such as filetype extend or custom snippets
+      require "astronvim.plugins.configs.luasnip"(plugin, opts) -- runs astronvim's default luasnip.setup() before our additions below
       local luasnip = require "luasnip"
 
       local snippet = luasnip.snippet
       local text = luasnip.text_node
       local insert = luasnip.insert_node
 
-      -- Extend filetypes if needed
       luasnip.filetype_extend("javascript", { "javascriptreact" })
 
-      -- 🔥 Add your custom snippets
-      -- XML snippet with XSD schema configuration
+      -- XSD-validated XML skeleton, used for ROS/CycloneDDS config files
       luasnip.add_snippets("xml", {
         snippet("xsd", {
           text { '<?xml version="1.0" encoding="UTF-8"?>', "" },

@@ -1,18 +1,12 @@
--- AstroCore provides a central place to modify mappings, vim options, autocommands, and more!
--- Configuration documentation can be found with `:h astrocore`
--- NOTE: We highly recommend setting up the Lua Language Server (`:LspInstall lua_ls`)
---       as this provides autocomplete and documentation while editing
-
 ---@type LazySpec
 return {
   "AstroNvim/astrocore",
   ---@type AstroCoreOpts
   opts = {
-    -- Configure project root detection, check status with `:AstroRootInfo`
+    -- check resolved root with `:AstroRootInfo`
     rooter = {
       autochdir = false,
     },
-    -- Configure core features of AstroNvim
     features = {
       large_buf = { size = 2 * 1024 * 1024, lines = 10000 }, -- set global limits for large files for disabling features like treesitter
       autopairs = true, -- enable autopairs at start
@@ -21,14 +15,12 @@ return {
       highlighturl = true, -- highlight URLs at start
       notifications = true, -- enable notifications at start
     },
-    -- Diagnostics configuration (for vim.diagnostics.config({...})) when diagnostics are on
     diagnostics = {
       virtual_text = true,
       underline = true,
     },
-    -- passed to `vim.filetype.add`
+    -- passed straight to `vim.filetype.add`
     filetypes = {
-      -- see `:h vim.filetype.add` for usage
       extension = {
         foo = "fooscript",
         urdf = "xml",
@@ -41,25 +33,21 @@ return {
         [".*/etc/foo/.*"] = "fooscript",
       },
     },
-    -- vim options can be configured here
     options = {
       opt = { -- vim.opt.<key>
-        spell = false, -- sets vim.opt.spell
-        wrap = true, -- sets vim.opt.wrap
+        spell = false,
+        wrap = true,
         scrolloff = 10,
         showmode = true,
         sidescrolloff = 8,
         colorcolumn = "80",
         cursorline = true,
-        tabstop = 4, -- Number of spaces per tab
-        smartindent = true, -- Highlight current line
-        showmatch = false, -- Show matching brackets
+        tabstop = 4,
+        smartindent = true,
+        showmatch = false,
       },
-      g = { -- vim.g.<key>
-        -- configure global vim variables (vim.g)
-        -- NOTE: `mapleader` and `maplocalleader` must be set in the AstroNvim opts or before `lazy.setup`
-        -- This can be found in the `lua/lazy_setup.lua` file
-      },
+      -- mapleader/maplocalleader must be set in lua/lazy_setup.lua, before lazy.setup runs
+      g = {},
     },
     autocmds = {
       urdf = {
@@ -84,10 +72,10 @@ return {
         desc = "Show current buffer path",
       },
     },
-    -- NOTE: keycodes follow the casing in the vimdocs. For example, `<Leader>` must be capitalized
+    -- keycodes follow vimdocs casing -- `<Leader>` must stay capitalized
     mappings = {
       n = {
-        -- Keeps the cursor in the middle when search next or prev term
+        -- recenter screen after jumping to a search match
         ["n"] = { "nzzzv", silent = true },
         ["N"] = { "Nzzzv", silent = true },
 
@@ -114,7 +102,7 @@ return {
         ["<Leader>D"] = {
           desc = "Delete file",
           function()
-            local file = vim.fn.expand "%:p" -- full path
+            local file = vim.fn.expand "%:p"
             if file == "" then
               print "No file to delete"
               return
@@ -123,8 +111,8 @@ return {
               vim.fn.confirm("Delete file?\n" .. file, "&Yes\n&No", 2)
             if choice == 1 then
               file = vim.fn.expand "%"
-              vim.cmd "silent! bdelete" -- close buffer first
-              os.remove(file) -- delete file using Lua's os.remove
+              vim.cmd "silent! bdelete" -- buffer must close before the backing file is removed
+              os.remove(file)
               print("Deleted file: " .. file)
             else
               print "File deletion cancelled"
@@ -132,14 +120,12 @@ return {
           end,
         },
 
-        -- Save new file/buffer
         ["<Leader>w"] = {
           function()
             if vim.fn.expand "%" == "" then
-              -- Unsaved file, invoke custom save logic
+              -- never-saved buffer has no name yet, so :write can't infer a path
               require("myPlugins.save_new_file").save_file()
             else
-              -- Saved file, fallback to default behavior
               vim.cmd "write"
             end
           end,
@@ -168,20 +154,6 @@ return {
           noremap = true,
         },
 
-        -- View/Edit last command
-        -- ["<Leader>;"] = {
-        --   function()
-        --     local last_cmd = vim.fn.histget(":", -1) -- get last Ex command
-        --     if last_cmd ~= "" then
-        --       vim.api.nvim_feedkeys(":" .. last_cmd, "n", false)
-        --     else
-        --       vim.api.nvim_feedkeys(":", "n", false) -- just open empty cmdline if no history
-        --     end
-        --   end,
-        --   desc = "Last command",
-        -- },
-
-        -- mappings seen under group name "Buffer"
         ["<Leader>bd"] = {
           function()
             require("astroui.status.heirline").buffer_picker(
@@ -206,7 +178,6 @@ return {
         },
         ["[c"] = { "%" },
 
-        -- Remote Sync mappings
         ["<Leader>s"] = { desc = "󰒮 Remote Sync" },
         ["<Leader>ss"] = {
           function() require("remote_sync").send() end,
@@ -296,7 +267,6 @@ return {
           silent = true,
         },
       },
-      -- All Visual Mode
       x = {
         ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
       },
@@ -315,7 +285,6 @@ return {
         },
       },
       v = {
-        -- Move selected lines up or down
         ["J"] = {
           ":m '>+1<CR>gv=gv",
           desc = "Move Current Line Down",
@@ -329,15 +298,12 @@ return {
           silent = true,
         },
 
-        -- Search for visually selected text literally
         ["/"] = {
           function()
             local selected_text = require("utils.helper").get_selected_text()
-
-            -- Escape for Vim's literal search
+            -- \V switches the register to literal (non-regex) search
             local escaped_text = vim.fn.escape(selected_text, "/\\")
-            vim.fn.setreg("/", "\\V" .. escaped_text) -- set literal search
-            -- Trigger normal buffer search
+            vim.fn.setreg("/", "\\V" .. escaped_text)
             vim.cmd "normal! n"
           end,
           desc = "Search selected text",

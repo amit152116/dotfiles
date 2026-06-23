@@ -1,52 +1,35 @@
--- AstroLSP allows you to customize the features in AstroNvim's LSP configuration engine
--- Configuration documentation can be found with `:h astrolsp`
 local Snacks = require "snacks"
 ---@type LazySpec
 return {
   "AstroNvim/astrolsp",
   ---@type AstroLSPOpts
   opts = {
-    -- Configuration table of features provided by AstroLSP
     features = {
-      codelens = true, -- enable/disable codelens refresh on start
-      inlay_hints = true, -- enable/disable inlay hints on start
-      semantic_tokens = true, -- enable/disable semantic token highlighting
+      codelens = true,
+      inlay_hints = true,
+      semantic_tokens = true,
       signature_help = false,
     },
     defaults = {
       hover = {
-        border = "rounded", -- default border value for hover windows
-        silent = false, -- disable hover silence by default
+        border = "rounded",
+        silent = false,
       },
     },
-    -- customize lsp formatting options
     formatting = {
-      -- control auto formatting on save
       format_on_save = {
-        enabled = true, -- enable or disable format on save globally
-        allow_filetypes = { -- enable format on save for specified filetypes only
-          -- "go",
-        },
-        ignore_filetypes = { -- disable format on save for specified filetypes
-          -- "python",
-        },
+        enabled = true,
+        allow_filetypes = {},
+        ignore_filetypes = {},
       },
-      disabled = { -- disable formatting capabilities for the listed language servers
-        -- disable lua_ls formatting capability if you want to use StyLua to format your lua code
-        -- "lua_ls",
-        "lemminx", -- use prettier for XML formatting via conform
+      disabled = {
+        "lemminx", -- use prettier for XML formatting via conform instead
       },
-      timeout_ms = 3200, -- default format timeout
-      -- filter = function(client) -- fully override the default formatting function
-      --   return true
-      -- end
+      timeout_ms = 3200,
     },
-    -- enable servers that you already have installed without mason
     servers = {
-      -- "pyright",
       "clangd", -- C/C++ LSP (system binary, not Mason-managed)
     },
-    -- customize language server configuration options passed to `lspconfig`
     ---@diagnostic disable: missing-fields
     config = {
       clangd = {
@@ -91,7 +74,6 @@ return {
         },
         root_dir = function(fname)
           local lspconfig = require "lspconfig"
-          -- Use project root or fallback to file directory
           return vim.fs.dirname(
             vim.fs.find({ ".git", ".codebook.toml", "codebook.toml" }, {
               upward = true,
@@ -177,34 +159,15 @@ return {
         filetypes = { "sh", "bash", "zsh" },
       },
       neocmake = {
-        -- newer versions use a subcommand instead of --stdio flag
-        cmd = { "neocmakelsp", "stdio" },
+        cmd = { "neocmakelsp", "stdio" }, -- newer versions use a subcommand instead of --stdio
       },
     },
-    -- customize how language servers are attached
-    handlers = {
-      -- a function without a key is simply the default handler, functions take two parameters, the server name and the configured options table for that server
-      -- function(server, opts) require("lspconfig")[server].setup(opts) end
-
-      -- the key is the server that is being setup with `lspconfig`
-      -- rust_analyzer = false, -- setting a handler to false will disable the set up of that language server
-      -- pyright = function(_, opts) require("lspconfig").pyright.setup(opts) end -- or a custom handler function can be passed
-    },
-    -- Configure buffer local auto commands to add when attaching a language server
+    handlers = {},
     autocmds = {
-      -- first key is the `augroup` to add the auto commands to (:h augroup)
       lsp_codelens_refresh = {
-        -- Optional condition to create/delete auto command group
-        -- can either be a string of a client capability or a function of `fun(client, bufnr): boolean`
-        -- condition will be resolved for each client on each execution and if it ever fails for all clients,
-        -- the auto commands will be deleted for that buffer
-        cond = "textDocument/codeLens",
-        -- cond = function(client, bufnr) return client.name == "lua_ls" end,
-        -- list of auto commands to set
+        cond = "textDocument/codeLens", -- autocmd group is torn down once no attached client supports codelens
         {
-          -- events to trigger
           event = { "InsertLeave", "BufEnter" },
-          -- the rest of the autocmd options (:h nvim_create_autocmd)
           desc = "Refresh codelens (buffer)",
           callback = function(args)
             if require("astrolsp").config.features.codelens then
@@ -214,15 +177,12 @@ return {
         },
       },
     },
-    -- Extra configuration for the `mason-lspconfig.nvim` plugin
     mason_lspconfig = {
       servers = {},
     },
-    -- mappings to be set up on attaching of a language server
     mappings = {
       n = {
-        -- a `cond` key can provided as the string of a server capability to be required to attach, or a function with `client` and `bufnr` parameters from the `on_attach` that returns a boolean
-
+        -- replaced below by Snacks pickers
         ["gK"] = false,
         ["<Leader>lG"] = false, -- original Workspace Symbols
         ["<Leader>lR"] = false, -- original references
@@ -261,7 +221,6 @@ return {
           function() Snacks.picker.lsp_workspace_symbols() end,
           desc = "Workspace Symbols",
         },
-        -- Disable original mappings
         ["grr"] = {
           function() Snacks.picker.lsp_references() end,
           desc = "Search References",
@@ -273,48 +232,5 @@ return {
         },
       },
     },
-    -- A custom `on_attach` function to be run after the default `on_attach` function
-    -- takes two parameters `client` and `bufnr`  (`:h lspconfig-setup`)
-    on_attach = function(client, bufnr)
-      -- Disable semantic tokens if needed
-      -- client.server_capabilities.semanticTokensProvider = nil
-
-      -- inspect(client.name, bufnr)
-
-      if client.name == "clangd" then
-        local opts =
-          { buffer = bufnr, noremap = true, silent = true, desc = "" }
-
-        -- -- 🧩 Compile current buffer to assembly (Compiler Explorer)
-        -- vim.keymap.set(
-        --   "n",
-        --   "<Leader>lc",
-        --   ":CECompile! compiler=g114<CR>",
-        --   vim.tbl_extend("force", opts, {
-        --     desc = "Compile & Show Assembly",
-        --   })
-        -- )
-        --
-        -- -- 🧩 Compile with live update (auto on save)
-        -- vim.keymap.set(
-        --   "n",
-        --   "<Leader>lC",
-        --   ":CECompileLive! compiler=g114<CR>",
-        --   vim.tbl_extend("force", opts, {
-        --     desc = "Live Assembly View",
-        --   })
-        -- )
-        --
-        -- -- 🧩 Open same code in browser on godbolt.org
-        -- vim.keymap.set(
-        --   "n",
-        --   "<Leader>lO",
-        --   ":CEOpenWebsite<CR>",
-        --   vim.tbl_extend("force", opts, {
-        --     desc = "Open in Compiler Explorer Website",
-        --   })
-        -- )
-      end
-    end,
   },
 }
