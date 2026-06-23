@@ -94,7 +94,8 @@ if [[ -n "$TMUX" ]]; then
 
     # Open lazygit in current directory via tmux-sessionizer
     __tmux_lazygit(){
-        local current_dir="${PWD}"
+        local current_dir
+        current_dir=$(git rev-parse --show-toplevel 2>/dev/null) || current_dir="${PWD}"
         BUFFER=""
         zle reset-prompt
         tmux neww "cd '$current_dir' && tmux-sessionizer -c lazygit -- -w ./" &>/dev/null
