@@ -34,9 +34,36 @@ return {
     config = {
       clangd = {
         filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
+        -- .git unreliable (nested submodule .git / stray ancestor repos); anchor on
+        -- colcon workspace marker instead: nearest src/ dir with a build/ or install/ sibling
+        root_dir = function(bufnr, on_dir)
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          local dir = vim.fs.dirname(fname)
+          local root
+          while dir and dir ~= "/" do
+            if
+              vim.uv.fs_stat(dir .. "/src")
+              and (
+                vim.uv.fs_stat(dir .. "/build")
+                or vim.uv.fs_stat(dir .. "/install")
+              )
+            then
+              root = dir
+              break
+            end
+            dir = vim.fs.dirname(dir)
+          end
+          if not root then
+            local found = vim.fs.find(
+              { "compile_commands.json", "compile_flags.txt", ".git" },
+              { upward = true, path = fname }
+            )[1]
+            root = found and vim.fs.dirname(found)
+          end
+          on_dir(root or vim.fn.getcwd())
+        end,
         cmd = {
           "clangd",
-          "--compile-commands-dir=build",
           "--background-index",
           "--background-index-priority=normal",
           "--clang-tidy",
@@ -72,14 +99,15 @@ return {
           checkWhileTyping = true,
           diagnosticSeverity = "information",
         },
-        root_dir = function(fname)
-          local lspconfig = require "lspconfig"
-          return vim.fs.dirname(
+        root_dir = function(bufnr, on_dir)
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          local root = vim.fs.dirname(
             vim.fs.find({ ".git", ".codebook.toml", "codebook.toml" }, {
               upward = true,
               path = fname,
             })[1]
           ) or vim.fn.getcwd()
+          on_dir(root)
         end,
       },
       ruff = {
@@ -171,7 +199,7 @@ return {
           desc = "Refresh codelens (buffer)",
           callback = function(args)
             if require("astrolsp").config.features.codelens then
-              vim.lsp.codelens.refresh { bufnr = args.buf }
+              vim.lsp.codelens.enable(true, { bufnr = args.buf })
             end
           end,
         },

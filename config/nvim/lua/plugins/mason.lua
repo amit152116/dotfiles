@@ -53,7 +53,6 @@ return {
         -- Other Tools
         "tree-sitter-cli", -- Syntax parsing / highlighting
         "cmakelang", -- CMake syntax
-        "codebook",
       }
 
       opts.ensure_installed = require("astrocore").list_insert_unique(

@@ -2,6 +2,21 @@
 return {
   {
     "CopilotC-Nvim/CopilotChat.nvim",
+    cmd = {
+      "CopilotChat",
+      "CopilotChatToggle",
+      "CopilotChatSave",
+      "CopilotChatLoad",
+      "CopilotChatModels",
+      "CopilotChatExplain",
+      "CopilotChatFix",
+      "CopilotChatOptimize",
+      "CopilotChatDocs",
+      "CopilotChatTests",
+      "CopilotChatCommit",
+      "CopilotChatReset",
+      "CopilotChatPrompts",
+    },
     dependencies = {
       { "zbirenbaum/copilot.lua" },
       { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
@@ -14,7 +29,7 @@ return {
     -- See Commands section for default commands if you want to lazy load on them
     config = function()
       require("CopilotChat").setup {
-        model = "claude-haiku-4.5",
+        -- model = "claude-haiku-4.5",
         -- model = "gpt-4o",
         prompts = {
           AlgoDoc = {

@@ -18,6 +18,8 @@ return {
     diagnostics = {
       virtual_text = true,
       underline = true,
+      update_in_insert = false, -- skip diagnostic redraw while still typing
+      severity_sort = true, -- highest-severity sign wins when a line has several
     },
     -- passed straight to `vim.filetype.add`
     filetypes = {
@@ -307,6 +309,101 @@ return {
             vim.cmd "normal! n"
           end,
           desc = "Search selected text",
+        },
+      },
+    },
+    treesitter = {
+      ensure_installed = {
+        "lua",
+        "vim",
+        "bash",
+        "cpp",
+        "go",
+      },
+      auto_install = true, -- fetch parser automatically on opening an unparsed filetype
+      textobjects = {
+        select = {
+          select_textobject = {
+            ["af"] = { query = "@function.outer", desc = "around function" },
+            ["if"] = { query = "@function.inner", desc = "inside function" },
+            ["ac"] = { query = "@class.outer", desc = "around class" },
+            ["ic"] = { query = "@class.inner", desc = "inside class" },
+            ["aa"] = { query = "@parameter.outer", desc = "around parameter" },
+            ["ia"] = { query = "@parameter.inner", desc = "inside parameter" },
+            ["ao"] = {
+              query = "@conditional.outer",
+              desc = "around conditional",
+            },
+            ["io"] = {
+              query = "@conditional.inner",
+              desc = "inside conditional",
+            },
+            ["al"] = { query = "@loop.outer", desc = "around loop" },
+            ["il"] = { query = "@loop.inner", desc = "inside loop" },
+            ["am"] = { query = "@call.outer", desc = "around call" },
+            ["im"] = { query = "@call.inner", desc = "inside call" },
+          },
+        },
+        move = {
+          goto_next_start = {
+            ["]f"] = { query = "@function.outer", desc = "Next function start" },
+            ["]a"] = { query = "@parameter.inner", desc = "Next parameter" },
+            ["]o"] = {
+              query = "@conditional.outer",
+              desc = "Next conditional start",
+            },
+            ["]l"] = { query = "@loop.outer", desc = "Next loop start" },
+          },
+          goto_next_end = {
+            ["]F"] = { query = "@function.outer", desc = "Next function end" },
+            ["]O"] = {
+              query = "@conditional.outer",
+              desc = "Next conditional end",
+            },
+            ["]L"] = { query = "@loop.outer", desc = "Next loop end" },
+          },
+          goto_previous_start = {
+            ["[f"] = {
+              query = "@function.outer",
+              desc = "Previous function start",
+            },
+            ["[a"] = { query = "@parameter.inner", desc = "Previous parameter" },
+            ["[o"] = {
+              query = "@conditional.outer",
+              desc = "Previous conditional start",
+            },
+            ["[l"] = { query = "@loop.outer", desc = "Previous loop start" },
+          },
+          goto_previous_end = {
+            ["[F"] = {
+              query = "@function.outer",
+              desc = "Previous function end",
+            },
+            ["[O"] = {
+              query = "@conditional.outer",
+              desc = "Previous conditional end",
+            },
+            ["[L"] = { query = "@loop.outer", desc = "Previous loop end" },
+          },
+        },
+        swap = {
+          swap_next = {
+            [">F"] = { query = "@function.outer", desc = "Swap next function" },
+            [">a"] = {
+              query = "@parameter.inner",
+              desc = "Swap next parameter",
+            },
+          },
+          swap_previous = {
+            ["<F"] = {
+              query = "@function.outer",
+              desc = "Swap previous function",
+            },
+            ["<a"] = {
+              query = "@parameter.inner",
+              desc = "Swap previous parameter",
+            },
+          },
         },
       },
     },

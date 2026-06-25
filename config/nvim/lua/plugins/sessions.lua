@@ -14,8 +14,10 @@ return {
   ---@type AstroCoreOpts
   opts = {
     sessions = {
-      -- disable the auto-saving of directory sessions
-      autosave = { cwd = true },
+      -- disable built-in cwd autosave: our autocmds below save/restore
+      -- under the branch-aware name instead, so both would otherwise
+      -- write separate session files per directory
+      autosave = { cwd = false },
     },
     autocmds = {
       -- disable alpha autostart

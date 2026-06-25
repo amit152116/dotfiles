@@ -446,7 +446,7 @@ return {
             },
 
             ["<Leader>fT"] = {
-              function() Snacks.picker.colorschemes() end,
+              function() Snacks.picker.colorschemes { focus = "list" } end,
               desc = "Find themes",
             },
 

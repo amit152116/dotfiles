@@ -1,12 +1,18 @@
 ---@type LazySpec
 return {
-  { "andweeb/presence.nvim" },
+  { "andweeb/presence.nvim", event = "VeryLazy" },
 
   { "tpope/vim-fugitive" },
 
   { "max397574/better-escape.nvim" },
 
   { "wakatime/vim-wakatime", event = "User AstroFile" },
+
+  {
+    "ThePrimeagen/refactoring.nvim",
+    dependencies = { "lewis6991/async.nvim", "nvim-treesitter/nvim-treesitter" },
+    opts = {},
+  },
 
   {
     "yutkat/confirm-quit.nvim",
@@ -26,31 +32,16 @@ return {
   },
 
   {
-    "nvim-treesitter/nvim-treesitter",
-    opts = {
-      ensure_installed = {
-        "lua",
-        "vim",
-        "bash",
-        "cpp",
-        "go",
-      },
-
-      incremental_selection = {
-        enable = true,
-        keymaps = {
-          init_selection = false, -- false disables the mapping rather than removing the key
-          node_incremental = false,
-          scope_incremental = false,
-          node_decremental = false,
-        },
-      },
-    },
-  },
-
-  {
     "folke/twilight.nvim",
     enabled = true,
+    keys = {
+      {
+        "ux",
+        function() require("twilight.view").toggle() end,
+        mode = "n",
+        desc = "Toggle twilight",
+      },
+    },
     opts = {
       dimming = {
         alpha = 0.25,
@@ -85,9 +76,10 @@ return {
   },
   {
     "MeanderingProgrammer/render-markdown.nvim",
+    ft = { "markdown" },
     dependencies = {
       "nvim-treesitter/nvim-treesitter",
-      "echasnovski/mini.icons",
+      "nvim-mini/mini.icons",
     },
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
@@ -156,6 +148,10 @@ return {
             ["vim.lsp.util.stylize_markdown"] = true,
             ["cmp.entry.get_documentation"] = true, -- requires hrsh7th/nvim-cmp
           },
+          -- lspsaga owns hover/signature UI (K -> Lspsaga hover_doc); both
+          -- patch the same vim.lsp.buf functions, leave it to lspsaga
+          hover = { enabled = false },
+          signature = { enabled = false },
         },
         presets = {
           bottom_search = false, -- classic bottom cmdline for search instead of noice's popup

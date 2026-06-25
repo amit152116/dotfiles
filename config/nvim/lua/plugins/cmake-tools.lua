@@ -1,7 +1,7 @@
-local osys = require "cmake-tools.osys"
 return {
   {
     "Civitasv/cmake-tools.nvim",
+    ft = { "cmake", "c", "cpp" },
     dependencies = {
       {
         "AstroNvim/astrocore",
@@ -53,7 +53,7 @@ return {
       },
       -- supports macro expansion: ${kit}, ${kitGenerator}, ${variant:xx}
       cmake_build_directory = function()
-        if osys.iswin32 then return "out\\${variant:buildType}" end
+        if require("cmake-tools.osys").iswin32 then return "out\\${variant:buildType}" end
         return "out/${variant:buildType}" -- relative to cwd
       end,
       cmake_compile_commands_options = {

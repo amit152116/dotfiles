@@ -1,44 +1,53 @@
--- Customize None-ls sources
--- Make sure null-ls is installed
-local null_ls = require "null-ls"
-
-null_ls.setup {
-  sources = {
-
-    -- CMake linter
-    null_ls.builtins.diagnostics.cmake_lint.with {
-      filetypes = { "cmake" },
-    },
-
-    -- Dockerfile linter
-    null_ls.builtins.diagnostics.hadolint.with {
-      filetypes = { "dockerfile" },
-    },
-
-    -- Kotlin linter
-    null_ls.builtins.diagnostics.ktlint.with {
-      filetypes = { "kotlin" },
-    },
-
-    -- Markdown linter
-    null_ls.builtins.diagnostics.markdownlint.with {
-      filetypes = { "markdown" },
-    },
-
-    -- Lua linter
-    null_ls.builtins.diagnostics.selene.with {
-      filetypes = { "lua" },
-    },
-
-    null_ls.builtins.code_actions.refactoring, -- generic code refactoring
-
-    -- Go-specific actions (since you work with Go)
-    null_ls.builtins.code_actions.gomodifytags,
-    null_ls.builtins.code_actions.impl,
-  },
-}
 ---@type LazySpec
 return {
+  {
+    -- customize None-ls sources (deferred: null-ls only loads on `User AstroFile`)
+    "nvimtools/none-ls.nvim",
+    opts = function(_, opts)
+      local null_ls = require "null-ls"
+      opts.sources = opts.sources or {}
+      vim.list_extend(opts.sources, {
+        -- CMake linter
+        null_ls.builtins.diagnostics.cmake_lint.with { filetypes = { "cmake" } },
+        -- Dockerfile linter
+        null_ls.builtins.diagnostics.hadolint.with {
+          filetypes = { "dockerfile" },
+        },
+        -- Kotlin linter
+        null_ls.builtins.diagnostics.ktlint.with { filetypes = { "kotlin" } },
+        -- Markdown linter
+        null_ls.builtins.diagnostics.markdownlint.with {
+          filetypes = { "markdown" },
+        },
+        -- Lua linter
+        null_ls.builtins.diagnostics.selene.with { filetypes = { "lua" } },
+        -- filetypes scoped: unscoped, fires on every buffer (help/terminal/oil) and
+        -- crashes when refactoring.nvim's treesitter lookup gets a bufnr with no parser
+        null_ls.builtins.code_actions.refactoring.with {
+          filetypes = {
+            "lua",
+            "vim",
+            "ps1",
+            "javascript",
+            "javascriptreact",
+            "go",
+            "cpp",
+            "typescriptreact",
+            "typescript",
+            "python",
+            "c",
+            "cs",
+            "ruby",
+            "php",
+            "java",
+          },
+        },
+        -- Go-specific actions (since you work with Go)
+        null_ls.builtins.code_actions.gomodifytags.with { filetypes = { "go" } },
+        null_ls.builtins.code_actions.impl.with { filetypes = { "go" } },
+      })
+    end,
+  },
   {
     "stevearc/conform.nvim",
     event = "User AstroFile",
@@ -57,7 +66,7 @@ return {
       },
     },
     dependencies = {
-      { "williamboman/mason.nvim", optional = true },
+      { "mason-org/mason.nvim", optional = true },
       {
         "AstroNvim/astrocore",
         opts = {
