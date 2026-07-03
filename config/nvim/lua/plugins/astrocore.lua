@@ -37,6 +37,7 @@ return {
     },
     options = {
       opt = { -- vim.opt.<key>
+        exrc = true, -- auto-source .nvim.lua at project root
         spell = false,
         wrap = true,
         scrolloff = 10,
@@ -47,6 +48,12 @@ return {
         tabstop = 4,
         smartindent = true,
         showmatch = false,
+        smoothscroll = true,
+        splitkeep = "screen",
+        foldlevel = 99,
+        foldtext = "",
+        inccommand = "nosplit",
+        jumpoptions = "view",
       },
       -- mapleader/maplocalleader must be set in lua/lazy_setup.lua, before lazy.setup runs
       g = {},
@@ -77,9 +84,18 @@ return {
     -- keycodes follow vimdocs casing -- `<Leader>` must stay capitalized
     mappings = {
       n = {
-        -- recenter screen after jumping to a search match
-        ["n"] = { "nzzzv", silent = true },
-        ["N"] = { "Nzzzv", silent = true },
+        ["n"] = {
+          "'Nn'[v:searchforward].'zzzv'",
+          expr = true,
+          silent = true,
+          desc = "Next result (always forward, center+unfold)",
+        },
+        ["N"] = {
+          "'Nn'[v:searchforward == 0].'zzzv'",
+          expr = true,
+          silent = true,
+          desc = "Prev result (always backward, center+unfold)",
+        },
 
         ["<M-q>"] = {
           "<Cmd>confirm qall<CR>",
@@ -97,7 +113,15 @@ return {
         },
 
         ["<Leader>o"] = {
-          "<C-w>w",
+          -- HACK(gitsigns): suppress BufLeave so gitsigns' preview_hunk_inline
+          -- (autocloses on BufLeave) survives switching windows; regressed after
+          -- v5->v6/nvim 0.11 migration where <C-w>w reliably fires BufLeave now.
+          function()
+            local ei = vim.o.eventignore
+            vim.o.eventignore = "BufLeave"
+            vim.cmd "wincmd w"
+            vim.o.eventignore = ei
+          end,
           desc = "Switch Window",
         },
 
@@ -178,8 +202,6 @@ return {
           "<cmd>b#<cr>",
           desc = "Jump to Previous Buffer",
         },
-        ["[c"] = { "%" },
-
         ["<Leader>s"] = { desc = "󰒮 Remote Sync" },
         ["<Leader>ss"] = {
           function() require("remote_sync").send() end,
@@ -254,10 +276,6 @@ return {
           desc = "Reload project config",
         },
 
-        ["<Leader>uD"] = {
-          function() require("astrocore.toggles").diagnostics() end,
-          desc = "Toggle diagnostics",
-        },
         ["<Leader>pR"] = {
           "<cmd>AstroRoot<CR>",
           desc = "Show project root",
@@ -268,9 +286,59 @@ return {
           desc = "Astro Reload",
           silent = true,
         },
+
+        -- move line down/up in normal mode (visual has J/K)
+        ["<A-j>"] = { "<cmd>m .+1<cr>==", desc = "Move line down" },
+        ["<A-k>"] = { "<cmd>m .-2<cr>==", desc = "Move line up" },
+
+        -- buffer management
+        ["<Leader>bi"] = {
+          function()
+            local visible = {}
+            for _, win in ipairs(vim.api.nvim_list_wins()) do
+              visible[vim.api.nvim_win_get_buf(win)] = true
+            end
+            for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+              if vim.bo[buf].buflisted and not visible[buf] then
+                require("snacks").bufdelete(buf)
+              end
+            end
+          end,
+          desc = "Delete invisible buffers",
+        },
+
+        ["mm"] = { "%", desc = "Jump to matching bracket" },
+
+        -- which-key window hydra — hold <c-w> loop without modifier
+        ["<C-w><space>"] = {
+          function() require("which-key").show { keys = "<c-w>", loop = true } end,
+          desc = "Window hydra mode",
+        },
+
+        -- inspect treesitter tree at cursor
+        ["<Leader>uI"] = {
+          function()
+            vim.treesitter.inspect_tree()
+            vim.api.nvim_input "I"
+          end,
+          desc = "Inspect treesitter tree",
+        },
+      },
+      i = {
+        -- ==gi: reindent line, re-enter insert at last cursor pos
+        ["<A-j>"] = { "<esc><cmd>m .+1<cr>==gi", desc = "Move line down" },
+        ["<A-k>"] = { "<esc><cmd>m .-2<cr>==gi", desc = "Move line up" },
+        -- <c-g>u inserts undo checkpoint so u only undoes back to last punctuation
+        [","] = { ",<c-g>u", desc = "Undo checkpoint" },
+        ["."] = { ".<c-g>u", desc = "Undo checkpoint" },
+        [";"] = { ";<c-g>u", desc = "Undo checkpoint" },
+        ["("] = { "(<c-g>u", desc = "Undo checkpoint" },
+        [")"] = { ")<c-g>u", desc = "Undo checkpoint" },
+        ["<CR>"] = { "<CR><c-g>u", desc = "Newline + undo checkpoint" },
       },
       x = {
-        ["<Leader>p"] = { '"_dP', desc = "Replace and keep yank" },
+        -- "_d = delete to black hole (no yank), P = paste; preserves yank register
+        ["<Leader>p"] = { '"_dP', desc = "Paste over selection (keep yank)" },
       },
       t = {
         ["jj"] = {

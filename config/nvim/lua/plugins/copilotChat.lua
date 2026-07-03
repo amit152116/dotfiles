@@ -58,10 +58,10 @@ return {
               --   "<cmd>CopilotChatTests<CR>",
               --   desc = "Generate tests",
               -- },
-              ["<Leader>ac"] = {
-                "<cmd>CopilotChatCommit<CR>",
-                desc = "Generate commit msg",
-              },
+              -- ["<Leader>ac"] = {
+              --   "<cmd>CopilotChatCommit<CR>",
+              --   desc = "Generate commit msg",
+              -- },
               ["<Leader>ax"] = {
                 "<cmd>CopilotChatReset<CR>",
                 desc = "Clear chat",

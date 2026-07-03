@@ -11,7 +11,15 @@ return {
   ---@type snacks.Config
   opts = {
     animate = {},
-    scroll = { enabled = true },
+    scroll = {
+      enabled = true,
+      animate = {
+        duration = { step = 15, total = 200 },
+        easing = "outCubic",
+        fps = 60,
+      },
+    },
+    toggle = {},
     gh = { enabled = true },
 
     dashboard = {

@@ -196,6 +196,16 @@ return {
         cmd = { "neocmakelsp", "stdio" }, -- newer versions use a subcommand instead of --stdio
       },
     },
+    commands = {
+      LspLog = {
+        function() vim.cmd.edit(vim.lsp.log.get_filename()) end,
+        desc = "Open LSP log file",
+      },
+      LspInfo = {
+        function() vim.cmd "checkhealth vim.lsp" end,
+        desc = "Show LSP info (checkhealth)",
+      },
+    },
     handlers = {},
     autocmds = {
       lsp_codelens_refresh = {
@@ -263,6 +273,11 @@ return {
         ["<Leader>ln"] = {
           function() vim.lsp.buf.rename() end,
           desc = "Rename symbol",
+        },
+        ["<Leader>la"] = {
+          function() vim.lsp.buf.code_action() end,
+          desc = "LSP code action",
+          cond = "textDocument/codeAction",
         },
       },
     },

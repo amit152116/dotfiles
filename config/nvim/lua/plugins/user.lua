@@ -28,6 +28,7 @@ return {
     opts = {
       preset = "helix",
       sort = { "group", "alphanum", "mod", "order", "local" },
+      show_help = false, -- footer renders as separate float with wrong width (wk bug)
     },
   },
 
