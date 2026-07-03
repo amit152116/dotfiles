@@ -2,77 +2,13 @@
 return {
   {
     "CopilotC-Nvim/CopilotChat.nvim",
-    cmd = {
-      "CopilotChat",
-      "CopilotChatToggle",
-      "CopilotChatSave",
-      "CopilotChatLoad",
-      "CopilotChatModels",
-      "CopilotChatExplain",
-      "CopilotChatFix",
-      "CopilotChatOptimize",
-      "CopilotChatDocs",
-      "CopilotChatTests",
-      "CopilotChatCommit",
-      "CopilotChatReset",
-      "CopilotChatPrompts",
-    },
     dependencies = {
       { "zbirenbaum/copilot.lua" },
       { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
     },
     build = "make tiktoken", -- Only on MacOS or Linux
-    opts = {
-      -- See Configuration section for options
-    },
 
     -- See Commands section for default commands if you want to lazy load on them
-    config = function()
-      require("CopilotChat").setup {
-        -- model = "claude-haiku-4.5",
-        -- model = "gpt-4o",
-        prompts = {
-          AlgoDoc = {
-            prompt = [[
-            You are documenting this algorithm/data structure implementation for coding interview preparation.
-            Generate a detailed structured comment block in the following format:
-
-            1. Definition:
-              - One-liner about what the algorithm/data structure does.
-
-            2. Allowed Operations / Rules:
-              - Describe what operations or rules are permitted (if applicable).
-
-            3. Recurrence Relation / Formula:
-              - Include DP recurrence, formula, or core idea (if applicable).
-              - For data structures, describe the logic of core operations.
-
-            4. Edge Cases / Pitfalls:
-              - Common Tricky Cases (if applicable).
-
-            5. Complexity:
-              - Time and space complexity (worst/average/best if relevant).
-
-            6. Example:
-              - A small, concrete input/output transformation example.
-
-            7. Use Cases:
-              - Real-world applications and why this algorithm matters.
-
-            8. Comparison:
-              - How it relates to or differs from similar algorithms or data structures.
-
-            9. Implementation Notes:
-              - Specific implementation details (if applicable).
-
-            Make it concise, structured, and uniform so it’s easy to revise for interviews.
-            ]],
-            system_prompt = "COPILOT_REVIEW",
-            description = "Generate structured DSA algorithm comments (algo_doc style)",
-          },
-        },
-      }
-    end,
     specs = {
       {
         "AstroNvim/astrocore",

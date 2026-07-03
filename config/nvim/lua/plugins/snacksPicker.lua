@@ -11,6 +11,8 @@ return {
   ---@type snacks.Config
   opts = {
     animate = {},
+    scroll = { enabled = true },
+    gh = { enabled = true },
 
     dashboard = {
       preset = {

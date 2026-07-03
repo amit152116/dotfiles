@@ -10,6 +10,9 @@ local Snacks = require "snacks"
 local NAMESPACE_ID = vim.api.nvim_create_namespace "snacks_multigrep_highlight"
 local DELIMITER = "#"
 
+-- single-slot preview file cache; invalidated by mtime
+local _preview_cache = { path = nil, mtime = nil, lines = nil }
+
 -- Directives mapping
 local DIRECTIVES = {
   r = "replace",
@@ -71,6 +74,12 @@ end
 ---@return table
 local function find_directives(prompt)
   local positions = {}
+  -- directive at very start of string (no preceding space)
+  local d0 = prompt:match "^([rtxg]):"
+  if d0 and DIRECTIVES[d0] then
+    table.insert(positions, { pos = 1, type = d0 })
+  end
+  -- directives preceded by whitespace
   for pos, directive in prompt:gmatch "()[%s]([rtxg]):" do
     if DIRECTIVES[directive] then
       table.insert(positions, { pos = pos + 1, type = directive })
@@ -149,10 +158,13 @@ local function parse_search_prompt(prompt, opts)
       and vim.trim(prompt:sub(1, positions[1].pos - 1))
     or prompt
 
-  opts.find_pattern = find_pattern ~= "" and find_pattern or prompt
-  vim.list_extend(args, { "-e", opts.find_pattern })
-
-  if find_pattern == "" then return args end
+  opts.find_pattern = find_pattern
+  if find_pattern == "" then
+    -- directive-only input (e.g. "g:*.lua"); match all lines, let glob/type filter
+    vim.list_extend(args, { "-e", "." })
+  else
+    vim.list_extend(args, { "-e", opts.find_pattern })
+  end
 
   -- Process directives
   process_directives(prompt, positions, args, opts)
@@ -245,11 +257,21 @@ end
 local function process_find_replace(opts, item, key)
   local text = item.line
   if not text then return key and rawget(item, key) or true end
+  if not opts.find_pattern or opts.find_pattern == "" then
+    return key and rawget(item, key) or true
+  end
 
   local ignore_case = not opts.find_pattern:match "%u"
-  local pattern = prepare_pattern(opts.find_pattern, opts.regex, ignore_case)
 
-  -- ✅ Handle invalid regex pattern (prepare_pattern returned nil)
+  -- cache compiled pattern per search term; avoid recompiling on every item
+  if opts._compiled_for ~= opts.find_pattern then
+    opts._compiled_pattern =
+      prepare_pattern(opts.find_pattern, opts.regex, ignore_case)
+    opts._compiled_for = opts.find_pattern
+  end
+  local pattern = opts._compiled_pattern
+
+  -- handle invalid regex (prepare_pattern returned nil)
   if opts.regex and not pattern then
     return key and rawget(item, key) or true
   end
@@ -476,6 +498,11 @@ local function createFinder(opts)
     local args = parse_search_prompt(input, opts)
     invalid_regex_notified = false
 
+    -- empty search → no args → don't spawn rg (avoids notification storm)
+    if not args then
+      return function(_cb) end
+    end
+
     return require("snacks.picker.source.proc").proc({
       cmd = "rg",
       args = args,
@@ -498,11 +525,7 @@ local function createFinder(opts)
         item.line = text
         item.file = file
         item.pos = { tonumber(lnum), tonumber(col) - 1 }
-
-        -- Schedule replacement processing
-        vim.schedule(
-          function() process_find_replace(opts, item, "replace_text") end
-        )
+        item._opts = opts -- preview uses this for lazy match/replace compute
 
         return true
       end,
@@ -543,37 +566,72 @@ local function createPreview(ctx)
   local item = ctx.item
   if not item or not item.file or not item.pos then return false end
 
-  local buf = ctx.buf
-  local filepath = item.cwd .. "/" .. item.file
-
-  -- Read file safely
-  local ok, lines = pcall(vim.fn.readfile, filepath)
-  if not ok then
-    vim.notify("Failed to read file: " .. filepath, vim.log.levels.ERROR)
-    return false
+  -- lazy match/replace compute (was previously scheduled per-item in transform)
+  if not item.match_info and item._opts then
+    process_find_replace(item._opts, item, nil)
   end
 
+  local filepath = vim.fs.normalize(item.cwd .. "/" .. item.file)
   local lnum = item.pos[1]
   local col = item.pos[2]
 
-  -- Handle replacement preview
-  if item.replace_line then lines[lnum] = item.replace_line end
-
-  -- Set buffer content
-  ctx.preview:set_lines(lines)
-  ctx.preview:highlight { file = item.file }
-
-  -- Add match highlighting
-  if item.match_info then
-    local match = item.replace_line and item.match_info.replace
-      or item.match_info.find
-    local hl_group = item.replace_line and "Substitute" or "IncSearch"
-
-    add_highlight(buf, lnum, match.start_col, match.end_col, hl_group, 300)
+  if item.replace_line then
+    -- replace preview must mutate a line → scratch set_lines path
+    -- single-slot mtime cache for source lines
+    local lines
+    local stat = vim.uv.fs_stat(filepath)
+    local mtime = stat and stat.mtime.sec or 0
+    if _preview_cache.path == filepath and _preview_cache.mtime == mtime then
+      lines = _preview_cache.lines
+    else
+      local ok, read = pcall(vim.fn.readfile, filepath)
+      if not ok then
+        vim.notify("Failed to read file: " .. filepath, vim.log.levels.ERROR)
+        return false
+      end
+      lines = read
+      _preview_cache = { path = filepath, mtime = mtime, lines = lines }
+    end
+    local display = vim.list_slice(lines, 1, #lines)
+    display[lnum] = item.replace_line
+    ctx.preview:set_lines(display)
+    ctx.preview:highlight { file = item.file }
+    local buf = ctx.buf
+    if item.match_info and item.match_info.replace then
+      add_highlight(
+        buf,
+        lnum,
+        item.match_info.replace.start_col,
+        item.match_info.replace.end_col,
+        "Substitute",
+        300
+      )
+    end
+    add_line_highlight(buf, lnum)
+  else
+    -- buffer-as-cache: load file into nvim buffer once, swap pointer on each render
+    -- zero disk I/O after first load; treesitter/LSP attach automatically
+    if not item._buf or not vim.api.nvim_buf_is_valid(item._buf) then
+      item._buf = vim.fn.bufadd(filepath)
+      vim.b[item._buf].multigrep_preview = true -- tagged for GC on picker close
+      vim.fn.bufload(item._buf)
+    end
+    ctx.preview:set_buf(item._buf)
+    -- extmarks go on the real buffer; clear before re-adding to avoid stale highlights
+    local buf = item._buf
+    vim.api.nvim_buf_clear_namespace(buf, NAMESPACE_ID, 0, -1)
+    if item.match_info then
+      add_highlight(
+        buf,
+        lnum,
+        item.match_info.find.start_col,
+        item.match_info.find.end_col,
+        "IncSearch",
+        300
+      )
+    end
+    add_line_highlight(buf, lnum)
   end
-
-  -- Add line highlight
-  add_line_highlight(buf, lnum)
 
   -- Position cursor
   vim.api.nvim_win_set_cursor(ctx.win, { lnum, col })
@@ -606,6 +664,15 @@ function M.Multigrep(opts)
       smartcase = true,
     },
     preview = createPreview,
+    on_close = function()
+      -- GC buffers loaded by buffer-as-cache preview; skip ones open in a real window
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.b[buf].multigrep_preview and vim.fn.bufwinnr(buf) == -1 then
+          pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        end
+      end
+      _preview_cache = { path = nil, mtime = nil, lines = nil }
+    end,
     actions = {
       replace = function(picker, _)
         if opts.replace_pattern then

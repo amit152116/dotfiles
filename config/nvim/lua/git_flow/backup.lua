@@ -172,7 +172,7 @@ end
 function M.start_auto_backup()
   if timer then timer:stop() end
   local interval = config.options.backup.backup_interval
-  timer = vim.loop.new_timer()
+  timer = vim.uv.new_timer()
   timer:start(interval, interval, vim.schedule_wrap(M.create_backup))
 end
 

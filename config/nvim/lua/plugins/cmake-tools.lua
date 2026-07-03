@@ -59,7 +59,7 @@ return {
       cmake_compile_commands_options = {
         -- soft_link: symlink compile_commands.json to target; copy: copy it; lsp: point lsp at it directly; none: skip
         action = "soft_link",
-        target = vim.loop.cwd(), -- only used by soft_link/copy
+        target = vim.uv.cwd(), -- only used by soft_link/copy
       },
       cmake_kits_path = nil,
       cmake_variants_message = {

@@ -63,7 +63,7 @@ local function git_job(args)
   local job = Job:new {
     command = "git",
     args = args,
-    cwd = vim.loop.cwd(),
+    cwd = vim.uv.cwd(),
     on_stderr = function(_, _) end,
   }
 

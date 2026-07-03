@@ -20,7 +20,6 @@ return {
         "bash-language-server", -- Bash
         "kotlin-language-server", -- Kotlin
         "taplo", -- TOML
-        "basedpyright", -- Python
 
         -- Formatters
         "stylua", -- Lua
@@ -33,17 +32,13 @@ return {
         "prettier", -- JS/TS/JSON/etc.
         "ktlint", -- Kotlin
         "google-java-format", -- Java
-        "black", -- Python
-
         -- Linters
-        "ruff", -- Python
         "selene", -- Lua
         "markdownlint", -- Markdown
         "shellcheck", -- Shell
         "hadolint", -- Dockerfile
 
         -- Debuggers
-        "debugpy", -- Python
         "delve", -- Go
 
         -- Go Code Actions

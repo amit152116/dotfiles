@@ -29,6 +29,8 @@ return {
     },
     servers = {
       "clangd", -- C/C++ LSP (system binary, not Mason-managed)
+      "basedpyright",
+      "ruff",
     },
     ---@diagnostic disable: missing-fields
     config = {
@@ -111,7 +113,15 @@ return {
         end,
       },
       ruff = {
+        init_options = {
+          settings = {
+            lineLength = 88,
+            lint = { preview = true },
+            format = { preview = true },
+          },
+        },
         on_attach = function(client)
+          -- basedpyright handles hover; ruff only does lint/format actions
           client.server_capabilities.hoverProvider = false
         end,
       },
@@ -119,41 +129,37 @@ return {
         before_init = function(_, c)
           if not c.settings then c.settings = {} end
           if not c.settings.python then c.settings.python = {} end
-          c.settings.python.pythonPath = vim.fn.exepath "python"
+          (c.settings.python --[[@as {pythonPath: string}]]).pythonPath =
+            vim.fn.exepath "python"
         end,
         settings = {
           basedpyright = {
-            disableOrganizeImports = true,
+            disableOrganizeImports = true, -- ruff handles imports
             analysis = {
               autoimportCompletions = true,
               autoFormatStrings = true,
               autoSearchPaths = true,
               diagnosticMode = "workspace",
-              diagnosticSeverityOverrides = {
-                reportUnusedImport = "none",
-                reportUnusedFunction = "none",
-                reportUnusedVariable = "none",
-                reportGeneralTypeIssues = "hint",
-                reportOptionalMemberAccess = "none",
-                reportOptionalSubscript = "none",
-                reportPrivateImportUsage = "none",
-              },
+              typeCheckingMode = "standard",
+              useLibraryCodeForTypes = true,
               inlayHints = {
                 variableTypes = true,
                 callArgumentNames = true,
                 functionReturnTypes = true,
                 genericTypes = true,
               },
-              typeCheckingMode = "standard",
-              useLibraryCodeForTypes = true,
-            },
-          },
-
-          python = {
-            analysis = {
-              autoSearchPaths = true,
-              useLibraryCodeForTypes = true,
-              diagnosticMode = "workspace",
+              diagnosticSeverityOverrides = {
+                -- ruff handles unused imports/vars; suppress pyright duplicates
+                reportUnusedImport = "none",
+                reportUnusedVariable = "none",
+                -- surface type issues at appropriate severity
+                reportGeneralTypeIssues = "warning",
+                reportOptionalMemberAccess = "warning",
+                reportOptionalSubscript = "warning",
+                reportPrivateImportUsage = "none",
+                reportUnusedFunction = "information",
+                reportMissingTypeArgument = "information",
+              },
             },
           },
         },
@@ -169,7 +175,7 @@ return {
         settings = {
           xml = {
             downloadExternalResources = {
-              enabled = true,
+              enabled = false, -- fetching schemas on open hangs/crashes nvim for ROS XML
             },
             validation = {
               enabled = true,
