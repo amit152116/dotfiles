@@ -159,39 +159,26 @@ run_env() {
     # Load the createSymlink function
     source "$DOTFILES_DIR/symlink.sh"
 
-    # Map of source files/dirs to target locations
-    declare -A FILES_TO_LINK=(
-        ["$DOTFILES_DIR/config/alacritty"]="$HOME/.config/alacritty"
-        ["$DOTFILES_DIR/config/btop"]="$HOME/.config/btop"
-        ["$DOTFILES_DIR/config/ghostty/config"]="$HOME/.config/ghostty/config"
-        ["$DOTFILES_DIR/config/nvim"]="$HOME/.config/nvim"
-        ["$DOTFILES_DIR/config/tmuxinator"]="$HOME/.config/tmuxinator"
-        ["$DOTFILES_DIR/config/timewarrior"]="$HOME/.config/timewarrior"
-        ["$DOTFILES_DIR/config/yazi"]="$HOME/.config/yazi"
-        ["$DOTFILES_DIR/config/vicinae"]="$HOME/.config/vicinae"
-        ["$DOTFILES_DIR/env/.gitconfig"]="$HOME/.gitconfig"
-        ["$DOTFILES_DIR/env/.taskrc"]="$HOME/.taskrc"
-        ["$DOTFILES_DIR/env/.gitignore"]="$HOME/.gitignore"
-        ["$DOTFILES_DIR/env/.ideavimrc"]="$HOME/.ideavimrc"
-        ["$DOTFILES_DIR/env/.tmux.conf"]="$HOME/.tmux.conf"
-        ["$DOTFILES_DIR/env/.zshrc"]="$HOME/.zshrc"
-        ["$DOTFILES_DIR/env/.zsh"]="$HOME/.zsh"
-        ["$DOTFILES_DIR/env/.p10k.zsh"]="$HOME/.p10k.zsh"
-    )
-
-    for src in "${!FILES_TO_LINK[@]}"; do
-        dest="${FILES_TO_LINK[$src]}"
-
-        if [[ -e "$src" ]]; then
-            if [[ $DRY_RUN -eq 1 ]]; then
-                log "Would create symlink: $dest → $src"
-            else
-                mkdir -p "$(dirname "$dest")"
-                createSymlink "$src" "$dest"
-            fi
+    link_one() {
+        local src="$1" dest="$2"
+        if [[ $DRY_RUN -eq 1 ]]; then
+            log "Would create symlink: $dest → $src"
         else
-            warn "Source not found: $src"
+            mkdir -p "$(dirname "$dest")"
+            createSymlink "$src" "$dest"
         fi
+    }
+
+    # config/* → ~/.config/*
+    for src in "$DOTFILES_DIR/config"/*/; do
+        src="${src%/}"
+        link_one "$src" "$HOME/.config/$(basename "$src")"
+    done
+
+    # env/.* → ~/.*
+    for src in "$DOTFILES_DIR/env"/.*; do
+        [[ $(basename "$src") == "." || $(basename "$src") == ".." ]] && continue
+        link_one "$src" "$HOME/$(basename "$src")"
     done
 }
 

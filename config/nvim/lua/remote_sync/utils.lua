@@ -192,7 +192,7 @@ end
 --- exactly one byte larger than the normalised remote length.
 ---@param local_path string
 ---@param remote_content string Remote file content as returned by get_remote_file
----@param local_size number Actual local file size in bytes (from vim.loop.fs_stat)
+---@param local_size number Actual local file size in bytes (from vim.uv.fs_stat)
 ---@return boolean
 function M.compare_files_large(local_path, remote_content, local_size)
   -- Normalise remote: strip trailing newline stripped by SSH capture.

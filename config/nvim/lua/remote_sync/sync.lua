@@ -233,7 +233,7 @@ local function execute_rsync(
   -- the user sees, regardless of how quickly mkdir or rsync callbacks fire.
   state.current = direction == "send" and M.State.SYNCING_UP
     or M.State.SYNCING_DOWN
-  local start_time = vim.loop.now()
+  local start_time = vim.uv.now()
 
   utils.debug(
     string.format(
@@ -257,7 +257,7 @@ local function execute_rsync(
   -- Hard ceiling timer: covers both mkdir and rsync time.
   local timeout_ms = (config.get_value "rsync_timeout") * 1000
   local timed_out = false
-  local timeout_timer = vim.loop.new_timer()
+  local timeout_timer = vim.uv.new_timer()
 
   -- Abort helper: cleans up state, fires callbacks, logs failure.
   local function abort(msg)
@@ -312,7 +312,7 @@ local function execute_rsync(
           timeout_timer:close()
         end
 
-        local elapsed = vim.loop.now() - start_time
+        local elapsed = vim.uv.now() - start_time
         state.current = M.State.IDLE
         state.last_code = code
         state.job_id = -1

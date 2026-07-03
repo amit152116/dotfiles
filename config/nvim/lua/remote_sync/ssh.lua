@@ -158,7 +158,7 @@ local function validate_ssh_key(key_path)
   end
 
   -- Check permissions (private keys should be 600 or 400)
-  local stat = vim.loop.fs_stat(key_path)
+  local stat = vim.uv.fs_stat(key_path)
   if stat and stat.mode then
     local mode = stat.mode % 512 -- Get last 9 bits (permission bits)
     if mode > 384 then -- 0600 in octal = 384 decimal
@@ -488,7 +488,7 @@ function M.get_remote_file_with_comparison(
   local threshold = config.get_value "diff_size_threshold"
 
   -- Get local size
-  local local_stat = vim.loop.fs_stat(local_path)
+  local local_stat = vim.uv.fs_stat(local_path)
   local local_size = local_stat and local_stat.size or nil
 
   -- Get remote size first

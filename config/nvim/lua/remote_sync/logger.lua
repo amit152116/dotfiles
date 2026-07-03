@@ -39,10 +39,10 @@ function M.log(level, message, context)
 
   -- Open for append and write entry (called after optional rotation)
   local function write_entry()
-    vim.loop.fs_open(log_file, "a", FILE_MODE, function(err, fd)
+    vim.uv.fs_open(log_file, "a", FILE_MODE, function(err, fd)
       if not err and fd then
-        vim.loop.fs_write(fd, entry, -1, function()
-          vim.loop.fs_close(fd, function() end)
+        vim.uv.fs_write(fd, entry, -1, function()
+          vim.uv.fs_close(fd, function() end)
         end)
       end
     end)
@@ -50,10 +50,10 @@ function M.log(level, message, context)
 
   -- Check size synchronously (stat is microseconds; doing it async would
   -- require extra nesting with no practical benefit for this use case)
-  local stat = vim.loop.fs_stat(log_file)
+  local stat = vim.uv.fs_stat(log_file)
   if stat and stat.size > MAX_LOG_SIZE then
     -- Rotate asynchronously, then write to the fresh file
-    vim.loop.fs_rename(
+    vim.uv.fs_rename(
       log_file,
       log_file .. ".old",
       function() write_entry() end

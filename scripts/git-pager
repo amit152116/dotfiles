@@ -4,5 +4,5 @@
 if command -v delta >/dev/null 2>&1; then
     delta "$@"
 else
-    batcat -l diff -p --paging=always "$@"
+    batcat -l diff -p --style=plain --paging=always "$@"
 fi
