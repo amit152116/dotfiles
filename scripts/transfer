@@ -3,12 +3,10 @@
 # Simple SCP transfer script for Raspberry Pi
 # Usage: ./transfer.sh [upload|download] [file/folder] [remote_path (optional)]
 
-# Configuration
-HOST="raspberrypi.local"    # Change if different
-USER="pi"                   # Default Raspberry Pi user
-DEFAULT_REMOTE_PATH="$HOME" # Default remote directory
+HOST="raspberrypi.local"    # change if different
+USER="pi"                   # default Raspberry Pi user
+DEFAULT_REMOTE_PATH="$HOME"
 
-# Help function
 show_help() {
     echo "Usage: $0 [upload|download] [file/folder] [remote_path (optional)]"
     echo "Examples:"
@@ -17,7 +15,6 @@ show_help() {
     exit 1
 }
 
-# Check minimum arguments
 if [ $# -lt 2 ]; then
     show_help
 fi
@@ -26,13 +23,11 @@ DIRECTION=$1
 FILE=$2
 REMOTE_PATH=${3:-$DEFAULT_REMOTE_PATH}
 
-# Validate input
 if [ ! -e "$FILE" ] && [ "$DIRECTION" == "upload" ]; then
     echo "Error: Local file/folder '$FILE' does not exist!"
     exit 2
 fi
 
-# Transfer functions
 upload() {
     if [ -d "$FILE" ]; then
         scp -r "$FILE" "${USER}@${HOST}:${REMOTE_PATH}"
@@ -49,7 +44,6 @@ download() {
     fi
 }
 
-# Execute transfer
 case $DIRECTION in
     upload | u)
         upload

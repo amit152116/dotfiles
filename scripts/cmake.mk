@@ -39,47 +39,37 @@ ifdef coverage
 	BUILD_FLAGS += --coverage
 endif
 
-# ============================================================================
-# Primary Targets
-# ============================================================================
+# primary targets
 
 .DEFAULT_GOAL := all
 
-# Quick build targets
 .PHONY: all build b
 all build b: debug
 
 .PHONY: rebuild rb
 rebuild rb: clean debug
 
-# Debug build
 .PHONY: debug d
 debug d:
 	@$(BUILD_SCRIPT) -b Debug --ccache $(BUILD_FLAGS)
 
-# Release build
 .PHONY: release r
 release r: 
 	@$(BUILD_SCRIPT) -b Release $(BUILD_FLAGS)
 
-# RelWithDebInfo build
 .PHONY: relwithdebinfo rwdi
 relwithdebinfo rwdi: format
 	@$(BUILD_SCRIPT) -b RelWithDebInfo $(BUILD_FLAGS)
 
-# MinSizeRel build
 .PHONY: minsizerel msr minsize
 minsizerel msr minsize: format
 	@$(BUILD_SCRIPT) -b MinSizeRel $(BUILD_FLAGS)
 
-# Benchmark optimized build
 .PHONY: benchmark bench
 benchmark bench: format
 	@$(BUILD_SCRIPT) -b Release --benchmark $(BUILD_FLAGS)
 
-# ============================================================================
-# Install Targets
-# ============================================================================
+# install targets
 
 .PHONY: install i
 install i:
@@ -89,9 +79,7 @@ install i:
 install-debug id:
 	@$(BUILD_SCRIPT) -b Debug --install $(BUILD_FLAGS)
 
-# ============================================================================
-# Testing Targets
-# ============================================================================
+# testing targets
 
 .PHONY: test t
 test t:
@@ -105,7 +93,6 @@ test-release tr:
 test-verbose tv:
 	@$(BUILD_SCRIPT) -b Debug --test --verbose $(BUILD_FLAGS)
 
-# Coverage with tests
 .PHONY: coverage cov
 coverage cov: format
 	@$(BUILD_SCRIPT) -b Debug --coverage --test $(BUILD_FLAGS)
@@ -118,20 +105,15 @@ coverage cov: format
 		{ echo "❌ Coverage report generation failed"; exit 1; }
 	@echo "✅ Coverage report generated in coverage_report/"
 
-
-# ============================================================================
-# Sanitizer Builds
-# ============================================================================
+# sanitizer builds
 
 .PHONY: asan address
 asan address: 
 	@$(BUILD_SCRIPT) -b Debug -s asan $(BUILD_FLAGS)
 
-
 .PHONY: msan memory
 msan memory: 
 	@$(BUILD_SCRIPT) -b Debug -s msan $(BUILD_FLAGS)
-
 
 .PHONY: tsan thread
 tsan thread: 
@@ -141,10 +123,7 @@ tsan thread:
 ubsan ub: 
 	@$(BUILD_SCRIPT) -b Debug -s ubsan $(BUILD_FLAGS)
 
-
-# ============================================================================
-# Cross-Compilation Targets
-# ============================================================================
+# cross-compilation targets
 
 .PHONY: cross-arm32
 cross-arm32: format
@@ -162,15 +141,11 @@ cross-rpi3: format
 cross-rpi4: format
 	@$(BUILD_SCRIPT) -b Release --cross rpi4 $(BUILD_FLAGS)
 
-# List available cross-compilation targets
 .PHONY: list-cross
 list-cross:
 	@$(BUILD_SCRIPT) --list-cross-targets
 
-
-# ============================================================================
-# Maintenance & Utilities
-# ============================================================================
+# maintenance & utilities
 
 .PHONY: clean c
 clean c:
@@ -195,14 +170,11 @@ stats info:
 list-targets lt:
 	@$(BUILD_SCRIPT) --list-targets
 
-# Dry-run to see commands
 .PHONY: dry-run dr
 dry-run dr:
 	@$(BUILD_SCRIPT) -b Debug --dry-run $(BUILD_FLAGS)
 
-# ============================================================================
-# Code Formatting
-# ============================================================================
+# code formatting
 
 .PHONY: format fmt
 format fmt:
@@ -232,9 +204,7 @@ format fmt:
 	fi
 	@echo "✅ Formatting complete"
 
-# ============================================================================
-# Documentation
-# ============================================================================
+# documentation
 
 .PHONY: docs doc
 docs doc:
@@ -255,9 +225,7 @@ view-docs vd:
 	@xdg-open docs/html/index.html 2>/dev/null || open docs/html/index.html || \
 		{ echo "❌ Failed to open documentation"; exit 1; }
 
-# ============================================================================
-# Development Tools
-# ============================================================================
+# development tools
 
 .PHONY: configure conf
 configure conf:
@@ -267,9 +235,7 @@ configure conf:
 .PHONY: reconfigure reconf
 reconfigure reconf: clean configure
 
-# ============================================================================
-# Benchmarking
-# ============================================================================
+# benchmarking
 
 .PHONY: bench-run br
 bench-run br: benchmark
@@ -280,9 +246,7 @@ bench-run br: benchmark
 		find build -type f -executable -name "*bench*" -exec {} \;; \
 	fi
 
-# ============================================================================
-# Static Analysis
-# ============================================================================
+# static analysis
 
 .PHONY: analyze
 analyze:
@@ -322,7 +286,6 @@ callgrind:
 		exit 1; \
 	fi
 
-
 # 💾 Heap Usage Profiling (Massif)
 .PHONY: massif
 massif:
@@ -342,7 +305,6 @@ massif:
 		exit 1; \
 	fi
 
-
 # 🧨 System-level CPU Sampling (perf)
 .PHONY: perf
 perf:
@@ -355,9 +317,7 @@ perf:
 		exit 1; \
 	fi
 
-# ============================================================================
-# Help Target
-# ============================================================================
+# help target
 
 .PHONY: help h
 help h:

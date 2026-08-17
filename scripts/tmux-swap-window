@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-#
-# Swap with an existing window index if it exists,
-# otherwise move the current window there.
-#
+# swaps into an existing window index, or moves the current window there if it's free
 
 target="$1"
 if [ -z "$target" ]; then

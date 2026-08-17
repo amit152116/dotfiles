@@ -1,26 +1,16 @@
 #!/usr/bin/env bash
 
-# tmux-broadcast.sh
-#
-# Broadcast a command to all panes running a shell.
-#
-# Usage:
-#   ./tmux-broadcast.sh [-s] "your command here"
-#
-# Options:
-#   -s    Silent mode (just send command + Enter, no extra keys)
-#   -h    Show this help message
+# broadcasts a command to every tmux pane currently sitting at a shell prompt
 
 SILENT=0
 help_info() {
-
     echo "Usage: tmux-broadcast [-s, --slient] <command>"
     echo
     echo "Options:"
     echo "  -s    Silent mode"
     echo "  -h    Show this help message"
 }
-# Parse flags
+
 while [[ "$1" == -* ]]; do
     case "$1" in
     -s | --slient) SILENT=1 ;;
@@ -43,10 +33,8 @@ fi
 tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index}|#{pane_pid}|#{pane_current_command}" |
     grep -E "\|(zsh|bash|sh|fish)$" | while IFS="|" read -r pane pid cmd; do
 
-    # Skip if shell has child processes
-    pgrep -P "$pid" >/dev/null 2>&1 && continue
+    pgrep -P "$pid" >/dev/null 2>&1 && continue # shell has a child process running, skip
 
-    # Send command depending on SILENT mode
     keys=("$CMD" C-m)
     [[ $SILENT -eq 1 ]] && keys=("$CMD" C-b C-m)
     tmux send-keys -t "$pane" "${keys[@]}"

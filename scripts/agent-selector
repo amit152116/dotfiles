@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-#==============================================================================
-# agent-selector - FZF-based coding agent selector for tmux-sessionizer
-#==============================================================================
+# fzf-based coding agent selector for tmux-sessionizer
 
-# List of available coding agents
 AGENTS=(
     "claude"
     "codex"
@@ -14,19 +11,17 @@ AGENTS=(
     "opencode"
 )
 
-# Check if fzf is available
 if ! command -v fzf &>/dev/null; then
     echo "Error: fzf is not installed" >&2
     exit 1
 fi
 
-# Check if tmux-sessionizer exists
 if ! command -v tmux-sessionizer &>/dev/null; then
     echo "Error: tmux-sessionizer is not installed" >&2
     exit 1
 fi
 
-# Popup re-invocation: just run fzf and write selection to result file
+# popup re-invocation: run fzf, write selection to result file
 if [[ -n "${_TAS_RESULT_FILE:-}" ]]; then
     printf '%s\n' "${AGENTS[@]}" | fzf \
         --prompt='Select Agent ❯ ' \
@@ -40,7 +35,7 @@ if [[ -n "${_TAS_RESULT_FILE:-}" ]]; then
     exit 0
 fi
 
-# Parent path: open popup that re-invokes this script in fzf-only mode
+# parent path: open popup that re-invokes this script in fzf-only mode
 result_file=$(mktemp)
 
 tmux display-popup -E -w 50% -h 50% \
@@ -49,8 +44,6 @@ tmux display-popup -E -w 50% -h 50% \
 selected_agent=$(cat "$result_file")
 rm -f "$result_file"
 
-# Exit if nothing selected
 [[ -z "$selected_agent" ]] && exit 0
 
-# Launch the selected agent using tmux-sessionizer
 tmux neww tmux-sessionizer -c "$selected_agent"

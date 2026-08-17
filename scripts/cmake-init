@@ -6,10 +6,8 @@ PROJECT_TYPE="${2:-executable}" # executable, library, header
 
 echo "Creating project: $PROJECT_NAME (type: $PROJECT_TYPE)"
 
-# Create directory structure
 mkdir -p "$PROJECT_NAME"/{src,include/$PROJECT_NAME,tests,examples}
 
-# Copy appropriate CMakeLists.txt
 TEMPLATES_DIR="$HOME/.dotfiles/templates"
 
 case "$PROJECT_TYPE" in
@@ -28,7 +26,6 @@ header)
 	;;
 esac
 
-# Update project name in CMakeLists.txt
 sed -i "s/MyProject/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt" 2>/dev/null ||
 	sed -i '' "s/MyProject/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt"
 
@@ -38,10 +35,8 @@ sed -i "s/MyLibrary/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt" 2>/dev/null 
 sed -i "s/MyHeaderLib/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt" 2>/dev/null ||
 	sed -i '' "s/MyHeaderLib/$PROJECT_NAME/g" "$PROJECT_NAME/CMakeLists.txt"
 
-# Copy tests CMakeLists.txt
 cp "$TEMPLATES_DIR/CMakeLists-tests.txt" "$PROJECT_NAME/tests/CMakeLists.txt"
 
-# Create main.cpp for executable projects
 if [ "$PROJECT_TYPE" = "executable" ]; then
 	cat >"$PROJECT_NAME/src/main.cpp" <<'MAIN_CPP'
 #include <iostream>
@@ -55,7 +50,6 @@ MAIN_CPP
 		sed -i '' "s/PROJECT_NAME/$PROJECT_NAME/g" "$PROJECT_NAME/src/main.cpp"
 fi
 
-# Create sample header
 cat >"$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp" <<'HEADER'
 #pragma once
 
@@ -76,14 +70,12 @@ public:
 }  // namespace project_name
 HEADER
 
-# Replace placeholders
 sed -i "s/project_name/${PROJECT_NAME,,}/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp" 2>/dev/null ||
 	sed -i '' "s/project_name/${PROJECT_NAME,,}/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp"
 
 sed -i "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp" 2>/dev/null ||
 	sed -i '' "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/include/$PROJECT_NAME/${PROJECT_NAME,,}.hpp"
 
-# Create sample test
 cat >"$PROJECT_NAME/tests/test_basic.cpp" <<'TEST_CPP'
 #include <gtest/gtest.h>
 #include "project_name/project_name.hpp"
@@ -107,7 +99,6 @@ sed -i "s/ProjectName/${PROJECT_NAME^}/g" "$PROJECT_NAME/tests/test_basic.cpp" 2
 sed -i "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/tests/test_basic.cpp" 2>/dev/null ||
 	sed -i '' "s/ProjectClass/${PROJECT_NAME^}Class/g" "$PROJECT_NAME/tests/test_basic.cpp"
 
-# Create .gitignore
 cat >"$PROJECT_NAME/.gitignore" <<'GITIGNORE'
 # Build directories
 build/
@@ -153,7 +144,6 @@ docs/html/
 docs/latex/
 GITIGNORE
 
-# Create README
 cat >"$PROJECT_NAME/README.md" <<README
 # $PROJECT_NAME
 
@@ -185,7 +175,6 @@ make install
 TODO: Add license
 README
 
-# Create Makefile
 cp "$TEMPLATES_DIR/makefile" "$PROJECT_NAME/Makefile" 2>/dev/null ||
 	echo "Warning: makefile not found"
 

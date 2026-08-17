@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
 
-#==============================================================================
-# command-runner - Open tmux popup with fzf to select a directory, then open zsh
-#==============================================================================
+# tmux popup: fzf-select a directory, then open zsh there
 
 VERSION="0.1.0"
 
-#------------------------------------------------------------------------------
-# Logging Function
-#------------------------------------------------------------------------------
+# logging
 
 log() {
     case "$PS_LOG" in
@@ -21,9 +17,7 @@ log() {
     esac
 }
 
-#------------------------------------------------------------------------------
-# Help & Version Functions
-#------------------------------------------------------------------------------
+# help & version
 
 show_help() {
     cat <<EOF
@@ -46,16 +40,12 @@ show_version() {
     echo "command-runner version $VERSION"
 }
 
-#------------------------------------------------------------------------------
-# Global Variables
-#------------------------------------------------------------------------------
+# global state
 
 user_search_dir="/"
 custom_prompt=""
 
-#------------------------------------------------------------------------------
-# Argument Parsing
-#------------------------------------------------------------------------------
+# argument parsing
 
 parse_arguments() {
     while [[ "$#" -gt 0 ]]; do
@@ -97,9 +87,7 @@ parse_arguments() {
     done
 }
 
-#------------------------------------------------------------------------------
-# Sanity Checks
-#------------------------------------------------------------------------------
+# sanity checks
 
 sanity_check() {
     if ! command -v tmux &>/dev/null; then
@@ -113,16 +101,12 @@ sanity_check() {
     fi
 }
 
-#------------------------------------------------------------------------------
-# Directory Search Function
-#------------------------------------------------------------------------------
+# directory search
 
 find_dirs() {
     local search_path="${1:-$HOME}"
 
-    # --- Configuration: Add folders to ignore here ---
     local ignored_folders=(
-        # --- Your Existing Rules ---
         "node_modules"
         ".git"
         "target"
@@ -136,31 +120,30 @@ find_dirs() {
         ".cache"
         "root"
 
-        # --- C++ & ROS 2 Workspaces ---
-        "install" # ROS 2 workspace install directories
-        "log"     # ROS 2 workspace log directories
+        # ros 2 workspaces
+        "install" # workspace install dirs
+        "log"     # workspace log dirs
         ".clangd" # C++ language server cache
 
-        # --- Linux Virtual Filesystems (CRITICAL) ---
-        "proc" # Kernel/process virtual filesystem (will cause hangs)
-        "sys"  # Hardware virtual filesystem
-        "dev"  # Device files
-        "run"  # System runtime data
+        # linux virtual filesystems - descending into these hangs the search
+        "proc"
+        "sys"
+        "dev"
+        "run"
 
-        # --- Heavy System & OS Directories ---
-        "lib" # System libraries
+        # heavy system/OS dirs
+        "lib"
         "lib32"
         "lib64"
         "libx32"
-        "lost+found" # Filesystem recovery folder
+        "lost+found"
     )
 
-    # Expand tilde (~ -> /home/user)
     search_path="${search_path/#\~/$HOME}"
     [[ -d "$search_path" ]] || search_path="$HOME"
 
     {
-        # 1. Zoxide entries first (sorted by frecency)
+        # zoxide first, sorted by frecency
         if command -v zoxide >/dev/null 2>&1; then
             zoxide query --list --score 2>/dev/null |
             sort -rn |
@@ -168,9 +151,7 @@ find_dirs() {
             grep "^$search_path"
         fi
 
-        # 2. Use fd if available (Faster), otherwise fallback to find
         if command -v fd >/dev/null 2>&1; then
-            # Build fd exclude arguments dynamically
             local fd_args=()
             for folder in "${ignored_folders[@]}"; do
                 fd_args+=("--exclude" "$folder")
@@ -185,7 +166,6 @@ find_dirs() {
                 "${fd_args[@]}"
 
         else
-            # Build find exclude arguments dynamically
             local find_args=()
             for folder in "${ignored_folders[@]}"; do
                 find_args+=("-not" "-path" "*/$folder/*")
@@ -196,14 +176,11 @@ find_dirs() {
                 2>/dev/null
         fi
     } |
-    # Filter for valid directories only
     while IFS= read -r dir; do
         [[ -d "$dir" ]] || continue
         printf '%s\n' "$dir"
     done |
-    # Deduplicate (remove paths found by fd that were already listed by zoxide)
-    awk '!seen[$0]++' |
-    # Format output (Absolute path -> Tilde path)
+    awk '!seen[$0]++' | # dedup: fd and zoxide can both list the same path
     while IFS= read -r dir; do
         local display_path
         if [[ "$dir" == "$HOME" ]]; then
@@ -215,22 +192,17 @@ find_dirs() {
     done
 }
 
-#------------------------------------------------------------------------------
-# Main Execution Logic
-#------------------------------------------------------------------------------
+# main execution
 
 main() {
     sanity_check
     parse_arguments "$@"
 
-    # Set default search path if not specified
     local search_path="${user_search_dir:-$HOME}"
 
     # Popup re-invocation: just run fzf and write result to file
     if [[ -n "${_PS_FZF_ONLY:-}" ]]; then
         log "Running fzf in popup mode with search path: $search_path"
-        # Define preview script separately - no escaping needed
-        # 1. Define the options in a variable to keep the main command clean
         local fzf_cmd_opts=(
             --cycle
             --tiebreak=index
@@ -238,12 +210,11 @@ main() {
             --pointer='>'
             --marker='+'
             --header 'ctrl-v:Preview | alt-f:Drill dir'
-            # Theme colors
             --color='bg:-1, bg+:#262626, fg:#abb2bf, fg+:#98c979' # -1 uses terminal's default transparency
             --color='hl:#206a75, hl+:#e06c75, prompt:#61afef, pointer:#98d979'
             --color='header:#6ab6bd,info:#c6a642'
             --bind 'ctrl-v:toggle-preview'
-            # Use single quotes for the bind body so $HOME and {} aren't expanded early
+            # single-quoted bind body: $HOME and {} must not expand early
             --bind "alt-f:transform:
         selected={}
         expanded=\${selected/#\~/$HOME}
@@ -260,52 +231,42 @@ main() {
         fi"
         )
 
-        # 2. Run fzf while overriding the global default opts with an empty string
-        # and passing your local array
+        # FZF_DEFAULT_OPTS='' overrides the global default opts so only fzf_cmd_opts apply
         find_dirs "$search_path" | FZF_DEFAULT_OPTS='' fzf "${fzf_cmd_opts[@]}" >"$PS_RESULT_FILE" || true
         exit 0
     fi
 
-    # Parent mode: create result file, run popup, read result
+    # parent mode: run popup (which re-invokes this script in fzf-only mode), read its result file
     local result_file
     result_file=$(mktemp)
 
     log "Opening tmux popup with result file: $result_file"
 
-    # Run popup that re-invokes this script in fzf-only mode
-    # Added '|| true' inside the command string AND after the tmux command
     tmux display-popup -E -w 65% -h 70% \
         "bash -c 'PS_RESULT_FILE=\"${result_file}\" ${0} --_fzf-only -d \"${search_path}\"; exit 0'" || true
 
-    # Read the result
     local selected
     selected=$(cat "$result_file" 2>/dev/null)
     rm -f "$result_file"
 
-    # Handle empty selection
     if [[ -z "$selected" ]]; then
         log "No selection made"
         return 0
     fi
 
-    # Expand ~ back to $HOME
     local selected_path="${selected/#\~/$HOME}"
 
-    # Validate it's a directory
     if [[ ! -d "$selected_path" ]]; then
         echo "Error: Selected path is not a directory: $selected_path" >&2
         log "Error: Selected path is not a directory: $selected_path"
         return 1
     fi
 
-    # After resolving selected_path
     log "Selected path: $selected_path"
     zoxide add "$selected_path" 2>/dev/null || true # update zoxide db
     tmux display-popup -d "$selected_path" -E "zsh"
     exit 0
 }
 
-#------------------------------------------------------------------------------
-# Entry Point
-#------------------------------------------------------------------------------
+# entry point
 main "$@"

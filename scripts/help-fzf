@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # help-fzf: Browse man pages or tldr with fzf
 
-# Get man list
 list_man_pages() {
     man -k . 2>/dev/null | sort -u | awk -F' - ' '{printf "%-39s [man] \n", $1}'
 }
 
-# Get tldr list
 list_tldr() {
     tldr --list 2>/dev/null | awk '{printf "%-39s [tldr]\n", $1}'
 }
@@ -23,12 +21,10 @@ if [[ -n "${_HF_RESULT_FILE:-}" ]]; then
                 page=\$(echo {} | sed 's/^[[:space:]]*//; s/[[:space:]]*\\[.*\\]$//')
 
                 if [[ {} == *'[man]'* ]]; then
-                    # Extract name and optional section
                     name=\$(echo \"\$page\" | awk '{print \$1}')
                     section=\$(echo \"\$page\" | awk '{print \$2}' | tr -d '()')
                     man \"\$section\" \"\$name\" 2>/dev/null | col -bx | batcat -l man -p --color=always | head -n 40
                 else
-                    # tldr preview
                     tldr \"\$page\" 2>/dev/null | col -bx | batcat -pf -l md
                 fi
             " \
@@ -53,20 +49,16 @@ tmux display-popup -E -w 80% -h 80% \
 selection=$(cat "$result_file")
 rm -f "$result_file"
 
-# Exit if nothing was selected
 [[ -z "$selection" ]] && exit 0
 
-# Extract page name and type
 page=$(echo "$selection" | sed 's/\[.*\]$//' | xargs)
 type=$(echo "$selection" | grep -o '\[.*\]')
 
 if [[ $type == "[man]" ]]; then
-    # man pages: extract name and optional section
     name=$(echo "$page" | awk '{print $1}')
     section=$(echo "$page" | awk '{print $2}' | tr -d '()')
 
     tmux neww -n "${name}(${section})" "man ${section} ${name} | col -bx | batcat -l man --style=plain --paging=always"
 else
-    # tldr page
     tmux neww -n "${page}" "tldr --raw ${page} | glow -"
 fi

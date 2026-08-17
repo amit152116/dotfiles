@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
 
-#==============================================================================
-# tmux-sessionizer - A fuzzy finder for tmux sessions and project directories
-#==============================================================================
+# fuzzy finder for tmux sessions and project directories
 
 VERSION="1.1.0"
 
-#------------------------------------------------------------------------------
-# Configuration & Paths
-#------------------------------------------------------------------------------
+# configuration & paths
 
 CONFIG_FILE_NAME="tmux-sessionizer.conf"
 CONFIG_DIR="$HOME/.dotfiles/scripts"
@@ -18,9 +14,7 @@ PANE_CACHE_FILE="$PANE_CACHE_DIR/panes.cache"
 
 [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
 
-#------------------------------------------------------------------------------
-# Logging Function
-#------------------------------------------------------------------------------
+# logging
 
 TS_LOG_FILE="${TS_LOG_FILE:-$HOME/.local/share/tmux-sessionizer/tmux-sessionizer.logs}"
 
@@ -31,9 +25,7 @@ log() {
     esac
 }
 
-#------------------------------------------------------------------------------
-# Global Variables
-#------------------------------------------------------------------------------
+# global state
 
 session_idx=""
 session_cmd=""
@@ -42,9 +34,7 @@ session_args=()
 user_selected=""
 _TS_FZF_ONLY=""
 
-#------------------------------------------------------------------------------
-# Help & Version Functions
-#------------------------------------------------------------------------------
+# help & version
 
 show_help() {
     cat <<EOF
@@ -71,9 +61,7 @@ show_version() {
     echo "tmux-sessionizer version $VERSION"
 }
 
-#------------------------------------------------------------------------------
-# Argument Parsing
-#------------------------------------------------------------------------------
+# argument parsing
 
 parse_arguments() {
     while [[ "$#" -gt 0 ]]; do
@@ -144,9 +132,7 @@ parse_arguments() {
     log "tmux-sessionizer($VERSION): idx=$session_idx cmd=$session_cmd args='${session_args[*]}' split_type=$split_type log=$TS_LOG log_file=$TS_LOG_FILE"
 }
 
-#------------------------------------------------------------------------------
-# Sanity Checks
-#------------------------------------------------------------------------------
+# sanity checks
 
 sanity_check() {
     if ! command -v tmux &>/dev/null; then
@@ -160,9 +146,7 @@ sanity_check() {
     fi
 }
 
-#------------------------------------------------------------------------------
-# Tmux Helper Functions
-#------------------------------------------------------------------------------
+# tmux helpers
 
 is_tmux_running() {
     local tmux_running
@@ -226,9 +210,7 @@ hydrate() {
     fi
 }
 
-#------------------------------------------------------------------------------
-# Pane Cache Management
-#------------------------------------------------------------------------------
+# pane cache
 
 init_pane_cache() {
     mkdir -p "$PANE_CACHE_DIR"
@@ -269,9 +251,7 @@ cleanup_dead_panes() {
     mv "$temp_file" "$PANE_CACHE_FILE" 2>/dev/null || touch "$PANE_CACHE_FILE"
 }
 
-#------------------------------------------------------------------------------
-# Directory Search Function
-#------------------------------------------------------------------------------
+# directory search
 
 find_dirs() {
     # Order-preserving dedup: a worktree reachable both via fd and via its bare repo's worktree list
@@ -281,7 +261,7 @@ find_dirs() {
 }
 
 _find_dirs_raw() {
-    # 1️⃣ Get list of existing tmux session directories
+    # existing tmux session directories
     local -A tmux_dirs
     if command -v tmux >/dev/null 2>&1; then
         while IFS= read -r session_dir; do
@@ -289,7 +269,6 @@ _find_dirs_raw() {
         done < <(tmux list-sessions -F "#{session_path}" 2>/dev/null)
     fi
 
-    # List TMUX sessions (if inside tmux)
     if [[ -n "${TMUX}" ]]; then
         local current_session
         current_session=$(tmux display-message -p '#S')
@@ -300,22 +279,14 @@ _find_dirs_raw() {
         grep -vFx "[TMUX] $current_session"
     fi
 
-    # 2️⃣ Prepare fd arguments (Build the exclude list once)
-    # fd is the correct tool here, NOT ripgrep (rg)
+    # fd, not ripgrep (rg) - rg has no directory-search mode
     local fd_args=("--type" "d" "--absolute-path" "--color" "never" "--min-depth" "1" "--hidden")
 
-    # Add TS_IGNORE_PATHS to fd exclusions
     for ignore in "${TS_IGNORE_PATHS[@]}"; do
         fd_args+=("--exclude" "$ignore")
     done
 
-    # 3️⃣ Search configured paths
     {
-        # 2. Sort the array effectively
-        # We print the array elements (newline separated), sort them, and read them back in
-        # IFS=$'\n' readarray -t TS_SEARCH_PATHS < <(printf '%s\n' "${TS_SEARCH_PATHS[@]}" | sort -r)
-        # unset IFS
-
         printf '%s\n' "/"
         for entry in "${TS_SEARCH_PATHS[@]}"; do
             local path="${entry%%:*}"
@@ -412,9 +383,7 @@ _find_dirs_raw() {
     }
 }
 
-#------------------------------------------------------------------------------
-# Session Command Handlers
-#------------------------------------------------------------------------------
+# session command handlers
 
 # NOTE(cmd-quoting): tmux re-parses this string through a shell, so each arg is quoted individually —
 # a flat "$*" let an argument containing spaces split into several arguments.
@@ -519,9 +488,7 @@ handle_session_cmd() {
     exit 0
 }
 
-#------------------------------------------------------------------------------
-# Fuzzy Finder
-#------------------------------------------------------------------------------
+# fuzzy finder
 
 run_fuzzy_finder() {
     # Popup re-invocation: stream find_dirs directly into fzf — no buffering.
@@ -632,9 +599,7 @@ is_worktree() {
     [[ "$top" == "$(cd -- "$dir_path" && pwd -P)" ]]
 }
 
-#------------------------------------------------------------------------------
-# Main Execution Logic
-#------------------------------------------------------------------------------
+# main execution
 main() {
     sanity_check
     parse_arguments "$@"
@@ -728,7 +693,5 @@ main() {
     switch_to "$selected_name"
 }
 
-#------------------------------------------------------------------------------
-# Entry Point
-#------------------------------------------------------------------------------
+# entry point
 main "$@"

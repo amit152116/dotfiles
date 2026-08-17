@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # man-fzf: Browse man pages with fzf + extras
 
-# Get list of all man pages
 list_man_pages() {
     man -k . 2>/dev/null | sort -u | awk -F' - ' '{print $1}'
 }
 
-# Choose a man page via fzf
 selection=$(
     list_man_pages |
     FZF_DEFAULT_OPTS=${FZF_COMMON_OPTS} fzf --ansi \
@@ -21,15 +19,9 @@ selection=$(
         --color=marker:#98c379,fg+:#abb2bf,prompt:#61afef,hl+:#e06c75
 )
 
-# --preview-window=down,60%,wrap \
-
-    # Exit if nothing was selected
 [[ -z "$selection" ]] && exit 0
 
-# Extract the man page name (first column before space)
 page=$(echo "$selection" | awk '{print $1}')
-
-# Extract section (in parentheses, e.g., printf (3))
-section=$(echo "$selection" | awk '{print $2}' | tr -d '()')
+section=$(echo "$selection" | awk '{print $2}' | tr -d '()') # e.g. printf (3)
 
 man "$section" "$page" | col -bx | batcat -l man -p
