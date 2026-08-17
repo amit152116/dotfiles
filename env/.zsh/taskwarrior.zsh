@@ -119,7 +119,6 @@ _tfocus_get() {
 _tfocus_set() { echo "$1" >"$TASK_FOCUS_FILE"; }
 _tfocus_clear() { rm -f "$TASK_FOCUS_FILE"; }
 
-# ── tstart ─────────────────────────────────────────────────────────────────
 tstart() {
     local project=$(_tmux_project)
     local filter=()
@@ -152,7 +151,6 @@ for t in sorted(tasks, key=lambda x: -x.get("urgency", 0)):
     echo "▶ focused: $id"
 }
 
-# ── tstop ──────────────────────────────────────────────────────────────────
 tstop() {
     local tmp
     tmp=$(mktemp)
@@ -186,7 +184,6 @@ for t in tasks:
     done
 }
 
-# ── tfocus ─────────────────────────────────────────────────────────────────
 tfocus() {
     local focused
     focused=$(_tfocus_get)
@@ -241,7 +238,6 @@ for t in sorted(tasks, key=lambda x: -x.get("urgency", 0)):
     echo "Usage: tfocus [set|clear]"
 }
 
-# ── tlog ───────────────────────────────────────────────────────────────────
 tlog() {
     local project=$(_tmux_project)
     local filter=()
@@ -257,7 +253,7 @@ tlog() {
         all 2>/dev/null
 }
 
-# ── tq — fast capture ──────────────────────────────────────────────────────
+# fast capture
 tq() {
     if [[ -z "$1" ]]; then
         tadd
@@ -277,7 +273,7 @@ tq() {
 
 TASK_PARK_STACK="$HOME/.task_park_stack"
 
-# ── tpark — push focus to park stack ───────────────────────────────────────
+# push focus to park stack
 tpark() {
     local note="${1:-}"
     local focused
@@ -298,7 +294,7 @@ tpark() {
     echo "⏸ parked #${focused}. Stack depth: ${depth}"
 }
 
-# ── treturn — pop focus from park stack ────────────────────────────────────
+# pop focus from park stack
 treturn() {
     if [[ ! -f "$TASK_PARK_STACK" ]] || [[ ! -s "$TASK_PARK_STACK" ]]; then
         echo "treturn: park stack is empty" >&2
@@ -339,7 +335,7 @@ treturn() {
     echo "$msg"
 }
 
-# ── twhere — show focus + park stack, read-only ────────────────────────────
+# show focus + park stack, read-only
 twhere() {
     local project=$(_tmux_project)
     local focused
@@ -394,7 +390,7 @@ twhere() {
     echo ""
 }
 
-# ── task-dashboard — called by tmux popup (Alt+t) ──────────────────────────
+# called by tmux popup (Alt+t)
 task-dashboard() {
     set +xv
     # emulate -L zsh          # reset all inherited shell options (xtrace, verbose, etc.)

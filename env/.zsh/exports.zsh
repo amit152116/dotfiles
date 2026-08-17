@@ -6,8 +6,7 @@ export MANPAGER="sh -c 'col -bx | batcat -l man -p'"
 
 export NVM_DIR="$HOME/.config/nvm"
 
-# Resolve nvm's default node and put its bin on PATH directly (fast; works in
-# tmux popups/scripts that skip .zshrc since the server inherits this PATH).
+# resolve nvm's default node onto PATH directly - works in tmux popups/scripts that skip .zshrc
 if [ -f "$NVM_DIR/alias/default" ]; then
     _nvm_def="$(cat "$NVM_DIR/alias/default")"
     _nvm_bin="$(ls -d "$NVM_DIR/versions/node/v${_nvm_def#v}"*/bin 2>/dev/null | sort -V | tail -1)"

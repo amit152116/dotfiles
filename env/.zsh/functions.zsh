@@ -107,15 +107,11 @@ if command -v zoxide >/dev/null 2>&1; then
     }
 fi
 
-# Refresh display/session env from tmux on every prompt.
-# tmux-resurrect restores panes carrying stale DISPLAY/WAYLAND_DISPLAY from a
-# dead login session; update-environment only fixes the *session* env for new
-# panes, never already-running shells. This re-exports the live values that
-# tmux holds into the current shell so clipboard, GUI launches, and ssh-agent
-# keep working after a reboot/restore.
+# tmux-resurrect restores panes with stale DISPLAY/WAYLAND_DISPLAY from a dead login session;
+# update-environment only fixes new panes, never already-running ones - re-export tmux's live values here
 if [[ -n "$TMUX" ]]; then
     function _refresh_tmux_env() {
-        # Single tmux call (-s = shell syntax) instead of one per variable.
+        # -s = shell syntax; one tmux call instead of one per var
         eval "$(tmux show-environment -s 2>/dev/null |
             grep -E '^(export )?(DISPLAY|WAYLAND_DISPLAY|XAUTHORITY|XDG_SESSION_TYPE|SSH_AUTH_SOCK)=')"
         if [[ -n "$WAYLAND_DISPLAY" && -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]]; then

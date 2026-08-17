@@ -1,43 +1,17 @@
-# Init completion system. -i silently ignores "insecure" dirs (no prompt) —
-# distrobox/containers see the shared $HOME as group-writable via uid/gid maps.
-# -C skips security check and uses the dump cache — regenerates only if >24h old.
+# -i silently ignores "insecure" dirs — distrobox shares $HOME as group-writable via uid/gid maps
 autoload -Uz compinit bashcompinit
 _zcompdump="${ZDOTDIR:-$HOME}/.zcompdump"
-# Regenerate dump only if >24h old; otherwise use cache (-C skips security check).
+# -C skips security check, uses dump cache; regenerate only if >24h old
 if [[ -n "$_zcompdump"(#qN.mh+24) ]]; then
   compinit -i
 else
   compinit -i -C
 fi
 unset _zcompdump
-# Block all re-runs of compinit (ROS/colcon setup scripts call it multiple times).
-# Completion system already initialized above — no-op is safe for the session lifetime.
+# no-op: ROS/colcon setup scripts call compinit again, already initialized above
 function compinit() { : }
 bashcompinit
 zinit cdreplay -q
-
-# # Autocomplete for tmux_resurrect
-# __tmux_resurrect_complete() {
-#   local dir sessions
-#   dir="$HOME/.tmux/resurrect"
-#   [[ -d $dir ]] || return
-#
-#   # collect files -> strip prefix/suffix -> get bare session names
-#   sessions=(${dir}/tmux_resurrect_*.txt(N))
-#   sessions=(${sessions##*/})
-#   sessions=(${sessions#tmux_resurrect_})
-#   sessions=(${sessions%.txt})
-#
-# # Filter matching current input
-# local matches=()
-# for s in $sessions; do
-#   input=$s pretty_date=$(date -d "${input:0:8}\
-#     ${input:9:2}:${input:11:2}:${input:13:2}"\
-#     "+%Y-%m-%d %H:%M:%S")
-#     matches+=$pretty_date done
-#
-#   compadd -Q -d matches -- $sessions
-# }
 
 __tmux_resurrect_complete() {
   local cur dir sessions
@@ -49,7 +23,6 @@ __tmux_resurrect_complete() {
   sessions=(${dir}/tmux_resurrect_*.txt(N))
   sessions=(${sessions##*/}) # remove path, keep prefix and suffix
 
-  # Filter matching current input
   local matches=()
   for s in $sessions; do
     if [[ $s == $cur* ]]; then
@@ -60,5 +33,4 @@ __tmux_resurrect_complete() {
   compadd -Q -d "Resurrect sessions" -- $matches
 }
 
-# Tmux resurrect completion
 compdef __tmux_resurrect_complete tmux-resurrect

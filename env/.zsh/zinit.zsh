@@ -50,25 +50,20 @@ zinit snippet OMZP::web-search
 zinit snippet OMZP::nmap
 zinit snippet OMZP::systemd
 
-# --- zsh-completions: blockf prevents fpath duplication ---
+# blockf prevents fpath duplication
 zinit ice blockf
 zinit light zsh-users/zsh-completions
 
-# --- vi mode ---
-# Disable lazy keybindings: without this, vicmd bindings are deferred until
-# first ESC press, which wipes custom rebinds set in ZVM_AFTER_INIT_COMMANDS.
+# lazy keybindings off: else vicmd bindings defer until first ESC, wiping ZVM_AFTER_INIT_COMMANDS rebinds
 ZVM_LAZY_KEYBINDINGS=false
-# NEX engine does its own ESC parsing, ignoring ZLE bindkey table — Alt+key breaks.
-# ZLE engine uses standard bindkey matching so \eq, \eg etc. work correctly.
+# NEX engine parses ESC itself, ignoring ZLE bindkey table (breaks Alt+key); ZLE engine uses standard bindkey
 ZVM_READKEY_ENGINE='zle'
-# 'jj' → normal mode, like nvim. KEYTIMEOUT=15 below sets the 150ms window
-# in which a second 'j' escapes instead of inserting.
+# 'jj' -> normal mode, like nvim; KEYTIMEOUT=15 below is the 150ms window for the second 'j' to land
 ZVM_VI_INSERT_ESCAPE_BINDKEY='jj'
 zinit ice depth"1"
 zinit light jeffreytse/zsh-vi-mode
 
-# Correct lowercase variable names the plugin actually reads.
-# keybindings.zsh appends _zvm_rebind_custom_keys to both.
+# lowercase names are what the plugin actually reads; keybindings.zsh appends _zvm_rebind_custom_keys to both
 zvm_after_init_commands=(
     '(( $+functions[fzf-history-widget] )) && bindkey "^R" fzf-history-widget'
     '(( $+functions[fzf-file-widget] ))    && bindkey "^T" fzf-file-widget'

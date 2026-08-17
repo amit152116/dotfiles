@@ -1,11 +1,7 @@
-# Auto-activate a project's Python venv on cd.
-#
-# Walks up from the current dir to the nearest `.venv/bin/activate` and sources
-# it. Deactivates automatically when leaving the project tree — but only venvs
-# this hook activated, so a manually `source`d venv is left untouched.
+# auto-activates nearest .venv on cd; deactivates on leaving the tree, but only venvs this hook activated
+# (a manually `source`d venv is left untouched)
 
 _venv_auto() {
-    # Find nearest .venv walking up from cwd.
     local dir="$PWD" found=""
     while [[ "$dir" != "/" ]]; do
         if [[ -f "$dir/.venv/bin/activate" ]]; then

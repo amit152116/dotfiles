@@ -66,10 +66,7 @@ elif command -v pp_json &>/dev/null; then
     alias pjson='pp_json'
 fi
 
-# ============================================================================
-# CMake Build System Helpers
-# ============================================================================
-
+# cmake build system helpers
 TEMPLATES_DIR="$HOME/.dotfiles/templates"
 
 # Copy CMakeLists templates

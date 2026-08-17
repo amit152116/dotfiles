@@ -1,17 +1,8 @@
-# Distrobox integration: shells always open on the HOST. Switch into a repo's
-# container on demand.
-#
-# Mark a project by dropping a `.distrobox` file at its repo root containing the
-# container name, e.g.:   echo "ros-dev" > .distrobox     (or run `dbox-mark`)
-#
-# Switching, all in the same pane:
-#   - host -> container : run `box`     (reads the marker, or `box <name>`)
-#   - container -> host : type `exit`   (host shell resumes underneath)
-#   - one-off native cmd from inside the container: `onhost <cmd>`
+# distrobox integration: shells always open on HOST, switch into a repo's container on demand.
+# mark a project: `echo "ros-dev" > .distrobox` at repo root (or `dbox-mark`).
+# host->container: `box` (reads marker, or `box <name>`); container->host: `exit`; one-off host cmd from inside: `onhost <cmd>`
 
-# --- Detect whether this shell is already inside a container ----------------
-# Markers: docker (/.dockerenv), podman/distrobox (/run/.containerenv, $container),
-# toolbox (/run/.toolboxenv), distrobox ($CONTAINER_ID). Matches zinit.zsh.
+# markers: docker (/.dockerenv), podman/distrobox (/run/.containerenv, $container), toolbox (/run/.toolboxenv), distrobox ($CONTAINER_ID) — matches zinit.zsh
 if [[ -f /.dockerenv || -f /run/.containerenv || -f /run/.toolboxenv ||
     -n "$container" || -n "$CONTAINER_ID" ]]; then
     export IN_CONTAINER=1
@@ -32,8 +23,7 @@ _distrobox_marker_name() {
     return 1
 }
 
-# --- Enter the project's container (no exec: `exit` returns to host) ---------
-# Usage: box [name]   (name defaults to the repo's .distrobox marker)
+# no exec: `exit` returns to host. box [name] defaults to the repo's .distrobox marker
 box() {
     ((IN_CONTAINER)) && {
         print -P "%F{yellow}already inside container%f"
@@ -55,11 +45,8 @@ box() {
     distrobox enter "$name"
 }
 
-# --- Inside the container: run things on the host ---------------------------
-# `onhost <cmd>` runs a one-off command on the host and returns to the box.
-# `onhost` with no args drops back to the host shell *underneath* instead of
-# stacking a new one: `box` entered without exec, so exiting the container
-# returns to the original host shell (keeps the shell stack at depth 1).
+# onhost <cmd>: one-off host cmd, returns to box. onhost (no args): exit container -
+# box entered without exec, so this drops to the original host shell, not a stacked one
 if ((IN_CONTAINER)) && command -v distrobox-host-exec >/dev/null 2>&1; then
     onhost() {
         if (($#)); then
@@ -70,8 +57,7 @@ if ((IN_CONTAINER)) && command -v distrobox-host-exec >/dev/null 2>&1; then
     }
 fi
 
-# --- Mark a repo to auto-detect a (already-created) container ----------------
-# Usage: dbox-mark <name> [repo-path]   (create the box yourself first)
+# dbox-mark <name> [repo-path]: marks repo for auto-detect; create the box yourself first
 dbox-mark() {
     local name="$1" repo="$2"
     if [[ -z "$name" ]]; then
