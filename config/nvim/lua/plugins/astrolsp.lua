@@ -1,4 +1,5 @@
 local Snacks = require "snacks"
+local helper = require "utils.helper"
 ---@type LazySpec
 return {
   "AstroNvim/astrolsp",
@@ -31,6 +32,7 @@ return {
       "clangd", -- C/C++ LSP (system binary, not Mason-managed)
       "basedpyright",
       "ruff",
+      "gopls",
     },
     ---@diagnostic disable: missing-fields
     config = {
@@ -205,6 +207,52 @@ return {
         function() vim.cmd "checkhealth vim.lsp" end,
         desc = "Show LSP info (checkhealth)",
       },
+      LspSymbolKinds = {
+        function(args)
+          local bufnr = 0
+          local method, params
+          if args.bang then
+            method = "workspace/symbol"
+            params = { query = args.args ~= "" and args.args or "a" }
+          else
+            method = "textDocument/documentSymbol"
+            params =
+              { textDocument = vim.lsp.util.make_text_document_params(bufnr) }
+          end
+
+          local responses =
+            vim.lsp.buf_request_sync(bufnr, method, params, 2000)
+          if not responses then
+            vim.notify("No LSP response", vim.log.levels.WARN)
+            return
+          end
+
+          local kinds = {}
+          local function walk(items)
+            for _, item in ipairs(items or {}) do
+              kinds[vim.lsp.protocol.SymbolKind[item.kind]] = true
+              if item.children then walk(item.children) end
+            end
+          end
+          for _, resp in pairs(responses) do
+            walk(resp.result)
+          end
+
+          local list = vim.tbl_keys(kinds)
+          table.sort(list)
+          vim.notify(
+            ("%s symbol kinds (%s): %s"):format(
+              args.bang and "Workspace" or "Document",
+              vim.bo[bufnr].filetype,
+              #list > 0 and table.concat(list, ", ") or "none"
+            ),
+            vim.log.levels.INFO
+          )
+        end,
+        desc = "Dump LSP symbol kinds seen in buffer (! for workspace, optional query arg)",
+        bang = true,
+        nargs = "?",
+      },
     },
     handlers = {},
     autocmds = {
@@ -249,8 +297,56 @@ return {
         },
 
         ["gs"] = {
-          function() Snacks.picker.lsp_symbols() end,
+          function() Snacks.picker.lsp_symbols { title = "Document Symbols" } end,
           desc = "Search Document Symbols",
+        },
+
+        ["gsc"] = {
+          function()
+            Snacks.picker.lsp_symbols {
+              title = "Document Symbols: Classes/Modules",
+              filter = helper.lsp_symbol_filter {
+                "Class",
+                "Struct",
+                "Interface",
+                "Enum",
+                "EnumMember",
+                "Trait",
+                "TypeParameter",
+                "Namespace",
+                "Module",
+                "Package",
+              },
+            }
+          end,
+          desc = "Document Symbols: Classes/Modules",
+        },
+        ["gsv"] = {
+          function()
+            Snacks.picker.lsp_symbols {
+              title = "Document Symbols: Variables",
+              filter = helper.lsp_symbol_filter {
+                "Variable",
+                "Field",
+                "Property",
+                "Constant",
+              },
+            }
+          end,
+          desc = "Document Symbols: Variables",
+        },
+        ["gsf"] = {
+          function()
+            Snacks.picker.lsp_symbols {
+              title = "Document Symbols: Functions",
+              filter = helper.lsp_symbol_filter {
+                "Function",
+                "Method",
+                "Constructor",
+              },
+            }
+          end,
+          desc = "Document Symbols: Functions",
         },
 
         ["gy"] = {
@@ -262,8 +358,58 @@ return {
           desc = "Goto Type Definition",
         },
         ["gw"] = {
-          function() Snacks.picker.lsp_workspace_symbols() end,
+          function()
+            Snacks.picker.lsp_workspace_symbols { title = "Workspace Symbols" }
+          end,
           desc = "Workspace Symbols",
+        },
+
+        ["gwc"] = {
+          function()
+            Snacks.picker.lsp_workspace_symbols {
+              title = "Workspace Symbols: Classes/Modules",
+              filter = helper.lsp_symbol_filter {
+                "Class",
+                "Struct",
+                "Interface",
+                "Enum",
+                "EnumMember",
+                "Trait",
+                "TypeParameter",
+                "Namespace",
+                "Module",
+                "Package",
+              },
+            }
+          end,
+          desc = "Workspace Symbols: Classes/Modules",
+        },
+        ["gwv"] = {
+          function()
+            Snacks.picker.lsp_workspace_symbols {
+              title = "Workspace Symbols: Variables",
+              filter = helper.lsp_symbol_filter {
+                "Variable",
+                "Field",
+                "Property",
+                "Constant",
+              },
+            }
+          end,
+          desc = "Workspace Symbols: Variables",
+        },
+        ["gwf"] = {
+          function()
+            Snacks.picker.lsp_workspace_symbols {
+              title = "Workspace Symbols: Functions",
+              filter = helper.lsp_symbol_filter {
+                "Function",
+                "Method",
+                "Constructor",
+              },
+            }
+          end,
+          desc = "Workspace Symbols: Functions",
         },
         ["grr"] = {
           function() Snacks.picker.lsp_references() end,

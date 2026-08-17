@@ -3,8 +3,6 @@ local myPicker = require "myPlugins"
 local Snacks = require "snacks"
 _G.Snacks = require "snacks"
 
-local lsp_sym_nested = false
-
 return {
   "folke/snacks.nvim",
   lazy = false,
@@ -67,19 +65,7 @@ return {
       ui_select = true,
       sources = {
         lsp_symbols = {
-          transform = function(item)
-            if item.name and item.name:match "^%[%d+%]$" then return false end
-            if not lsp_sym_nested and item.parent and not item.parent.root then
-              return false
-            end
-          end,
-          win = {
-            input = {
-              keys = {
-                ["<a-e>"] = { "lsp_sym_toggle_nested", mode = { "n", "i" } },
-              },
-            },
-          },
+
           filter = {
             default = {
               "Class",
@@ -98,7 +84,8 @@ return {
               "TypeParameter",
               "Variable",
             },
-            -- C / C++ (clangd)
+            -- C / C++ (clangd) — verified via :LspSymbolKinds[!]; Null (anon-namespace
+            -- artifact) excluded as noise
             c = {
               "Class",
               "Constructor",
@@ -107,6 +94,7 @@ return {
               "Field",
               "Function",
               "Method",
+              "Namespace",
               "Struct",
               "TypeParameter",
               "Variable",
@@ -119,13 +107,15 @@ return {
               "Field",
               "Function",
               "Method",
+              "Namespace",
               "Struct",
               "TypeParameter",
               "Variable",
             },
-            -- Python (basedpyright / ruff)
+            -- Python (basedpyright / ruff) — verified via :LspSymbolKinds[!]
             python = {
               "Class",
+              "Constant",
               "Constructor",
               "Enum",
               "EnumMember",
@@ -136,25 +126,21 @@ return {
               "Property",
               "Variable",
             },
-            -- Lua (lua_ls) — no Package (luals uses it for control flow)
+            -- Lua (lua_ls) — verified via :LspSymbolKinds[!]; scalar-value kinds
+            -- (Array/Boolean/Number/Object/String) excluded as per-local noise
             lua = {
               "Class",
-              "Constructor",
-              "Enum",
+              "Constant",
               "Field",
               "Function",
-              "Interface",
-              "Method",
-              "Module",
-              "Namespace",
-              "Property",
+              "Package",
               "Struct",
-              "Trait",
               "Variable",
             },
             -- Go (gopls)
             go = {
               "Class",
+              "Constant",
               "Constructor",
               "Enum",
               "EnumMember",
@@ -211,10 +197,7 @@ return {
         },
       },
       actions = {
-        lsp_sym_toggle_nested = function(picker)
-          lsp_sym_nested = not lsp_sym_nested
-          picker:refresh()
-        end,
+
         sidekick_send = function(...)
           return require("sidekick.cli.picker.snacks").send(...)
         end,
@@ -418,7 +401,12 @@ return {
             },
 
             ["<leader>fe"] = {
-              function() Snacks.picker.explorer() end,
+              function()
+                Snacks.picker.explorer {
+                  hidden = true,
+                  ignored = true,
+                }
+              end,
               desc = "Find explorer",
             },
 

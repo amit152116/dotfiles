@@ -54,6 +54,7 @@ function M.buffer_cycle(direction)
           ["j"] = { { "list_down", "buf_select" } },
           ["k"] = { { "list_up", "buf_select" } },
           ["i"] = { { "insert_mode" } },
+          ["o"] = { { "confirm" } },
         },
       },
     },

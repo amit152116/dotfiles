@@ -1,6 +1,7 @@
 -- Test bench for free inline-suggestion plugins.
 -- Switch backend in lua/ai_provider.lua -- one change, restart nvim.
 local active = require("ai_provider").backend
+local helper = require "utils.helper"
 
 return {
   -- pack.cpp's nvim-dap pulls this in but it assumes nvim-cmp, not blink.cmp -- breaks startup otherwise.
@@ -21,13 +22,16 @@ return {
       neocodeium.setup {
         show_label = true,
         silent = true, -- skip "server started"/"server stopped" noise
-        debounce = true, -- wait for typing pause before requesting; cuts request spam
+        debounce = false, -- wait for typing pause before requesting; cuts request spam
         max_lines = 5000, -- ROS repos have huge files; cap context scan for latency
         single_line = {
           enabled = false, -- collapse multi-line suggestions so they don't fight blink's popup for screen space
           label = "...",
         },
-        filter = function() return not require("blink.cmp").is_visible() end,
+        filter = function(bufnr)
+          if helper.is_secret_buf(bufnr) then return false end
+          return not require("blink.cmp").is_visible()
+        end,
         filetypes = {
           help = false,
           gitcommit = false,

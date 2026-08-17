@@ -1,6 +1,16 @@
 local active = require("ai_provider").backend
+local helper = require "utils.helper"
 -- shared rank for all AI sources: below lsp/snippets so known symbols still win ties
 local ai_score_offset = 20
+
+-- cloud AI sources must never see secret-file buffers; blink's `enabled()` takes no
+-- args, so read the current buffer at call time
+local function ai_source_enabled(backend)
+  return function()
+    return active == backend
+      and not helper.is_secret_buf(vim.api.nvim_get_current_buf())
+  end
+end
 return {
   {
     "saghen/blink.cmp",
@@ -67,6 +77,7 @@ return {
             -- to avoid burning free-tier requests on files the LLM can't meaningfully help with
             enable_predicates = {
               function() return vim.api.nvim_buf_line_count(0) < 3000 end,
+              function() return not helper.is_secret_buf(0) end,
             },
             provider_options = { openai_compatible = llm },
             -- virtualtext block left out on purpose: blink source below replaces it.
@@ -120,7 +131,7 @@ return {
             name = "copilot",
             module = "blink-copilot",
             score_offset = ai_score_offset,
-            enabled = function() return active == "copilot" end,
+            enabled = ai_source_enabled "copilot",
             async = true,
             opts = {
               max_completions = 3,
@@ -133,14 +144,14 @@ return {
             module = "blink-cmp-supermaven",
             score_offset = ai_score_offset,
             async = true,
-            enabled = function() return active == "supermaven" end,
+            enabled = ai_source_enabled "supermaven",
           },
           codeium = {
             name = "Codeium",
             module = "codeium.blink",
             score_offset = ai_score_offset,
             async = true,
-            enabled = function() return active == "windsurf" end,
+            enabled = ai_source_enabled "windsurf",
           },
           minuet = {
             name = "minuet",
@@ -148,7 +159,7 @@ return {
             async = true,
             timeout_ms = 3000,
             score_offset = ai_score_offset,
-            enabled = function() return active == "minuet" end,
+            enabled = ai_source_enabled "minuet",
           },
         },
       },

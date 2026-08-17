@@ -111,7 +111,8 @@ local function process_directives(prompt, positions, args, opts)
     local value = extract_directive_value(prompt, current, next_pos)
 
     if current.type == "r" then
-      opts.replace_pattern = value
+      -- \s encodes literal space in replace text (edges get trimmed otherwise)
+      opts.replace_pattern = value:gsub("\\s", " ")
     else
       local flag = RG_FLAGS[DIRECTIVES[current.type]]
       if flag then
@@ -665,10 +666,16 @@ function M.Multigrep(opts)
     },
     preview = createPreview,
     on_close = function()
-      -- GC buffers loaded by buffer-as-cache preview; skip ones open in a real window
+      -- GC buffers loaded by buffer-as-cache preview
       for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.b[buf].multigrep_preview and vim.fn.bufwinnr(buf) == -1 then
-          pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        if vim.b[buf].multigrep_preview then
+          if vim.fn.bufwinnr(buf) == -1 then
+            pcall(vim.api.nvim_buf_delete, buf, { force = true })
+          else
+            -- still open in a real window (e.g. same buf as user's edit buffer)
+            -- can't delete it; strip stale extmarks so highlight doesn't linger
+            pcall(vim.api.nvim_buf_clear_namespace, buf, NAMESPACE_ID, 0, -1)
+          end
         end
       end
       _preview_cache = { path = nil, mtime = nil, lines = nil }

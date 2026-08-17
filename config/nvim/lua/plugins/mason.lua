@@ -16,7 +16,6 @@ return {
         -- Language Servers (LSPs)
         "lua-language-server",
         "clangd", -- C/C++
-        "gopls", -- Go
         "bash-language-server", -- Bash
         "kotlin-language-server", -- Kotlin
         "taplo", -- TOML
