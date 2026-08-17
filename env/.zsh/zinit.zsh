@@ -12,7 +12,7 @@ HISTFILE="$HOME/.zsh_history"
 HISTSIZE=50000
 SAVEHIST=10000
 setopt HIST_EXPIRE_DUPS_FIRST HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_VERIFY
-setopt SHARE_HISTORY EXTENDED_HISTORY
+setopt INC_APPEND_HISTORY EXTENDED_HISTORY # not SHARE_HISTORY: breaks exit-code filter in history.zsh
 setopt AUTO_CD INTERACTIVE_COMMENTS
 unsetopt BEEP
 
@@ -61,6 +61,9 @@ ZVM_LAZY_KEYBINDINGS=false
 # NEX engine does its own ESC parsing, ignoring ZLE bindkey table — Alt+key breaks.
 # ZLE engine uses standard bindkey matching so \eq, \eg etc. work correctly.
 ZVM_READKEY_ENGINE='zle'
+# 'jj' → normal mode, like nvim. KEYTIMEOUT=15 below sets the 150ms window
+# in which a second 'j' escapes instead of inserting.
+ZVM_VI_INSERT_ESCAPE_BINDKEY='jj'
 zinit ice depth"1"
 zinit light jeffreytse/zsh-vi-mode
 

@@ -6,6 +6,9 @@ bindkey '^N' history-beginning-search-forward
 
 
 bindkey '^R' fzf-history-widget
+
+# Ctrl+Y → accept zsh-autosuggestions suggestion (alt to right-arrow)
+bindkey '^Y' autosuggest-accept
 # bindkey -r '^S'  # remove Ctrl+S binding
 
 setopt NO_NOTIFY      # don’t print “done” when background jobs finish
@@ -152,7 +155,7 @@ bindkey -s '^@' 'tq '
 # Called via ZVM_AFTER_INIT_COMMANDS after zvm_init() completes.
 _zvm_rebind_custom_keys() {
     # Bump timeout so terminal Alt+key ESC sequences aren't swallowed by vi mode-switch
-    KEYTIMEOUT=15
+    KEYTIMEOUT=20
 
     bindkey -M viins '^P' history-beginning-search-backward
     bindkey -M vicmd '^P' history-beginning-search-backward
@@ -161,6 +164,8 @@ _zvm_rebind_custom_keys() {
     bindkey -M viins '^o' __open_file_explorer
     bindkey -M viins '^B' __silent_run
     bindkey -M viins '^F' __fzf_repo_cd
+    bindkey -M viins '^Y' autosuggest-accept
+    bindkey -M vicmd '^Y' autosuggest-accept
     bindkey -M viins -s '^@' 'tq '
     bindkey -M viins '\ee' __toggle_box
     bindkey -M vicmd '\ee' __toggle_box

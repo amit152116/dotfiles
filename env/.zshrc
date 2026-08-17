@@ -32,6 +32,9 @@ source "$HOME"/.zsh/exports.zsh
 # 1️⃣ Load Zinit first
 source "$HOME"/.zsh/zinit.zsh
 
+# Persist only successful commands (must follow zinit.zsh — history opts live there)
+source "$HOME"/.zsh/history.zsh
+
 # 2️⃣ Load FZF
 source "$HOME"/.zsh/fzf.zsh
 
