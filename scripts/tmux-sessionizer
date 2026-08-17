@@ -4,7 +4,7 @@
 # tmux-sessionizer - A fuzzy finder for tmux sessions and project directories
 #==============================================================================
 
-VERSION="0.1.0"
+VERSION="1.1.0"
 
 #------------------------------------------------------------------------------
 # Configuration & Paths
@@ -26,8 +26,8 @@ TS_LOG_FILE="${TS_LOG_FILE:-$HOME/.local/share/tmux-sessionizer/tmux-sessionizer
 
 log() {
     case "$TS_LOG" in
-    "echo") echo "$*" ;;
-    "file") mkdir -p "$(dirname "$TS_LOG_FILE")" && echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$TS_LOG_FILE" ;;
+        "echo") echo "$*" ;;
+        "file") mkdir -p "$(dirname "$TS_LOG_FILE")" && echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$TS_LOG_FILE" ;;
     esac
 }
 
@@ -38,7 +38,7 @@ log() {
 session_idx=""
 session_cmd=""
 split_type=""
-session_args=""
+session_args=()
 user_selected=""
 _TS_FZF_ONLY=""
 
@@ -78,39 +78,39 @@ show_version() {
 parse_arguments() {
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
-        --)
-            shift
-            session_args="$*"
-            break
-            ;;
-        -h | --help)
-            show_help
-            exit 0
-            ;;
-        -v | --version)
-            show_version
-            exit 0
-            ;;
-        -c | --cmd)
-            if [[ -z "$2" || "$2" == -* ]]; then
-                echo "Error: --cmd requires a value" >&2
-                exit 1
-            fi
-            session_cmd="$2"
-            shift
-            ;;
-        --vsplit)
-            split_type="vsplit"
-            ;;
-        --hsplit)
-            split_type="hsplit"
-            ;;
-        --_fzf-only)
-            _TS_FZF_ONLY=1
-            ;;
-        *)
-            user_selected="$1"
-            ;;
+            --)
+                shift
+                session_args=("$@")
+                break
+                ;;
+            -h | --help)
+                show_help
+                exit 0
+                ;;
+            -v | --version)
+                show_version
+                exit 0
+                ;;
+            -c | --cmd)
+                if [[ -z "$2" || "$2" == -* ]]; then
+                    echo "Error: --cmd requires a value" >&2
+                    exit 1
+                fi
+                session_cmd="$2"
+                shift
+                ;;
+            --vsplit)
+                split_type="vsplit"
+                ;;
+            --hsplit)
+                split_type="hsplit"
+                ;;
+            --_fzf-only)
+                _TS_FZF_ONLY=1
+                ;;
+            *)
+                user_selected="$1"
+                ;;
         esac
         shift
     done
@@ -141,7 +141,7 @@ parse_arguments() {
         exit 1
     fi
 
-    log "tmux-sessionizer($VERSION): idx=$session_idx cmd=$session_cmd args='$session_args' split_type=$split_type log=$TS_LOG log_file=$TS_LOG_FILE"
+    log "tmux-sessionizer($VERSION): idx=$session_idx cmd=$session_cmd args='${session_args[*]}' split_type=$split_type log=$TS_LOG log_file=$TS_LOG_FILE"
 }
 
 #------------------------------------------------------------------------------
@@ -175,7 +175,8 @@ is_tmux_running() {
 }
 
 has_session() {
-    tmux list-sessions 2>/dev/null | grep -q "^$1:"
+    # NOTE(exact-match): "=" forces literal compare — worktree names "repo [branch]" are regex/pattern metachars.
+    tmux has-session -t "=$1" 2>/dev/null
 }
 
 tmux_popup() {
@@ -273,6 +274,13 @@ cleanup_dead_panes() {
 #------------------------------------------------------------------------------
 
 find_dirs() {
+    # Order-preserving dedup: a worktree reachable both via fd and via its bare repo's worktree list
+    # would otherwise appear twice. fflush keeps the feed streaming — awk block-buffers a pipe, which
+    # would stall fzf until ~4KB accumulated.
+    _find_dirs_raw | awk '!seen[$0]++ { print; fflush() }'
+}
+
+_find_dirs_raw() {
     # 1️⃣ Get list of existing tmux session directories
     local -A tmux_dirs
     if command -v tmux >/dev/null 2>&1; then
@@ -287,9 +295,9 @@ find_dirs() {
         current_session=$(tmux display-message -p '#S')
 
         tmux list-sessions -F "#{session_last_attached}|[TMUX] #{session_name}" 2>/dev/null |
-            sort -t'|' -k1,1nr |
-            sed "s/^[^|]*|//" |
-            grep -vFx "[TMUX] $current_session"
+        sort -t'|' -k1,1nr |
+        sed "s/^[^|]*|//" |
+        grep -vFx "[TMUX] $current_session"
     fi
 
     # 2️⃣ Prepare fd arguments (Build the exclude list once)
@@ -324,12 +332,51 @@ find_dirs() {
                 if [[ "$dir" == "$HOME/" ]]; then
                     display_path="home"
                 else
+                    # NOTE(display-norm): drop fd's trailing slash so a worktree found directly by fd and
+                    # the same worktree emitted by its bare repo produce one identical row, not two.
                     display_path="${dir/#$HOME/\~}"
+                    display_path="${display_path%/}"
                 fi
 
+                # NOTE(dedup-key): fd emits a trailing slash, #{session_path} does not — strip after the
+                # "$HOME/" / "/home/" comparisons above, which rely on the slashed form.
+                local dir_key="${dir%/}"
+
                 # --- Git Detection Logic (Unchanged & Optimized) ---
-                if [[ -f "$dir/.git" || -d "$dir/.git" ]]; then
-                    [[ -n "${tmux_dirs[$dir]}" ]] && continue
+                # NOTE(git-detect): bare test first — stray .git in a bare repo else shadows worktree expansion.
+                if [[ -f "$dir/HEAD" && -d "$dir/objects" ]]; then
+                    # Bare repo handling. `detached` worktrees carry no `branch` record — label them
+                    # with the short SHA, else they are unreachable from the picker entirely.
+                    # The bare repo's own `bare` record is dropped (clears path without printing).
+                    local worktree_out
+                    worktree_out=$(git -C "$dir" worktree list --porcelain 2>/dev/null | awk '
+                    /^worktree / { path = substr($0, 10); sha = ""; next }
+                    /^HEAD / { sha = substr($0, 6); next }
+                    /^branch / {
+                        branch = substr($0, 8)
+                        sub(/^refs\/heads\//, "", branch)
+                        if (path) { printf "%s [%s]\n", path, branch; path = "" }
+                        next
+                    }
+                    /^detached$/ {
+                        if (path) { printf "%s [%s]\n", path, substr(sha, 1, 7); path = "" }
+                        next
+                    }
+                    /^bare$/ { path = "" }
+                ')
+
+                    if [[ -z "$worktree_out" ]]; then
+                        # HEAD+objects/ heuristic false-positived (not a real repo) — list it as a plain dir.
+                        [[ -n "${tmux_dirs[$dir_key]}" ]] || printf '%s\n' "$display_path"
+                    else
+                        while IFS= read -r worktree_line; do
+                            local wt_path="${worktree_line%% \[*}"
+                            [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "${worktree_line/#$HOME/\~}"
+                        done <<<"$worktree_out"
+                    fi
+
+                elif [[ -f "$dir/.git" || -d "$dir/.git" ]]; then
+                    [[ -n "${tmux_dirs[$dir_key]}" ]] && continue
 
                     local git_dir="$dir/.git"
                     if [[ -f "$git_dir" ]]; then
@@ -356,22 +403,8 @@ find_dirs() {
                         printf '%s\n' "$display_path"
                     fi
 
-                elif [[ -f "$dir/HEAD" && -d "$dir/objects" ]]; then
-                    # Bare repo handling
-                    git -C "$dir" worktree list --porcelain | awk '
-                    /^worktree / { path = substr($0, 10); next }
-                    /^branch / {
-                        branch = substr($0, 8)
-                        sub(/^refs\/heads\//, "", branch)
-                        if (path) { printf "%s [%s]\n", path, branch; path = "" }
-                    }
-                ' | while IFS= read -r worktree_line; do
-                        local wt_path="${worktree_line%% \[*}"
-                        [[ -z "${tmux_dirs[$wt_path]}" ]] && echo "${worktree_line/#$HOME/\~}"
-                    done
-
                 else
-                    [[ -n "${tmux_dirs[$dir]}" ]] && continue
+                    [[ -n "${tmux_dirs[$dir_key]}" ]] && continue
                     printf '%s\n' "$display_path"
                 fi
             done
@@ -383,16 +416,24 @@ find_dirs() {
 # Session Command Handlers
 #------------------------------------------------------------------------------
 
+# NOTE(cmd-quoting): tmux re-parses this string through a shell, so each arg is quoted individually —
+# a flat "$*" let an argument containing spaces split into several arguments.
+build_full_cmd() {
+    local out arg
+    out=$(printf '%q' "$session_cmd")
+    for arg in "${session_args[@]}"; do
+        out+=" $(printf '%q' "$arg")"
+    done
+    printf '%s' "$out"
+}
+
 handle_window_session_cmd() {
     local current_session="$1"
 
     local target="$current_session:$session_idx"
 
-    # Build the full command with args if provided
-    local full_cmd="$session_cmd"
-    if [[ -n "$session_args" ]]; then
-        full_cmd="$session_cmd $session_args"
-    fi
+    local full_cmd
+    full_cmd=$(build_full_cmd)
 
     log "Target: $target, Command: $full_cmd"
 
@@ -402,7 +443,9 @@ handle_window_session_cmd() {
         log "Creating new window: tmux neww -dt $target $full_cmd"
         tmux neww -dt "$target" "$full_cmd"
         tmux rename-window -t "$target" "$session_cmd"
-        hydrate "$target" "$selected"
+        # NOTE(hydrate-noop): session_cmd is always set on this path, so hydrate returns early; there is
+        # no selected path in scope to pass.
+        hydrate "$target" ""
         error=$(tmux select-window -t "$target" 2>&1 >/dev/null)
 
         if [[ -n $error ]]; then
@@ -417,11 +460,8 @@ handle_split_session_cmd() {
     local current_session="$1"
     cleanup_dead_panes
 
-    # Build the full command with args if provided
-    local full_cmd="$session_cmd"
-    if [[ -n "$session_args" ]]; then
-        full_cmd="$session_cmd $session_args"
-    fi
+    local full_cmd
+    full_cmd=$(build_full_cmd)
 
     # Check if pane already exists
     local existing_pane_id
@@ -456,14 +496,14 @@ handle_split_session_cmd() {
 }
 
 handle_session_cmd() {
-    log "Executing session command: $session_cmd (index: $session_idx, args: '$session_args', split: $split_type)"
+    log "Executing session command: $session_cmd (index: $session_idx, args: '${session_args[*]}', split: $split_type)"
 
     if ! is_tmux_running; then
         echo "Error: tmux is not running. Please start tmux first before using session commands." >&2
         exit 1
     fi
 
-    if ! command -v $session_cmd &>/dev/null; then
+    if ! command -v "$session_cmd" &>/dev/null; then
         echo "Error: Session command '$session_cmd' is not installed." >&2
         exit 1
     fi
@@ -485,7 +525,8 @@ handle_session_cmd() {
 
 run_fuzzy_finder() {
     # Popup re-invocation: stream find_dirs directly into fzf — no buffering.
-    if [[ -n "${_TS_RESULT_FILE:-}" ]]; then
+    # Outside tmux there is no client for display-popup, so run fzf inline instead.
+    if [[ -n "${_TS_RESULT_FILE:-}" || -z "${TMUX:-}" ]]; then
         fzf_preview_script='
     item={}
     if [[ "$item" == \[TMUX\]* ]]; then
@@ -514,8 +555,7 @@ run_fuzzy_finder() {
             } | batcat -l yaml --color=always -p
             eza -1 --icons --color=always --group-directories-first "$dir"
         fi
-    elif [[ -d "$item" ]]; then
-        expanded="${item/#\~/$HOME}"
+    elif expanded="${item/#\~/$HOME}"; [[ -d "${expanded%/}" ]]; then
         {
             echo "📁 Directory: $item"
             echo "━━━━━━━━━━━━━━━━━━━━━━━"
@@ -543,7 +583,11 @@ run_fuzzy_finder() {
         )
 
         # 2. Execute fzf, clearing the global default opts for just this command
-        find_dirs | FZF_DEFAULT_OPTS='' fzf "${my_fzf_options[@]}" >"$_TS_RESULT_FILE" || true
+        if [[ -n "${_TS_RESULT_FILE:-}" ]]; then
+            find_dirs | FZF_DEFAULT_OPTS='' fzf "${my_fzf_options[@]}" >"$_TS_RESULT_FILE" || true
+        else
+            find_dirs | FZF_DEFAULT_OPTS='' fzf "${my_fzf_options[@]}" || true
+        fi
 
         return
     fi
@@ -553,8 +597,17 @@ run_fuzzy_finder() {
     local result_file
     result_file=$(mktemp)
 
+    # NOTE(popup-quoting): $0 may be relative (popup cwd differs) or contain spaces — resolve and %q it
+    # before it is re-parsed by the nested `bash -c`.
+    # $0 is a bare name when invoked from PATH (tmux.conf run-shell) — resolve via PATH first, then
+    # make a relative path absolute.
+    local self
+    self=$(command -v -- "$0") || self="$0"
+    [[ "$self" == /* ]] ||
+    self=$(cd -- "$(dirname -- "$self")" && printf '%s/%s' "$(pwd)" "$(basename -- "$self")")
+
     tmux display-popup -E -w 70% -h 70% \
-        "bash -c '_TS_RESULT_FILE=${result_file} ${0} --_fzf-only'"
+        "bash -c $(printf '%q' "_TS_RESULT_FILE=$(printf '%q' "$result_file") $(printf '%q' "$self") --_fzf-only")"
 
     local result
     result=$(cat "$result_file")
@@ -564,9 +617,19 @@ run_fuzzy_finder() {
 
 is_worktree() {
     local dir_path="$1"
-    local parent_dir=$(dirname "$dir_path")
-    [[ -d "$parent_dir" ]] &&
-        [[ "$(git -C "$parent_dir" rev-parse --is-bare-repository 2>/dev/null)" == "true" ]]
+    local common_dir git_dir
+    # NOTE(worktree-detect): common-dir != git-dir is the general test — the old parent-is-bare check
+    # missed `git worktree add ../feature`, collapsing same-named worktrees of different repos onto
+    # one session name.
+    common_dir=$(git -C "$dir_path" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
+    git_dir=$(git -C "$dir_path" rev-parse --path-format=absolute --git-dir 2>/dev/null) || return 1
+    [[ -n "$common_dir" && "$common_dir" != "$git_dir" ]] || return 1
+
+    # Must be the worktree root: a subdir of a worktree also has git-dir != common-dir, and would
+    # otherwise get the root's session name while pointing at the wrong path.
+    local top
+    top=$(git -C "$dir_path" rev-parse --show-toplevel 2>/dev/null) || return 1
+    [[ "$top" == "$(cd -- "$dir_path" && pwd -P)" ]]
 }
 
 #------------------------------------------------------------------------------
@@ -639,17 +702,21 @@ main() {
         local parent_name
 
         # Get git details
-        common_dir=$(git -C "$selected_path" rev-parse --git-common-dir 2>/dev/null)
-        branch_name=$(git -C "$selected_path" branch --show-current)
+        common_dir=$(git -C "$selected_path" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+        branch_name=$(git -C "$selected_path" branch --show-current 2>/dev/null)
+        [[ -n "$branch_name" ]] || branch_name=$(git -C "$selected_path" rev-parse --short HEAD 2>/dev/null)
 
-        # Clean up parent name (remove .git suffix)
+        # Non-bare repos have common_dir ".../repo/.git" — drop that component, else basename is empty.
+        common_dir="${common_dir%/}"
+        [[ "$(basename "$common_dir")" == ".git" ]] && common_dir=$(dirname "$common_dir")
         parent_name=$(basename "$common_dir" | sed 's/\.git$//')
 
         # Format: bare_name [branch]
         selected_name="${parent_name} [${branch_name}]"
     else
-        # Regular directory: Normalize name (dots to underscores, lowercase first letter)
-        selected_name=$(basename "$selected_path" | tr . _ | sed 's/^\(.\)/\L\1/')
+        # Regular directory: Normalize name (dots/colons to underscores, lowercase first letter).
+        # NOTE(name-sep): tmux parses ":" as session:window, so it must not survive into a session name.
+        selected_name=$(basename "$selected_path" | tr '.:' '__' | sed 's/^\(.\)/\L\1/')
     fi
 
     # 5. Create & Switch

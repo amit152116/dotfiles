@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Wrapper: sources ROS env for ROS workspaces only, then execs the python builder.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+# NOTE(builder): detection duplicated in detect.py — a sourced setup.bash only mutates
+# the sourcing shell, so ros-vs-cmake must be decided before exec'ing python.
+# walk up matching $1..$n as globs relative to each dir; $HOME is never a root
+walk_up_for() {
+    local d="$PWD" g
+    while [[ "$d" != "/" && "$d" != "$HOME" ]]; do
+        for g in "$@"; do
+            if compgen -G "$d/$g" >/dev/null 2>&1; then
+                printf '%s\n' "$d"
+                return 0
+            fi
+        done
+        d="$(dirname "$d")"
+    done
+    return 1
+}
+
+find_ros_ws() {
+    local flat
+    [[ "$PWD" == "$HOME" ]] && return 1
+
+    # src/ layout first: else `cd src/pkg` would resolve the root to src/ itself
+    walk_up_for "src/*/package.xml" "src/*/*/package.xml" && return 0
+
+    # flat layout: only a repo root or cwd itself may claim it, else a parent dir
+    # full of unrelated repos looks like a workspace
+    if flat="$(walk_up_for "*/package.xml")"; then
+        if [[ "$flat" == "$PWD" || -e "$flat/.git" ]]; then
+            printf '%s\n' "$flat"
+            return 0
+        fi
+    fi
+
+    # grouped layout on cwd only — a depth-2 glob walking up finds bogus roots
+    if compgen -G "$PWD/*/*/package.xml" >/dev/null 2>&1 || [[ -f "$PWD/package.xml" ]]; then
+        printf '%s\n' "$PWD"
+        return 0
+    fi
+    return 1
+}
+
+# --backend cmake must not pull ROS into CMAKE_PREFIX_PATH, else a plain project
+# starts resolving ROS deps
+wants_cmake=false
+prev=""
+for arg in "$@"; do
+    [[ "$arg" == "--backend=cmake" ]] && wants_cmake=true
+    [[ "$prev" == "--backend" && "$arg" == "cmake" ]] && wants_cmake=true
+    prev="$arg"
+done
+
+source_ros() {
+    local ws="$1" distro_setup="" candidate
+    if [[ -n "${ROS_DISTRO:-}" && -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]]; then
+        distro_setup="/opt/ros/${ROS_DISTRO}/setup.bash"
+    else
+        for candidate in /opt/ros/*/setup.bash; do
+            if [[ -f "$candidate" ]]; then
+                distro_setup="$candidate"
+                break
+            fi
+        done
+    fi
+
+    if [[ -z "$distro_setup" ]]; then
+        echo "build: no /opt/ros/*/setup.bash found; continuing unsourced" >&2
+        return 0
+    fi
+
+    # ROS setup scripts read unset vars and return nonzero; -u/-e would abort here
+    set +eu
+    # shellcheck disable=SC1090,SC1091
+    source "$distro_setup"
+    # shellcheck disable=SC1091
+    [[ -f "$ws/install/setup.bash" ]] && source "$ws/install/setup.bash"
+    set -eu
+}
+
+if [[ "$wants_cmake" == false ]] && ws="$(find_ros_ws)"; then
+    source_ros "$ws"
+fi
+
+# -m so the package uses relative imports; SCRIPT_DIR resolves symlinked PATH entries
+exec env PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 -m builder "$@"

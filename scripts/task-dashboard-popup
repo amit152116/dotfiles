@@ -1,0 +1,3 @@
+#!/usr/bin/env -S zsh --no-rcs
+source ~/.zsh/taskwarrior.zsh
+task-dashboard

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# delta: syntax-highlighting pager for git diff/grep/blame — https://github.com/dandavison/delta
+set -euo pipefail
+
+log_info() { echo "[INFO] $1"; }
+log_warn() { echo "[WARN] $1"; }
+log_error() { echo "[ERROR] $1" >&2; }
+
+if command -v delta >/dev/null 2>&1; then
+    log_info "delta already installed at $(command -v delta) ($(delta --version)). Skipping."
+    exit 0
+fi
+
+case "$(uname -m)" in
+    x86_64) deb_arch="amd64" ;;
+    aarch64 | arm64) deb_arch="arm64" ;;
+    *)
+        log_error "Unsupported architecture: $(uname -m)"
+        exit 1
+        ;;
+esac
+
+log_info "Fetching latest delta release version..."
+delta_version=$(curl -fsSL "https://api.github.com/repos/dandavison/delta/releases/latest" |
+    grep -Po '"tag_name": *"\K[^"]*')
+
+if [[ -z "$delta_version" ]]; then
+    log_error "Failed to determine latest delta version."
+    exit 1
+fi
+
+log_info "Latest version: v${delta_version}"
+
+deb_name="git-delta_${delta_version}_${deb_arch}.deb"
+url="https://github.com/dandavison/delta/releases/download/${delta_version}/${deb_name}"
+
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+
+log_info "Downloading $url"
+if ! curl -fsSL -o "$tmp_dir/$deb_name" "$url"; then
+    log_error "Failed to download $deb_name"
+    exit 1
+fi
+
+log_info "Installing $deb_name (sudo required)"
+sudo dpkg -i "$tmp_dir/$deb_name" || sudo apt-get install -f -y
+
+if command -v delta >/dev/null 2>&1; then
+    log_info "delta v${delta_version} installed successfully ($(delta --version))."
+else
+    log_error "delta installation failed."
+    exit 1
+fi
