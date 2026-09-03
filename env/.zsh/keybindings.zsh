@@ -9,6 +9,7 @@ bindkey '^Y' autosuggest-accept
 setopt NO_NOTIFY      # don’t print “done” when background jobs finish
 setopt NO_BG_NICE     # don’t lower priority of background jobs
 unsetopt MONITOR      # disable job control entirely (optional, also hides [&] messages)
+setopt IGNORE_EOF     # stray C-d (e.g. tmux copy-mode auto-exit at scroll bottom) won't kill pane; use `exit`
 
 __open_file_explorer() {
     {
