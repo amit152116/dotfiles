@@ -1,5 +1,5 @@
 # Paths
-export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$HOME/.fzf/bin:/usr/local/bin:/usr/sbin:/sbin:/usr/lib/ccache:/snap/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts/bin:$HOME/.dotfiles/scripts/internal:$HOME/.fzf/bin:/usr/local/bin:/usr/sbin:/sbin:/usr/lib/ccache:/snap/bin:$PATH"
 
 export DOTFILES_DIR=$HOME/.dotfiles
 export MANPAGER="sh -c 'col -bx | batcat -l man -p'"

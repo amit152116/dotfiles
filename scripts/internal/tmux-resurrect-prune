@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# keeps only the N newest tmux-resurrect save files, called via @resurrect-hook-post-save-all
+# (tmux-resurrect has no built-in count-based cap, only a days-based @resurrect-delete-backup-after)
+set -euo pipefail
+
+resurrect_dir="${1:-$HOME/.tmux/resurrect}"
+keep="${RESURRECT_KEEP:-10}"
+
+cd "$resurrect_dir" || exit 0
+# shellcheck disable=SC2012
+ls -t tmux_resurrect_*.txt 2>/dev/null | tail -n "+$((keep + 1))" | xargs -r rm --

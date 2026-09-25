@@ -64,6 +64,14 @@ if [[ -n "$TMUX" ]]; then
 
     __tmux_kill_pane() {
         local current_pane=$TMUX_PANE
+
+        # popups aren't real panes (not in the window layout, TMUX_PANE inside one
+        # still holds the background pane's id) — kill-pane can't target them at all.
+        # exiting the popup's shell is what actually closes it (via display-popup -E).
+        if ! __tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -qx "$current_pane"; then
+            exit
+        fi
+
         local panes=$(__tmux list-panes -s | wc -l)
 
         if [ "$panes" -eq 1 ]; then
@@ -74,7 +82,7 @@ if [[ -n "$TMUX" ]]; then
 
         # Kill the pane directly so nested shells (host -> box -> onhost -> ...)
         # all die at once instead of unwinding one `exit` per layer.
-        __tmux kill-pane
+        __tmux kill-pane -t "$current_pane"
     }
     zle -N __tmux_kill_pane
 
@@ -86,7 +94,7 @@ if [[ -n "$TMUX" ]]; then
         current_dir=$(git rev-parse --show-toplevel 2>/dev/null) || current_dir="${PWD}"
         BUFFER=""
         zle reset-prompt
-        tmux neww "cd '$current_dir' && tmux-sessionizer -c lazygit -- -w ./" &>/dev/null
+        __tmux neww "cd '$current_dir' && tmux-sessionizer -c lazygit -- -w ./" &>/dev/null
     }
     zle -N __tmux_lazygit
 
@@ -96,7 +104,7 @@ if [[ -n "$TMUX" ]]; then
         local current_dir="${PWD}"
         BUFFER=""
         zle reset-prompt
-        tmux neww "cd '$current_dir' && tmux-sessionizer -c yazi" &>/dev/null
+        __tmux neww "cd '$current_dir' && tmux-sessionizer -c yazi" &>/dev/null
     }
     zle -N __tmux_yazi
     bindkey '\ey' __tmux_yazi   # Alt+Y
@@ -105,7 +113,7 @@ if [[ -n "$TMUX" ]]; then
         local current_dir="${PWD}"
         BUFFER=""
         zle reset-prompt
-        tmux neww "cd '$current_dir' && tmux-sessionizer -c glow" &>/dev/null
+        __tmux neww "cd '$current_dir' && tmux-sessionizer -c glow" &>/dev/null
     }
     zle -N __tmux_glow
     bindkey '\ed' __tmux_glow   # Alt+D

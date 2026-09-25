@@ -315,6 +315,28 @@ return {
           desc = "Window hydra mode",
         },
 
+        -- tmux-aware split/pane nav (overrides AstroNvim's plain <C-w>h/j/k/l defaults)
+        ["<C-h>"] = {
+          "<cmd>TmuxNavigateLeft<cr>",
+          desc = "Navigate left (tmux-aware)",
+        },
+        ["<C-j>"] = {
+          "<cmd>TmuxNavigateDown<cr>",
+          desc = "Navigate down (tmux-aware)",
+        },
+        ["<C-k>"] = {
+          "<cmd>TmuxNavigateUp<cr>",
+          desc = "Navigate up (tmux-aware)",
+        },
+        ["<C-l>"] = {
+          "<cmd>TmuxNavigateRight<cr>",
+          desc = "Navigate right (tmux-aware)",
+        },
+        ["<C-\\>"] = {
+          "<cmd>TmuxNavigatePrevious<cr>",
+          desc = "Navigate to last tmux pane/vim split",
+        },
+
         -- inspect treesitter tree at cursor
         ["<Leader>uI"] = {
           function()

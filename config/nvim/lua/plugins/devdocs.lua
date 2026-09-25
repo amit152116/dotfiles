@@ -120,7 +120,7 @@ return {
         "cpp",
         "go",
         "http",
-        "python~3.10",
+        "python~3.12",
         "lua~5.1",
         "bash",
         "zsh",

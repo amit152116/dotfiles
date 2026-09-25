@@ -197,6 +197,35 @@ return {
       neocmake = {
         cmd = { "neocmakelsp", "stdio" }, -- newer versions use a subcommand instead of --stdio
       },
+      ts_ls = {
+        on_attach = function(client)
+          -- prettier (conform) handles formatting; avoid duplicate/clashing edits
+          client.server_capabilities.documentFormattingProvider = false
+          client.server_capabilities.documentRangeFormattingProvider = false
+        end,
+      },
+      eslint = {
+        settings = {
+          -- flat config (eslint.config.js) is the Vite/React default
+          experimental = { useFlatConfig = true },
+        },
+        on_attach = function(client)
+          client.server_capabilities.documentFormattingProvider = false
+        end,
+      },
+      tailwindcss = {
+        settings = {
+          tailwindCSS = {
+            -- catch class strings inside shadcn/ui's cn()/cva() helpers
+            experimental = {
+              classRegex = {
+                { "cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]" },
+                { "cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]" },
+              },
+            },
+          },
+        },
+      },
     },
     commands = {
       LspLog = {

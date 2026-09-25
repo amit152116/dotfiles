@@ -18,6 +18,8 @@ return {
   { import = "astrocommunity.pack.sql" },
   { import = "astrocommunity.pack.toml" },
   { import = "astrocommunity.pack.yaml" },
+  { import = "astrocommunity.pack.typescript" },
+  { import = "astrocommunity.pack.html-css" },
 
   { import = "astrocommunity.editing-support.bigfile-nvim" },
   -- { import = "astrocommunity.editing-support.wildfire-nvim" },
@@ -27,7 +29,7 @@ return {
   { import = "astrocommunity.editing-support.vim-exchange" },
   { import = "astrocommunity.bars-and-lines.dropbar-nvim" },
   { import = "astrocommunity.motion.tabout-nvim" },
-  -- { import = "astrocommunity.motion.vim-matchup" },
+  { import = "astrocommunity.motion.vim-matchup" },
   -- { import = "astrocommunity.workflow.hardtime-nvim" },
   -- import/override with your plugins folder
 }

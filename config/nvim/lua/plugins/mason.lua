@@ -19,6 +19,11 @@ return {
         "bash-language-server", -- Bash
         "kotlin-language-server", -- Kotlin
         "taplo", -- TOML
+        "typescript-language-server", -- JS/TS/React
+        "tailwindcss-language-server", -- Tailwind CSS
+        "css-lsp", -- CSS/PostCSS
+        "json-lsp", -- package.json, tsconfig, etc.
+        "eslint-lsp", -- JS/TS lint diagnostics
 
         -- Formatters
         "stylua", -- Lua
