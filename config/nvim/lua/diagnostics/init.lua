@@ -13,6 +13,7 @@ M.COLLECTORS = {
   "notify",
   "memory",
   "input",
+  "autoprofile",
 }
 
 local running = {}
@@ -69,6 +70,16 @@ end
 ---@return boolean started
 function M.start_collector(name)
   if running[name] then return true end
+  local capture = package.loaded["diagnostics.capture"]
+  if name == "profile" and capture and capture.owns_profiler() then
+    -- starting now would steal jit.p's profiler slot mid-capture
+    capture.resume_profile_after()
+    vim.notify(
+      "[diagnostics] profile capture running; stall stacks resume when it stops",
+      vim.log.levels.INFO
+    )
+    return false
+  end
   local mod = load_collector(name)
   if not mod then
     notify_error("unknown collector: " .. name)
@@ -111,6 +122,9 @@ function M.setup(opts)
     group = vim.api.nvim_create_augroup("Diagnostics", { clear = true }),
     once = true,
     callback = function()
+      -- jit.p only writes its file on stop
+      local capture = package.loaded["diagnostics.capture"]
+      if capture and capture.running() then pcall(capture.stop) end
       for _, name in ipairs(M.COLLECTORS) do
         local mod = running[name] and load_collector(name)
         if mod and mod.on_exit then

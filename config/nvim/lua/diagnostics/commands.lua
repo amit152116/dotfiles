@@ -33,6 +33,47 @@ local function status_lines()
   return lines
 end
 
+--- :DiagProfile [start [jit|snacks] [seconds] | stop]
+---@param fargs string[]
+local function profile_cmd(fargs)
+  local capture = require "diagnostics.capture"
+  local action = fargs[1]
+  if action == nil then
+    local st = capture.status()
+    if not st then return info "profile capture not running" end
+    return info(
+      string.format(
+        "profile capture running: %s, %.0f s%s",
+        st.backend,
+        st.elapsed_s,
+        st.file and (", " .. st.file) or ""
+      )
+    )
+  end
+  if action == "stop" then
+    local ok, msg = capture.stop()
+    if not ok then return err(msg) end
+    return info "profile capture stopped, see :DiagReport"
+  end
+  if action ~= "start" then
+    return err("unknown action: " .. action .. " (use start or stop)")
+  end
+  local backend = fargs[2] or "jit"
+  if backend ~= "jit" and backend ~= "snacks" then
+    return err("unknown backend: " .. backend .. " (use jit or snacks)")
+  end
+  local duration
+  if fargs[3] then
+    duration = tonumber(fargs[3])
+    if not duration or duration <= 0 then
+      return err("invalid seconds: " .. fargs[3])
+    end
+  end
+  local ok, msg = capture.start { backend = backend, duration_s = duration }
+  if not ok then return err(msg) end
+  info("profile capture started (" .. backend .. ")")
+end
+
 function M.register()
   local cmd = vim.api.nvim_create_user_command
 
@@ -96,6 +137,18 @@ function M.register()
     function() info(table.concat(status_lines(), "\n")) end,
     { desc = "Show diagnostics status" }
   )
+
+  cmd("DiagProfile", function(args) profile_cmd(args.fargs) end, {
+    nargs = "*",
+    complete = function(_, line)
+      local words = vim.split(line, "%s+", { trimempty = true })
+      if #words <= 2 and not line:match "start%s" then
+        return { "start", "stop" }
+      end
+      return { "jit", "snacks" }
+    end,
+    desc = "Start/stop a deep profile capture (jit.p or snacks)",
+  })
 end
 
 return M

@@ -13,6 +13,9 @@ local M = {}
 ---@field memory_interval_ms number
 ---@field memory_growth_mb number
 ---@field input_latency_ms number
+---@field profile_auto_stalls number
+---@field profile_auto_window_s number
+---@field profile_auto_duration_s number
 
 ---@class DiagnosticsConfig
 ---@field enabled boolean
@@ -39,6 +42,7 @@ M.defaults = {
     profile = true,
     memory = true,
     input = true,
+    autoprofile = false, -- opt-in: runs a 1 ms jit.p capture after repeated stalls
   },
   thresholds = {
     plugin_ms = 5,
@@ -53,6 +57,9 @@ M.defaults = {
     memory_interval_ms = 60000,
     memory_growth_mb = 100,
     input_latency_ms = 50,
+    profile_auto_stalls = 3,
+    profile_auto_window_s = 300,
+    profile_auto_duration_s = 30,
   },
 }
 

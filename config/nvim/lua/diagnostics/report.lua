@@ -435,6 +435,21 @@ function M.render(events, stats)
     )
   end
 
+  local captures = kind "profile_capture"
+  header("Profile captures", #captures)
+  for i = #captures, math.max(1, #captures - TOP_N + 1), -1 do
+    local ev = captures[i]
+    local d = data_of(ev)
+    add(
+      "- %s  %s  %s  %.1f s  %s",
+      fmt_time(ev.ts),
+      tostring(d.backend),
+      tostring(d.reason),
+      tonumber(d.duration_s) or 0,
+      d.file and tostring(d.file) or "(snacks picker, no file)"
+    )
+  end
+
   local spikes = kind "input_latency"
   header("Input latency", #spikes)
   local agg, agg_order = {}, {}

@@ -79,6 +79,25 @@ T.test("profiled stall without samples is called out as waiting", function()
   has(text, "no Lua samples: blocked waiting (I/O, job, sync request), not CPU")
 end)
 
+T.test("profile captures are listed with their files", function()
+  local text = render {
+    ev("profile_capture", nil, {
+      backend = "jit",
+      reason = "auto",
+      duration_s = 30,
+      file = "/s/diagnostics-profile-20261015-134500.txt",
+    }),
+    ev("profile_capture", nil, {
+      backend = "snacks",
+      reason = "manual",
+      duration_s = 12.5,
+    }),
+  }
+  has(text, "## Profile captures (2)")
+  has(text, "jit  auto  30.0 s  /s/diagnostics-profile-20261015-134500.txt")
+  has(text, "snacks  manual  12.5 s  (snacks picker, no file)")
+end)
+
 T.test("deferred stall stacks are marked as uncertain", function()
   local text = render {
     ev("stall", 600, {

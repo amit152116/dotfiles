@@ -47,6 +47,12 @@ function M.start(ctx)
           -- lets the report tell "not CPU-bound" apart from "profiler off"
           profiled = profile and profile.running() or nil,
         })
+        -- autoprofile (and user config) can react without polling the log
+        vim.api.nvim_exec_autocmds("User", {
+          pattern = "DiagnosticsStall",
+          modeline = false,
+          data = { ms = lateness_ms },
+        })
       end))
     end)
   )
