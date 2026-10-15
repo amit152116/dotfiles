@@ -103,6 +103,8 @@ return {
         extend_gitsigns = require("astrocore").is_available "gitsigns.nvim",
       },
       lightbulb = { sign = false },
+      -- dropbar owns the winbar; saga's symbol bar duplicated it
+      symbol_in_winbar = { enable = false },
       ui = {
         code_action = get_icon "DiagnosticHint",
         expand = get_icon "FoldClosed",

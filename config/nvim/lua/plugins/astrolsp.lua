@@ -343,6 +343,8 @@ return {
         ["gs"] = {
           function() Snacks.picker.lsp_symbols { title = "Document Symbols" } end,
           desc = "Search Document Symbols",
+          -- overrides typescript pack's vtsls-only cond, which silently hid gs on other servers
+          cond = "textDocument/documentSymbol",
         },
 
         ["gsc"] = {
