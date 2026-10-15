@@ -11,6 +11,9 @@ diag.setup {
     bigfile = false,
     lsp = false,
     notify = false,
+    profile = false,
+    memory = false,
+    input = false,
   },
 }
 T.ok(diag.start_collector "notify", "notify collector failed to start")

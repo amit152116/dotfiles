@@ -3,7 +3,17 @@ local writer = require "diagnostics.writer"
 
 local M = {}
 
-M.COLLECTORS = { "startup", "stall", "bigfile", "lsp", "notify" }
+-- profile before stall so stalls can carry stacks from the first one
+M.COLLECTORS = {
+  "startup",
+  "profile",
+  "stall",
+  "bigfile",
+  "lsp",
+  "notify",
+  "memory",
+  "input",
+}
 
 local running = {}
 local setup_done = false
@@ -101,6 +111,21 @@ function M.setup(opts)
     group = vim.api.nvim_create_augroup("Diagnostics", { clear = true }),
     once = true,
     callback = function()
+      for _, name in ipairs(M.COLLECTORS) do
+        local mod = running[name] and load_collector(name)
+        if mod and mod.on_exit then
+          local ok, err = pcall(mod.on_exit)
+          if not ok then
+            notify_error(
+              string.format(
+                "collector %s on_exit failed: %s",
+                name,
+                tostring(err)
+              )
+            )
+          end
+        end
+      end
       for _, name in ipairs(M.COLLECTORS) do
         M.stop_collector(name)
       end

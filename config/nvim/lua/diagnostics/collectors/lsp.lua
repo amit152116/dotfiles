@@ -8,13 +8,76 @@ local GROUP = "Diagnostics_lsp"
 local MAX_PENDING = 500
 local SWEEP_MS = 5000
 
+local MAX_PROGRESS = 100
+local PROGRESS_MAX_AGE_MS = 60 * 60 * 1000
+-- clients can take a while to exit after detaching; recheck before giving up
+local EXIT_CHECKS_MS = { 100, 2000 }
+
 local pending, count, timer = {}, 0, nil
+local progress, progress_count, exited = {}, 0, {}
+local names = {}
 
 ---@param id integer
 ---@return string
 local function client_name(id)
   local client = vim.lsp.get_client_by_id(id)
-  return client and client.name or ("client " .. tostring(id))
+  if client then names[id] = client.name end
+  return names[id] or ("client " .. tostring(id))
+end
+
+--- Pair work-done progress begin/end by token, e.g. clangd indexing.
+---@param ev {data: any}
+local function on_progress(ev)
+  local d = ev.data
+  if type(d) ~= "table" or type(d.params) ~= "table" then return end
+  local value = d.params.value
+  if type(value) ~= "table" then return end
+  local key = tostring(d.client_id) .. ":" .. tostring(d.params.token)
+  if value.kind == "begin" then
+    if progress[key] or progress_count >= MAX_PROGRESS then return end
+    progress[key] = {
+      start = uv.hrtime(),
+      title = value.title,
+      client = client_name(d.client_id),
+      client_id = d.client_id,
+    }
+    progress_count = progress_count + 1
+  elseif value.kind == "end" then
+    local p = progress[key]
+    if not p then return end
+    progress[key] = nil
+    progress_count = progress_count - 1
+    local ms = (uv.hrtime() - p.start) / 1e6
+    if ms > config.get_value "thresholds.lsp_progress_ms" then
+      writer.emit("lsp_progress", ms, { client = p.client, title = p.title })
+    end
+  end
+end
+
+-- detach happens per buffer; the client being gone afterwards means it stopped or crashed
+---@param ctx {guard: fun(fn: function): function}
+---@param ev {data: any}
+local function on_detach(ctx, ev)
+  local id = type(ev.data) == "table" and ev.data.client_id
+  if not id or exited[id] then return end
+  local name = client_name(id)
+  -- the client still exists at detach; _is_stopping is set only by a requested stop
+  -- (:LspRestart, :LspStop, plugins), so only unrequested exits count as crashes
+  local client = vim.lsp.get_client_by_id(id)
+  if client and client._is_stopping then return end
+  local function check(attempt)
+    if exited[id] then return end
+    if vim.lsp.get_client_by_id(id) == nil then
+      exited[id] = true
+      writer.emit("lsp_exit", nil, { client = name })
+    elseif attempt < #EXIT_CHECKS_MS then
+      vim.defer_fn(
+        ctx.guard(function() check(attempt + 1) end),
+        EXIT_CHECKS_MS[attempt + 1]
+      )
+    end
+  end
+  vim.defer_fn(ctx.guard(function() check(1) end), EXIT_CHECKS_MS[1])
 end
 
 local function drop_oldest()
@@ -68,6 +131,14 @@ end
 --- Report and forget requests that never got a reply.
 function M.sweep()
   local now = uv.hrtime()
+  -- a dead server never sends "end"; without this the cap would block all later progress
+  for key, p in pairs(progress) do
+    local stale = (now - p.start) / 1e6 > PROGRESS_MAX_AGE_MS
+    if stale or vim.lsp.get_client_by_id(p.client_id) == nil then
+      progress[key] = nil
+      progress_count = progress_count - 1
+    end
+  end
   local limit = config.get_value "thresholds.lsp_overdue_ms"
   for key, p in pairs(pending) do
     local age = (now - p.start) / 1e6
@@ -95,6 +166,15 @@ function M.start(ctx)
     group = vim.api.nvim_create_augroup(GROUP, { clear = true }),
     callback = ctx.guard(on_request),
   })
+  local group = vim.api.nvim_create_augroup(GROUP, { clear = false })
+  vim.api.nvim_create_autocmd("LspProgress", {
+    group = group,
+    callback = ctx.guard(on_progress),
+  })
+  vim.api.nvim_create_autocmd("LspDetach", {
+    group = group,
+    callback = ctx.guard(function(ev) on_detach(ctx, ev) end),
+  })
   timer = uv.new_timer()
   timer:start(SWEEP_MS, SWEEP_MS, ctx.guard(M.sweep))
 end
@@ -107,6 +187,7 @@ function M.stop()
     timer = nil
   end
   pending, count = {}, 0
+  progress, progress_count, exited = {}, 0, {}
 end
 
 return M

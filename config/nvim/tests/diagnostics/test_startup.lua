@@ -10,6 +10,9 @@ diag.setup {
     bigfile = false,
     lsp = false,
     notify = false,
+    profile = false,
+    memory = false,
+    input = false,
   },
 }
 

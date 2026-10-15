@@ -8,6 +8,19 @@ T.test("defaults apply with no opts", function()
   T.eq(config.get_value "max_queue", 2000)
 end)
 
+T.test("new collectors and thresholds have defaults", function()
+  config.setup()
+  for _, name in ipairs { "profile", "memory", "input" } do
+    T.eq(config.get_value("collectors." .. name), true, name)
+  end
+  T.eq(config.get_value "thresholds.profile_interval_ms", 20)
+  T.eq(config.get_value "thresholds.memory_interval_ms", 60000)
+  T.eq(config.get_value "thresholds.memory_growth_mb", 100)
+  T.eq(config.get_value "thresholds.lsp_progress_ms", 1000)
+  T.eq(config.get_value "thresholds.bigfile_line_length", 10000)
+  T.eq(config.get_value "thresholds.input_latency_ms", 50)
+end)
+
 T.test("user values override defaults", function()
   T.eq(config.setup { thresholds = { stall_ms = 500 } }, {})
   T.eq(config.get_value "thresholds.stall_ms", 500)

@@ -69,6 +69,9 @@ local OFF = {
   bigfile = false,
   lsp = false,
   notify = false,
+  profile = false,
+  memory = false,
+  input = false,
 }
 local log_file = T.tmpdir() .. "/d.jsonl"
 

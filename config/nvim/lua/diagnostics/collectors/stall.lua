@@ -4,6 +4,8 @@ local uv = vim.uv
 
 local M = {}
 
+local STACKS_PER_STALL = 3
+
 local timer
 
 ---@param ctx {guard: fun(fn: function): function}
@@ -24,9 +26,15 @@ function M.start(ctx)
       local now = uv.hrtime()
       local lateness_ms = (now - deadline) / 1e6
       local elapsed_ms = (now - last) / 1e6
+      local window_start = last
       last, deadline = now, now + interval * 1e6
       if lateness_ms <= stall_ms then return end
       local recent = writer.recent()
+      local profile = package.loaded["diagnostics.collectors.profile"]
+      local stacks = profile
+        and profile.running()
+        and profile.top(window_start, now, STACKS_PER_STALL)
+      if stacks and #stacks == 0 then stacks = nil end
       vim.schedule(ctx.guard(function()
         local buf = vim.api.nvim_get_current_buf()
         writer.emit("stall", lateness_ms, {
@@ -35,6 +43,9 @@ function M.start(ctx)
           ft = vim.bo[buf].filetype,
           mode = vim.api.nvim_get_mode().mode,
           recent = recent,
+          stacks = stacks or nil,
+          -- lets the report tell "not CPU-bound" apart from "profiler off"
+          profiled = profile and profile.running() or nil,
         })
       end))
     end)

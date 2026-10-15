@@ -7,6 +7,12 @@ local M = {}
 ---@field bigfile_bytes number
 ---@field lsp_ms number
 ---@field lsp_overdue_ms number
+---@field lsp_progress_ms number
+---@field bigfile_line_length number
+---@field profile_interval_ms number
+---@field memory_interval_ms number
+---@field memory_growth_mb number
+---@field input_latency_ms number
 
 ---@class DiagnosticsConfig
 ---@field enabled boolean
@@ -30,14 +36,23 @@ M.defaults = {
     bigfile = true,
     lsp = true,
     notify = true,
+    profile = true,
+    memory = true,
+    input = true,
   },
   thresholds = {
     plugin_ms = 5,
     stall_ms = 200,
     heartbeat_ms = 100,
     bigfile_bytes = 1024 * 1024,
+    bigfile_line_length = 10000, -- minified bundles; prose and lockfiles stay below
     lsp_ms = 100,
     lsp_overdue_ms = 5000,
+    lsp_progress_ms = 1000,
+    profile_interval_ms = 20,
+    memory_interval_ms = 60000,
+    memory_growth_mb = 100,
+    input_latency_ms = 50,
   },
 }
 

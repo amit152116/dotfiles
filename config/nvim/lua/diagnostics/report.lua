@@ -4,6 +4,14 @@ local SCHEMA_VERSION = 1
 local DEFAULT_SINCE = 86400
 local UNITS = { m = 60, h = 3600, d = 86400 }
 local TOP_N = 10
+local REGRESSION_MIN_RUNS = 3
+local REGRESSION_WINDOW = 20
+local REGRESSION_RATIO = 0.2
+local RUNTIME_HELPERS = {
+  "/lua/vim/_editor.lua",
+  "/lua/vim/shared.lua",
+  "/lua/vim/iter.lua",
+}
 
 ---@param fargs string[]
 ---@return {since: integer|nil, session: "current"|"last"|nil}|nil opts
@@ -136,6 +144,57 @@ local function top(list, n)
   return vim.list_slice(sorted, 1, n)
 end
 
+---@param frame string
+---@return boolean
+local function is_runtime_helper(frame)
+  for _, helper in ipairs(RUNTIME_HELPERS) do
+    if frame:find(helper, 1, true) then return true end
+  end
+  return false
+end
+
+--- First frame of a "file:line;file:line;" stack, trimmed to the plugin path.
+---@param stack string
+---@return string
+local function short_frame(stack)
+  local frame = stack:match "^[^;]+" or stack
+  -- generic runtime helpers say nothing about who called them
+  for f in stack:gmatch "[^;]+" do
+    if not is_runtime_helper(f) then
+      frame = f
+      break
+    end
+  end
+  return frame:match "/lazy/(.+)$"
+    or frame:match "([^/]+/[^/]+/[^/]+)$"
+    or frame
+end
+
+--- Flag the latest startup when it is slower than the median of earlier runs.
+---@param startups table[] sorted by ts
+---@return string|nil
+local function startup_regression(startups)
+  local runs = {}
+  for _, ev in ipairs(startups) do
+    if data_of(ev).available ~= false and type(ev.ms) == "number" then
+      runs[#runs + 1] = ev.ms
+    end
+  end
+  if #runs < REGRESSION_MIN_RUNS + 1 then return nil end
+  local latest = runs[#runs]
+  local earlier =
+    vim.list_slice(runs, math.max(1, #runs - REGRESSION_WINDOW), #runs - 1)
+  table.sort(earlier)
+  local median = earlier[math.ceil(#earlier / 2)]
+  if latest <= median * (1 + REGRESSION_RATIO) then return nil end
+  return string.format(
+    "- regression: latest %.1f ms vs median %.1f ms (+%d%%)",
+    latest,
+    median,
+    math.floor((latest / median - 1) * 100 + 0.5)
+  )
+end
+
 ---@param events table[] sorted by ts
 ---@param stats {skipped: integer, dropped: integer|nil}
 ---@return string[]
@@ -198,6 +257,8 @@ function M.render(events, stats)
       runs
     )
   end
+  local regression = startup_regression(startups)
+  if regression then add(regression) end
   for _, ev in ipairs(top(kind "plugin_load", TOP_N)) do
     local d = data_of(ev)
     add(
@@ -225,6 +286,21 @@ function M.render(events, stats)
       tostring(d.mode),
       table.concat(recent, ",")
     )
+    local hot = type(d.stacks) == "table" and d.stacks[1]
+    if type(hot) == "table" and type(hot.stack) == "string" then
+      add(
+        "    at %s (%s samples, %s%s)",
+        short_frame(hot.stack),
+        tostring(hot.count),
+        tostring(hot.vm),
+        hot.deferred == true
+            and "; blocked outside Lua, may be the next code run"
+          or ""
+      )
+    elseif d.profiled == true then
+      -- the cpu-time profiler only samples while something computes
+      add "    no Lua samples: blocked waiting (I/O, job, sync request), not CPU"
+    end
   end
 
   local attach = {}
@@ -233,25 +309,56 @@ function M.render(events, stats)
   end
   local bigfiles = kind "bigfile"
   header("Big files", #bigfiles)
+  local unmitigated = 0
+  for _, ev in ipairs(bigfiles) do
+    local a = attach[ev.sid .. ":" .. tostring(data_of(ev).buf)]
+    if a and type(a.mitigations) == "table" and #a.mitigations == 0 then
+      unmitigated = unmitigated + 1
+    end
+  end
   for _, ev in ipairs(top(bigfiles, TOP_N)) do
     local d = data_of(ev)
     local a = attach[ev.sid .. ":" .. tostring(d.buf)] or {}
     local clients = type(a.clients) == "table" and table.concat(a.clients, ",")
       or "?"
+    local mitigation = "?"
+    if type(a.mitigations) == "table" then
+      mitigation = #a.mitigations == 0 and "none"
+        or table.concat(a.mitigations, ",")
+    end
     add(
-      "- %.0f ms  %s  %s  %s lines  ft=%s lsp=%s ts=%s",
+      "- %.0f ms  %s  %s  %s lines  ft=%s lsp=%s ts=%s  maxline=%s  mitigation=%s",
       ev.ms or 0,
       tostring(d.file),
       fmt_size(d.size),
       tostring(d.lines or "?"),
       tostring(a.ft or "?"),
       clients == "" and "none" or clients,
-      tostring(a.treesitter == nil and "?" or a.treesitter)
+      tostring(a.treesitter == nil and "?" or a.treesitter),
+      tostring(d.max_line_len or "?"),
+      mitigation
     )
+  end
+  if unmitigated > 0 then
+    -- these are the thresholds worth tuning (astrocore large_buf, bigfile.nvim)
+    add("- %d big-file open(s) with no mitigation engaged", unmitigated)
   end
 
   local slow, overdue = kind "lsp", kind "lsp_overdue"
-  header("LSP", #slow + #overdue)
+  local progress, exits = kind "lsp_progress", kind "lsp_exit"
+  header("LSP", #slow + #overdue + #progress + #exits)
+  for _, ev in ipairs(top(progress, TOP_N)) do
+    local d = data_of(ev)
+    add(
+      "- progress  %s  %s  %.1f s",
+      tostring(d.client),
+      tostring(d.title or "?"),
+      (ev.ms or 0) / 1000
+    )
+  end
+  for _, ev in ipairs(exits) do
+    add("- exited  %s  at %s", tostring(data_of(ev).client), fmt_time(ev.ts))
+  end
   local groups, cancelled = {}, 0
   for _, ev in ipairs(slow) do
     local d = data_of(ev)
@@ -301,6 +408,68 @@ function M.render(events, stats)
   table.sort(order, function(a, b) return counts[a] > counts[b] end)
   for _, key in ipairs(vim.list_slice(order, 1, TOP_N)) do
     add("- %dx  %s", counts[key], key)
+  end
+
+  local summaries = kind "session_summary"
+  header("Memory", #summaries)
+  local growth = {}
+  for _, ev in ipairs(kind "memory") do
+    growth[ev.sid] = (growth[ev.sid] or 0) + 1
+  end
+  local sessions_by_rss = vim.list_slice(summaries)
+  table.sort(
+    sessions_by_rss,
+    function(a, b)
+      return (data_of(a).maxrss_mb or 0) > (data_of(b).maxrss_mb or 0)
+    end
+  )
+  for _, ev in ipairs(vim.list_slice(sessions_by_rss, 1, TOP_N)) do
+    local d = data_of(ev)
+    add(
+      "- session %s  %d min  cpu %.1f s  maxrss %.1f MB  growth events %d",
+      ev.sid,
+      math.floor((tonumber(d.duration_s) or 0) / 60),
+      (tonumber(d.utime_s) or 0) + (tonumber(d.stime_s) or 0),
+      tonumber(d.maxrss_mb) or 0,
+      growth[ev.sid] or 0
+    )
+  end
+
+  local spikes = kind "input_latency"
+  header("Input latency", #spikes)
+  local agg, agg_order = {}, {}
+  local function bucket(d)
+    local ft = d.ft ~= nil and d.ft ~= "" and tostring(d.ft) or "-"
+    local key = tostring(d.mode) .. " " .. ft
+    if not agg[key] then
+      agg[key] = { keys = 0, p95 = 0, max = 0, spikes = 0 }
+      agg_order[#agg_order + 1] = key
+    end
+    return agg[key]
+  end
+  for _, ev in ipairs(kind "input_summary") do
+    local d = data_of(ev)
+    local a = bucket(d)
+    a.keys = a.keys + (tonumber(d.count) or 0)
+    a.p95 = math.max(a.p95, tonumber(d.p95) or 0)
+    a.max = math.max(a.max, tonumber(d.max) or 0)
+  end
+  for _, ev in ipairs(spikes) do
+    local a = bucket(data_of(ev))
+    a.spikes = a.spikes + 1
+    a.max = math.max(a.max, ev.ms or 0)
+  end
+  table.sort(agg_order, function(a, b) return agg[a].max > agg[b].max end)
+  for _, key in ipairs(vim.list_slice(agg_order, 1, TOP_N)) do
+    local a = agg[key]
+    add(
+      "- %s  keys=%d  worst p95=%.0f ms  max=%.0f ms  spikes=%d",
+      key,
+      a.keys,
+      a.p95,
+      a.max,
+      a.spikes
+    )
   end
 
   return lines

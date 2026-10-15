@@ -10,6 +10,9 @@ diag.setup {
     bigfile = false,
     lsp = false,
     notify = false,
+    profile = false,
+    memory = false,
+    input = false,
   },
   thresholds = { lsp_ms = 50, lsp_overdue_ms = 50 },
 }
