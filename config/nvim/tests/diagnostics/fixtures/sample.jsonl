@@ -1,0 +1,13 @@
+{"v":1,"ts":1790000000.0,"sid":"s1","kind":"startup","ms":120.5,"data":{"available":true,"count":80,"loaded":30}}
+{"v":1,"ts":1790000001.0,"sid":"s1","kind":"plugin_load","ms":42.0,"data":{"name":"nvim-treesitter","reason":"event:BufRead"}}
+{"v":1,"ts":1790000002.0,"sid":"s1","kind":"plugin_load","ms":9.0,"data":{"name":"gitsigns.nvim","reason":"event:BufRead"}}
+not json at all
+{"v":2,"ts":1790000003.0,"sid":"s1","kind":"stall","ms":999}
+{"v":1,"ts":1790000004.0,"sid":"s1","kind":"stall","ms":450.0,"data":{"elapsed_ms":550,"buf":"/tmp/big.log","ft":"log","mode":"n","recent":[{"kind":"bigfile","ts":1790000003.5}]}}
+{"v":1,"ts":1790000005.0,"sid":"s2","kind":"bigfile","ms":800.0,"data":{"buf":3,"file":"/tmp/big.log","size":52428800,"size_source":"stat","lines":100000}}
+{"v":1,"ts":1790000005.6,"sid":"s2","kind":"bigfile_attach","data":{"buf":3,"file":"/tmp/big.log","ft":"log","clients":[],"treesitter":false}}
+{"v":1,"ts":1790000006.0,"sid":"s2","kind":"lsp","ms":350.0,"data":{"client":"clangd","method":"textDocument/hover"}}
+{"v":1,"ts":1790000007.0,"sid":"s2","kind":"lsp","ms":150.0,"data":{"client":"clangd","method":"textDocument/hover"}}
+{"v":1,"ts":1790000008.0,"sid":"s2","kind":"lsp_overdue","ms":6000.0,"data":{"client":"clangd","method":"textDocument/references"}}
+{"v":1,"ts":1790000009.0,"sid":"s2","kind":"notify","data":{"level":"ERROR","msg":"boom","trace":""}}
+{"v":1,"ts":1790000010.0,"sid":"s2","kind":"notify","data":{"level":"ERROR","msg":"boom","trace":""}}
