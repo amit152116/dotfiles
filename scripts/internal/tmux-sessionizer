@@ -7,7 +7,7 @@ VERSION="1.1.0"
 # configuration & paths
 
 CONFIG_FILE_NAME="tmux-sessionizer.conf"
-CONFIG_DIR="$HOME/.dotfiles/scripts"
+CONFIG_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 CONFIG_FILE="$CONFIG_DIR/$CONFIG_FILE_NAME"
 PANE_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-sessionizer"
 PANE_CACHE_FILE="$PANE_CACHE_DIR/panes.cache"
