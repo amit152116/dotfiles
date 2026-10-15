@@ -17,7 +17,8 @@ return {
         "lua-language-server",
         "clangd", -- C/C++
         "bash-language-server", -- Bash
-        "kotlin-language-server", -- Kotlin
+        -- "kotlin-language-server", -- Kotlin (community, stable) - DEPRECATED
+        "kotlin-lsp", -- Kotlin (JetBrains official, experimental AGP/Android support)
         "taplo", -- TOML
         "typescript-language-server", -- JS/TS/React
         "tailwindcss-language-server", -- Tailwind CSS
@@ -34,7 +35,8 @@ return {
         "shfmt", -- Shell
         "beautysh", -- Shell
         "prettier", -- JS/TS/JSON/etc.
-        "ktlint", -- Kotlin
+        "ktlint", -- Kotlin formatter
+        "detekt", -- Kotlin linter
         "google-java-format", -- Java
         -- Linters
         "selene", -- Lua

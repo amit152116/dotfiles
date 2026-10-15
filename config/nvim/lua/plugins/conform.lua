@@ -13,7 +13,7 @@ return {
         null_ls.builtins.diagnostics.hadolint.with {
           filetypes = { "dockerfile" },
         },
-        -- Kotlin linter
+        -- Kotlin linter (ktlint for style)
         null_ls.builtins.diagnostics.ktlint.with { filetypes = { "kotlin" } },
         -- Markdown linter
         null_ls.builtins.diagnostics.markdownlint.with {

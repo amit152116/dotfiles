@@ -34,6 +34,7 @@ return {
       },
       disabled = {
         "lemminx", -- use prettier for XML formatting via conform instead
+        "kotlin_lsp", -- use ktlint via conform instead
       },
       timeout_ms = 3200,
     },
@@ -42,6 +43,7 @@ return {
       "basedpyright",
       "ruff",
       "gopls",
+      "kotlin_lsp",
     },
     ---@diagnostic disable: missing-fields
     config = {
@@ -202,6 +204,114 @@ return {
       },
       bashls = {
         filetypes = { "sh", "bash", "zsh" },
+      },
+      -- kotlin_language_server = {
+      --   cmd = { "kotlin-language-server" },
+      --   filetypes = { "kotlin" },
+      --   root_dir = function(bufnr, on_dir)
+      --     local fname = vim.api.nvim_buf_get_name(bufnr)
+      --     local root = vim.fs.dirname(vim.fs.find({
+      --       "settings.gradle",
+      --       "settings.gradle.kts",
+      --       "build.gradle",
+      --       "build.gradle.kts",
+      --       "pom.xml",
+      --       ".git",
+      --     }, {
+      --       upward = true,
+      --       path = fname,
+      --     })[1]) or vim.fn.getcwd()
+      --     on_dir(root)
+      --   end,
+      --   settings = {
+      --     kotlin = {
+      --       compiler = { jvm = { target = "1.8" } },
+      --       completion = {
+      --         snippets = { enabled = true },
+      --         autoImport = { enabled = true },
+      --       },
+      --       formatting = { enabled = false },
+      --       build = { gradle = { enabled = true, offline = false } },
+      --       -- Aggressive performance: disable heavy compiler features
+      --       diagnostics = { enabled = true, mode = "fast" },
+      --       typeChecking = { enabled = false },
+      --       indexing = { enabled = false },
+      --     },
+      --   },
+      --   init_options = {
+      --     storagePath = vim.fn.stdpath "data" .. "/kotlin-language-server",
+      --   },
+      --   capabilities = {
+      --     workspace = {
+      --       didChangeConfiguration = { dynamicRegistration = false },
+      --     },
+      --     textDocument = {
+      --       semanticTokens = { dynamicRegistration = false },
+      --       foldingRange = {
+      --         dynamicRegistration = false,
+      --         lineFoldingOnly = true,
+      --       },
+      --       completion = { completionItem = { snippetSupport = true } },
+      --     },
+      --   },
+      --   on_attach = function(client, bufnr)
+      --     client.server_capabilities.semanticTokensProvider = nil
+      --     client.server_capabilities.documentFormattingProvider = false
+      --     client.server_capabilities.documentRangeFormattingProvider = false
+      --     client.server_capabilities.codeLensProvider = nil
+      --     vim.diagnostic.config({
+      --       update_in_insert = false,
+      --       severity_sort = true,
+      --     }, bufnr)
+      --   end,
+      -- },
+      -- kotlin-lsp (JetBrains official) - experimental AGP/Android support
+      kotlin_lsp = {
+        cmd = { "kotlin-lsp" },
+        filetypes = { "kotlin" },
+        root_dir = function(bufnr, on_dir)
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          local root = vim.fs.dirname(vim.fs.find({
+            "settings.gradle",
+            "settings.gradle.kts",
+            "build.gradle",
+            "build.gradle.kts",
+            "pom.xml",
+            ".git",
+          }, {
+            upward = true,
+            path = fname,
+          })[1]) or vim.fn.getcwd()
+          on_dir(root)
+        end,
+        settings = {
+          kotlin = {
+            completion = {
+              snippets = { enabled = true },
+              autoImport = { enabled = true },
+            },
+            formatting = { enabled = false }, -- use ktlint via conform
+            build = { gradle = { enabled = true, offline = false } },
+          },
+        },
+        capabilities = {
+          workspace = {
+            didChangeConfiguration = { dynamicRegistration = false },
+          },
+          textDocument = {
+            semanticTokens = { dynamicRegistration = false },
+            foldingRange = {
+              dynamicRegistration = false,
+              lineFoldingOnly = true,
+            },
+            completion = { completionItem = { snippetSupport = true } },
+          },
+        },
+        on_attach = function(client, bufnr)
+          client.server_capabilities.semanticTokensProvider = nil
+          client.server_capabilities.documentFormattingProvider = false
+          client.server_capabilities.documentRangeFormattingProvider = false
+        end,
       },
       neocmake = {
         cmd = { "neocmakelsp", "stdio" }, -- newer versions use a subcommand instead of --stdio
