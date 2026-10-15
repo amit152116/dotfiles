@@ -74,6 +74,7 @@ function M.start_collector(name)
   if name == "profile" and capture and capture.owns_profiler() then
     -- starting now would steal jit.p's profiler slot mid-capture
     capture.resume_profile_after()
+    if (capture.status() or {}).quiet then return false end
     vim.notify(
       "[diagnostics] profile capture running; stall stacks resume when it stops",
       vim.log.levels.INFO

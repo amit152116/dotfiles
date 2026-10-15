@@ -23,5 +23,8 @@ if not pcall(require, "lazy") then
   vim.cmd.quit()
 end
 
+-- DIAG_PROFILE_STARTUP=1 nvim: jit.p capture until UIEnter
+require("diagnostics.capture").startup_from_env()
+
 require "lazy_setup"
 require "polish"

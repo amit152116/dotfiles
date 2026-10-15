@@ -78,6 +78,8 @@ local function record_startup(lazy)
     count = stats.count,
     loaded = stats.loaded,
     times = stats.times,
+    -- 1 ms jit sampling inflates this startup
+    profiled = (package.loaded["diagnostics.capture"] or {}).startup_profiled,
   })
   for _, plugin in pairs(require("lazy.core.config").plugins) do
     record_plugin(plugin)

@@ -4,9 +4,9 @@ local uv = vim.uv
 
 local M = {}
 
--- depth 3, functions split by line, 1 ms sampling
+-- depth 3, functions split by line, full paths, rows >=1%, 1 ms sampling
 -- PERF(diagnostics): 1 ms sampling callbacks also run during auto captures, in an already slow session
-local JIT_MODE = "3Fli1"
+local JIT_MODE = "3Fplm1i1"
 
 local state
 local seq = 0
@@ -36,19 +36,20 @@ end
 ---@return boolean
 function M.running() return state ~= nil end
 
----@return {backend: string, file: string|nil, reason: string, elapsed_s: number}|nil
+---@return {backend: string, file: string|nil, reason: string, quiet: boolean|nil, elapsed_s: number}|nil
 function M.status()
   if not state then return nil end
   return {
     backend = state.backend,
     file = state.file,
     reason = state.reason,
+    quiet = state.quiet,
     elapsed_s = (uv.hrtime() - state.start) / 1e9,
   }
 end
 
 --- Start a deep profile capture.
----@param opts {backend: "jit"|"snacks"|nil, duration_s: number|nil, reason: string|nil}
+---@param opts {backend: "jit"|"snacks"|nil, duration_s: number|nil, reason: string|nil, quiet: boolean|nil}
 ---@return boolean ok
 ---@return string|nil err
 function M.start(opts)
@@ -58,6 +59,7 @@ function M.start(opts)
   local s = {
     backend = backend,
     reason = opts.reason or "manual",
+    quiet = opts.quiet,
     start = uv.hrtime(),
   }
 
@@ -150,6 +152,27 @@ function M.owns_profiler() return state ~= nil and state.backend == "jit" end
 --- Resume the stall profiler when the current capture stops.
 function M.resume_profile_after()
   if state then state.resume_profile = true end
+end
+
+--- Profile startup when $DIAG_PROFILE_STARTUP is set; call before lazy setup.
+---@return boolean started
+function M.startup_from_env()
+  local env = vim.env.DIAG_PROFILE_STARTUP
+  if not env or env == "" or env == "0" then return false end
+  -- NOTE(diagnostics): runs before setup, so the file lands next to the default log_file
+  if not M.start { reason = "startup", quiet = true } then return false end
+  M.startup_profiled = true
+  -- headless never fires UIEnter
+  local event = #vim.api.nvim_list_uis() > 0 and "UIEnter" or "VimEnter"
+  vim.api.nvim_create_autocmd(event, {
+    once = true,
+    callback = vim.schedule_wrap(function()
+      local file = state and state.reason == "startup" and state.file
+      if not file or not M.stop() then return end
+      vim.notify("[diagnostics] startup profile: " .. file, vim.log.levels.INFO)
+    end),
+  })
+  return true
 end
 
 return M
