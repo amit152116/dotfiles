@@ -1,7 +1,45 @@
 return {
   {
     "Civitasv/cmake-tools.nvim",
-    ft = { "cmake", "c", "cpp" },
+    -- cpp pack makes c/cpp buffers load cmake-tools -> mason-nvim-dap -> nvim-dap (~45ms);
+    -- lazy unions deps so they can't be dropped, defer the whole plugin to cmake ft / :CMake*
+    ft = function() return { "cmake" } end,
+    cmd = {
+      "CMakeGenerate",
+      "CMakeClean",
+      "CMakeBuild",
+      "CMakeQuickBuild",
+      "CMakeInstall",
+      "CMakeStopExecutor",
+      "CMakeStopRunner",
+      "CMakeCloseExecutor",
+      "CMakeCloseRunner",
+      "CMakeOpenExecutor",
+      "CMakeOpenRunner",
+      "CMakeOpenCache",
+      "CMakeRun",
+      "CMakeQuickRun",
+      "CMakeRunCurrentFile",
+      "CMakeBuildCurrentFile",
+      "CMakeLaunchArgs",
+      "CMakeSelectBuildType",
+      "CMakeSelectKit",
+      "CMakeSelectConfigurePreset",
+      "CMakeSelectBuildPreset",
+      "CMakeSelectTestPreset",
+      "CMakeSelectBuildTarget",
+      "CMakeSelectLaunchTarget",
+      "CMakeTargetSettings",
+      "CMakeSettings",
+      "CMakeSelectCwd",
+      "CMakeSelectBuildDir",
+      "CMakeRunTest",
+      "CMakeQuickStart",
+      "CMakeDebug",
+      "CMakeQuickDebug",
+      "CMakeDebugCurrentFile",
+      "CMakeShowTargetFiles",
+    },
     dependencies = {
       {
         "AstroNvim/astrocore",
@@ -53,7 +91,9 @@ return {
       },
       -- supports macro expansion: ${kit}, ${kitGenerator}, ${variant:xx}
       cmake_build_directory = function()
-        if require("cmake-tools.osys").iswin32 then return "out\\${variant:buildType}" end
+        if require("cmake-tools.osys").iswin32 then
+          return "out\\${variant:buildType}"
+        end
         return "out/${variant:buildType}" -- relative to cwd
       end,
       cmake_compile_commands_options = {

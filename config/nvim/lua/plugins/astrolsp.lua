@@ -11,6 +11,15 @@ return {
       semantic_tokens = true,
       signature_help = false,
     },
+    -- Performance: limit LSP capabilities per server
+    server_defaults = {
+      capabilities = {
+        textDocument = {
+          semanticTokens = { dynamicRegistration = false },
+          foldingRange = { dynamicRegistration = false, lineFoldingOnly = true },
+        },
+      },
+    },
     defaults = {
       hover = {
         border = "rounded",
@@ -214,6 +223,12 @@ return {
         end,
       },
       tailwindcss = {
+        -- lspconfig enables this; nvim then runs recursive inotifywait on root (.git fallback = whole ros ws, ~11k watches each)
+        capabilities = {
+          workspace = {
+            didChangeWatchedFiles = { dynamicRegistration = false },
+          },
+        },
         settings = {
           tailwindCSS = {
             -- catch class strings inside shadcn/ui's cn()/cva() helpers

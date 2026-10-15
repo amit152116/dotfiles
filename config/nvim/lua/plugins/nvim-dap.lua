@@ -2,9 +2,14 @@
 -- Complements dap-ui (scopes panel) by annotating the actual code lines.
 return {
   "theHamsta/nvim-dap-virtual-text",
-  dependencies = { "mfussenegger/nvim-dap" },
-  -- load alongside the dap stack pulled in by the astrocommunity packs
-  event = "User AstroFile",
+  -- loaded by nvim-dap (dep below); AstroFile event pulled the whole dap chain (~45ms) into every file open
+  lazy = true,
+  specs = {
+    {
+      "mfussenegger/nvim-dap",
+      dependencies = { "theHamsta/nvim-dap-virtual-text" },
+    },
+  },
   opts = {
     enabled = true,
     enabled_commands = true, -- create DapVirtualText* user commands

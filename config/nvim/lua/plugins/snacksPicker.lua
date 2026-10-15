@@ -16,6 +16,15 @@ return {
         easing = "outCubic",
         fps = 60,
       },
+      -- per-step normal! H/| on multi-MB lines stalled ~700ms each (diagnostics log)
+      filter = function(buf)
+        local b = vim.b[buf]
+        return vim.g.snacks_scroll ~= false
+          and b.snacks_scroll ~= false
+          and not b.large_buf
+          and not b.bigfile_detected
+          and vim.bo[buf].buftype ~= "terminal"
+      end,
     },
     toggle = {},
     gh = { enabled = true },
