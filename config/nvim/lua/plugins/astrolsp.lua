@@ -1,5 +1,64 @@
 local Snacks = require "snacks"
 local helper = require "utils.helper"
+
+local MAX_TOKEN_LEN = 10000
+
+---True if a delta-encoded token run stays inside the buffer.
+---@param data integer[]
+---@param nlines integer
+---@return boolean
+local function tokens_sane(data, nlines)
+  local line = 0
+  for i = 1, #data, 5 do
+    line = line + data[i]
+    if line >= nlines or data[i + 2] > MAX_TOKEN_LEN then return false end
+  end
+  return true
+end
+
+-- WARN(lsp): clangd 18.1 sends uint32-wrapped line deltas + ~67M lengths on some headers (mavsdk minimal.h); nvim 0.12.3 semantic_tokens.lua:148 then spins ~8min unyielded. drop tokens for that buf; remove once clangd/nvim fixed
+---@param client vim.lsp.Client
+local function guard_semantic_tokens(client)
+  if client._st_guarded then return end
+  client._st_guarded = true
+  local request = client.request
+  client.request = function(self, method, params, handler, bufnr)
+    if handler and method:find "^textDocument/semanticTokens/" then
+      local inner = handler
+      handler = function(err, result, ctx, ...)
+        local buf = ctx and ctx.bufnr or bufnr
+        local runs = result and (result.edits or { result }) or {}
+        for _, run in ipairs(runs) do
+          if
+            run.data
+            and buf
+            and vim.api.nvim_buf_is_valid(buf)
+            and not tokens_sane(run.data, vim.api.nvim_buf_line_count(buf))
+          then
+            vim.notify(
+              "clangd sent corrupt semantic tokens; disabled for "
+                .. vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":t"),
+              vim.log.levels.WARN
+            )
+            vim.schedule(
+              function()
+                vim.lsp.semantic_tokens.enable(
+                  false,
+                  { bufnr = buf, client_id = client.id }
+                )
+              end
+            )
+            result = result.edits and { edits = {} } or { data = {} }
+            break
+          end
+        end
+        return inner(err, result, ctx, ...)
+      end
+    end
+    return request(self, method, params, handler, bufnr)
+  end
+end
+
 ---@type LazySpec
 return {
   "AstroNvim/astrolsp",
@@ -77,6 +136,7 @@ return {
           end
           on_dir(root or vim.fn.getcwd())
         end,
+        on_attach = function(client) guard_semantic_tokens(client) end,
         cmd = {
           "clangd",
           "--background-index",

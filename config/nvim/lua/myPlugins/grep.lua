@@ -47,6 +47,9 @@ local function build_base_args(opts)
     "--column",
     "--smart-case",
     "--no-messages",
+    -- mirrors stock snacks grep; minified/1-line files otherwise get ts-highlighted whole per item (multi-sec stalls)
+    "--max-columns=500",
+    "--max-columns-preview",
   }
 
   -- Exclude patterns
