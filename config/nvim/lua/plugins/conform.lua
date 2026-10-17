@@ -21,27 +21,6 @@ return {
         },
         -- Lua linter
         null_ls.builtins.diagnostics.selene.with { filetypes = { "lua" } },
-        -- filetypes scoped: unscoped, fires on every buffer (help/terminal/oil) and
-        -- crashes when refactoring.nvim's treesitter lookup gets a bufnr with no parser
-        null_ls.builtins.code_actions.refactoring.with {
-          filetypes = {
-            "lua",
-            "vim",
-            "ps1",
-            "javascript",
-            "javascriptreact",
-            "go",
-            "cpp",
-            "typescriptreact",
-            "typescript",
-            "python",
-            "c",
-            "cs",
-            "ruby",
-            "php",
-            "java",
-          },
-        },
         -- Go-specific actions (since you work with Go)
         null_ls.builtins.code_actions.gomodifytags.with { filetypes = { "go" } },
         null_ls.builtins.code_actions.impl.with { filetypes = { "go" } },

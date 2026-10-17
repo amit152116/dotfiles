@@ -9,12 +9,6 @@ return {
   { "wakatime/vim-wakatime", event = "User AstroFile" },
 
   {
-    "ThePrimeagen/refactoring.nvim",
-    dependencies = { "lewis6991/async.nvim", "nvim-treesitter/nvim-treesitter" },
-    opts = {},
-  },
-
-  {
     "yutkat/confirm-quit.nvim",
     event = "CmdlineEnter",
     opts = {
