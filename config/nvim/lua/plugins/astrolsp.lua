@@ -376,7 +376,7 @@ return {
       neocmake = {
         cmd = { "neocmakelsp", "stdio" }, -- newer versions use a subcommand instead of --stdio
       },
-      ts_ls = {
+      vtsls = {
         on_attach = function(client)
           -- prettier (conform) handles formatting; avoid duplicate/clashing edits
           client.server_capabilities.documentFormattingProvider = false
@@ -468,7 +468,8 @@ return {
         nargs = "?",
       },
     },
-    handlers = {},
+    -- vtsls (typescript pack) owns TS; mason-installed ts_ls would otherwise auto-start alongside it
+    handlers = { ts_ls = false },
     autocmds = {
       lsp_codelens_refresh = {
         cond = "textDocument/codeLens", -- autocmd group is torn down once no attached client supports codelens

@@ -20,7 +20,6 @@ return {
         -- "kotlin-language-server", -- Kotlin (community, stable) - DEPRECATED
         "kotlin-lsp", -- Kotlin (JetBrains official, experimental AGP/Android support)
         "taplo", -- TOML
-        "typescript-language-server", -- JS/TS/React
         "tailwindcss-language-server", -- Tailwind CSS
         "css-lsp", -- CSS/PostCSS
         "json-lsp", -- package.json, tsconfig, etc.
