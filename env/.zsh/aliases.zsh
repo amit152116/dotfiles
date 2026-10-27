@@ -1,7 +1,7 @@
 alias cls="clear"
 alias python="python3"
 unalias t 2>/dev/null # Remove OMZ alias, use custom function from functions.zsh
-# alias pip="pip3"
+
 alias dotfiles='cd "$(git -C "$(realpath ~/.zshrc | xargs dirname)" rev-parse --show-toplevel)"'
 
 alias cat='batcat --style=plain'
@@ -50,11 +50,11 @@ fi
 # System aliases based on OS detection
 if [[ -f /etc/debian_version ]]; then
     # Debian/Ubuntu aliases
-    alias upgrade="sudo apt update && sudo apt upgrade -y"
+    alias update="sudo apt update"
+    alias upgrade="sudo apt upgrade"
     alias install="sudo apt install"
     alias remove="sudo apt purge"
-    alias clean="sudo apt autoremove -y && sudo apt clean"
-    alias update="sudo apt update"
+    alias clean="sudo apt autoremove && sudo apt clean"
 fi
 
 # JSON pretty print (check if appropriate tools are available)
