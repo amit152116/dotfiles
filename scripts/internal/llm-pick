@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# llm-pick: tmux popup (Alt+e) to run an `llm` profile on typed text or the pane's text
+set -uo pipefail
+
+log_error() { printf '\033[31m[error]\033[0m %s\n' "$*" >&2; }
+
+# launcher: re-invoke in a popup, pane id travels as argv (no user text in the tmux string)
+if [[ "${1:-}" != "--popup" ]]; then
+  pane="${1:-}"
+  [[ "$pane" =~ ^%[0-9]+$ ]] || { tmux display-message "llm-pick: bad pane id '$pane'"; exit 1; }
+  exec tmux display-popup -E -w 80% -h 80% -T " ◈ LLM " "$(printf '%q' "$0") --popup $pane"
+fi
+
+pane="${2:-}"
+PANE_LINES=200
+
+for dep in fzf llm; do
+  command -v "$dep" &>/dev/null || { log_error "$dep not installed"; read -r -n1 -p "press any key"; exit 1; }
+done
+
+loaded="$(llm ps 2>/dev/null | cut -f1 | paste -sd' ')"
+header="enter: type prompt · ctrl-p: use pane text · ctrl-w: preload model"
+header+=$'\n'"loaded: ${loaded:-none}"
+
+# --expect prints the pressed key first (empty for enter), then the selection
+mapfile -t sel < <(
+  llm list | awk '/^  /' | fzf \
+    --prompt='Profile ❯ ' --pointer='➤ ' --reverse --border \
+    --color=prompt:#61afef,fg+:#abb2bf,hl+:#e06c75 \
+    --expect=ctrl-p,ctrl-w --header="$header"
+)
+key="${sel[0]:-}"
+line="${sel[1]:-}"
+[[ -z "$line" ]] && exit 0
+profile="$(awk '{print $1}' <<<"$line")"
+
+if [[ "$key" == "ctrl-w" ]]; then
+  llm warm "$profile"
+  sleep 1
+  exit 0
+fi
+
+prompt=""
+text=""
+if [[ "$key" == "ctrl-p" ]]; then
+  text="$(tmux capture-pane -p -J -t "$pane" -S "-$PANE_LINES" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
+  [[ -z "$text" ]] && { log_error "pane is empty"; read -r -n1 -p "press any key"; exit 1; }
+  read -r -e -p "extra instruction (optional) ❯ " prompt
+else
+  read -r -e -p "$profile ❯ " prompt
+  [[ -z "$prompt" ]] && exit 0
+fi
+
+err="$(mktemp)"
+trap 'rm -f "$err"' EXIT
+printf '\033[2mrunning %s…\033[0m\n' "$profile"
+SECONDS=0
+
+if [[ -n "$text" ]]; then
+  args=("$profile")
+  [[ -n "$prompt" ]] && args+=("$prompt")
+  args+=(-)
+  out="$(llm "${args[@]}" <<<"$text" 2>"$err")"
+else
+  out="$(llm "$profile" "$prompt" </dev/null 2>"$err")"
+fi
+rc=$?
+
+if [[ $rc -ne 0 || -z "$out" ]]; then
+  cat "$err" >&2
+  read -r -n1 -p "failed; press any key"
+  exit 1
+fi
+
+printf '%s\n' "$out" | less -FRX
+printf '\033[2m%ss · \033[0m' "$SECONDS"
+read -r -n1 -p "[p]aste into pane  [y]ank  [r]etry  [q]uit ❯ " act
+echo
+
+case "$act" in
+p)
+  printf '%s' "$out" | tmux load-buffer -b llm-pick -
+  tmux paste-buffer -p -d -b llm-pick -t "$pane"
+  ;;
+y) printf '%s' "$out" | tmux-clip ;;
+r) exec "$0" --popup "$pane" ;;
+esac
