@@ -89,3 +89,14 @@ end = { foreground = '#6e6a86', background = '#000000' }
 key = "Return"
 mods = "Shift"
 chars = "\u001B\r"
+
+# alacritty sends nothing for ctrl+tab; emit modifyOtherKeys seqs tmux parses (extended-keys on)
+[[keyboard.bindings]]
+key = "Tab"
+mods = "Control"
+chars = "\u001B[27;5;9~"
+
+[[keyboard.bindings]]
+key = "Tab"
+mods = "Control|Shift"
+chars = "\u001B[27;6;9~"
